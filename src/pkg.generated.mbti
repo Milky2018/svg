@@ -138,6 +138,8 @@ pub fn raster_thick_line(Int, Int, Int, Int, Int, Color, PixelSetter) -> Unit
 
 pub fn rect(String, Double, Double, Double, Double) -> SVGNode
 
+pub fn render_path_commands_to_image(Array[PathCommand], Int, Int, Color, transform? : Array[Double]) -> Image
+
 pub fn render_svg_document_to_image(SVGDocument, Int, Int) -> Image
 
 pub fn render_svg_node_to_image(SVGNode, Int, Int) -> Image
