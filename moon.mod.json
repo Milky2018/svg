@@ -1,6 +1,6 @@
 {
   "name": "mizchi/svg",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Standalone SVG scene graph and renderer",
   "deps": {},
   "source": "src",
