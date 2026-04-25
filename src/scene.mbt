@@ -80,7 +80,7 @@ pub fn AnimationManager::update(
   let mut any_running = false
   // Update each tween
   for tween in self.tweens {
-    if not(tween.is_complete()) {
+    if !tween.is_complete() {
       match scene.find_node(tween.target_id) {
         Some(node) => if tween.update(dt, node) { any_running = true }
         None => () // Node not found, skip
@@ -111,7 +111,7 @@ pub fn AnimationManager::cleanup(self : AnimationManager) -> Unit {
 /// Check if any animations are running
 pub fn AnimationManager::is_animating(self : AnimationManager) -> Bool {
   for tween in self.tweens {
-    if not(tween.is_complete()) {
+    if !tween.is_complete() {
       return true
     }
   }
@@ -306,7 +306,7 @@ fn compute_dirty_region(
   // If this node is dirty, include its current and previous bounds
   if node.node_dirty {
     let current_bbox = get_shape_bounds(node.shape)
-    if not(current_bbox.is_empty()) {
+    if !current_bbox.is_empty() {
       let transformed_bbox = transform.apply_bbox(current_bbox)
       dirty_bbox = dirty_bbox.union(transformed_bbox)
     }
@@ -370,7 +370,7 @@ fn render_and_update_dirty(
   let transform = parent_transform.multiply(node.transform)
   // Update previous bounds and clear dirty
   let current_bbox = get_shape_bounds(node.shape)
-  if not(current_bbox.is_empty()) {
+  if !current_bbox.is_empty() {
     node.prev_bounds = Some(transform.apply_bbox(current_bbox))
   }
   node.node_dirty = false
@@ -494,7 +494,7 @@ fn get_min_z_index(nodes : Array[SVGNode]) -> Int {
 fn compute_bounds(node : SVGNode, parent_transform : Transform) -> BoundingBox {
   let transform = parent_transform.multiply(node.transform)
   let mut bbox = get_shape_bounds(node.shape)
-  if not(bbox.is_empty()) {
+  if !bbox.is_empty() {
     bbox = transform.apply_bbox(bbox)
   }
   for child in node.children {
@@ -512,7 +512,7 @@ fn compute_bounds_without_self_transform(
 ) -> BoundingBox {
   let transform = parent_transform
   let mut bbox = get_shape_bounds(node.shape)
-  if not(bbox.is_empty()) {
+  if !bbox.is_empty() {
     bbox = transform.apply_bbox(bbox)
   }
   for child in node.children {
@@ -865,9 +865,9 @@ fn render_node(
   }
   // Early culling: check if node's bounding box is visible
   let shape_bbox = get_shape_bounds(node.shape)
-  if not(shape_bbox.is_empty()) {
+  if !shape_bbox.is_empty() {
     let transformed_bbox = transform.apply_bbox(shape_bbox)
-    if not(is_visible(transformed_bbox, ctx_for_node)) {
+    if !is_visible(transformed_bbox, ctx_for_node) {
       // Node is outside visible area, but still need to check children
       // (they might have different transforms that make them visible)
       for child in node.children {
@@ -1145,7 +1145,7 @@ fn pattern_is_valid(pattern : Pattern) -> Bool {
   if pattern.width <= 0.0 || pattern.height <= 0.0 {
     return false
   }
-  if not(pattern.transform.is_invertible()) {
+  if !pattern.transform.is_invertible() {
     return false
   }
   pattern.content.length() > 0
@@ -1176,7 +1176,7 @@ fn resolve_paint_for_render(
     PaintServerRef(id, fallback) =>
       match resources.gradients.get(id) {
         Some(Gradient::Linear(grad)) =>
-          if not(grad.transform.is_invertible()) {
+          if !grad.transform.is_invertible() {
             resolve_paint_fallback(fallback, node_color)
           } else if grad.stops.length() == 0 {
             ResolvedPaint::None
@@ -1184,7 +1184,7 @@ fn resolve_paint_for_render(
             ResolvedPaint::LinearGrad(grad)
           }
         Some(Gradient::Radial(grad)) =>
-          if not(grad.transform.is_invertible()) {
+          if !grad.transform.is_invertible() {
             resolve_paint_fallback(fallback, node_color)
           } else if grad.stops.length() == 0 {
             ResolvedPaint::None
@@ -1490,7 +1490,7 @@ fn find_attr_value(svg : String, name : String) -> String? {
         } else {
           let start = j
           while j < end &&
-                (char_at(svg, j) |> is_space_char |> not) &&
+                !is_space_char(char_at(svg, j)) &&
                 char_at(svg, j) != '>' {
             j = j + 1
           }
@@ -2307,7 +2307,7 @@ fn render_markers_for_polylines(
     if len < 2 {
       return 0.0
     }
-    if not(closed) && index == 0 {
+    if !closed && index == 0 {
       for i in 1..<len {
         let dx = points[i].0 - points[0].0
         let dy = points[i].1 - points[0].1
@@ -2318,7 +2318,7 @@ fn render_markers_for_polylines(
       }
       return 0.0
     }
-    if not(closed) && index >= len - 1 {
+    if !closed && index >= len - 1 {
       for i = len - 1; i > 0; i = i - 1 {
         let dx = points[i].0 - points[i - 1].0
         let dy = points[i].1 - points[i - 1].1
@@ -2563,7 +2563,7 @@ fn compute_arc_tangents(
     (-y1p - cyp) / ry,
   )
   let pi = 3.14159265358979323846
-  if not(sweep) && dtheta > 0.0 {
+  if !sweep && dtheta > 0.0 {
     dtheta = dtheta - 2.0 * pi
   } else if sweep && dtheta < 0.0 {
     dtheta = dtheta + 2.0 * pi

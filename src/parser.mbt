@@ -71,29 +71,29 @@ fn inherited_style_from_node(node : SVGNode) -> InheritedStyle {
 
 ///|
 fn apply_inherited_style(node : SVGNode, inherited : InheritedStyle) -> Unit {
-  if not(node.fill_is_set) {
+  if !node.fill_is_set {
     node.fill = inherited.fill
   }
-  if not(node.stroke_paint_is_set) {
+  if !node.stroke_paint_is_set {
     node.stroke = { ..node.stroke, paint: inherited.stroke.paint }
   }
-  if not(node.stroke_width_is_set) {
+  if !node.stroke_width_is_set {
     node.stroke = { ..node.stroke, width: inherited.stroke.width }
   }
-  if not(node.color_is_set) {
+  if !node.color_is_set {
     node.color = inherited.color
   }
 }
 
 ///|
 fn apply_inherited_markers(child : SVGNode, parent : SVGNode) -> Unit {
-  if not(child.marker_start_is_set) {
+  if !child.marker_start_is_set {
     child.marker_start = parent.marker_start
   }
-  if not(child.marker_mid_is_set) {
+  if !child.marker_mid_is_set {
     child.marker_mid = parent.marker_mid
   }
-  if not(child.marker_end_is_set) {
+  if !child.marker_end_is_set {
     child.marker_end = parent.marker_end
   }
 }
@@ -141,7 +141,7 @@ fn SVGParser::advance(self : SVGParser) -> Char {
 
 ///|
 fn SVGParser::skip_whitespace(self : SVGParser) -> Unit {
-  while not(self.is_end()) {
+  while !self.is_end() {
     let c = self.peek()
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
       let _ = self.advance()
@@ -164,7 +164,7 @@ fn SVGParser::expect_char(self : SVGParser, expected : Char) -> Bool {
 ///|
 fn SVGParser::read_until(self : SVGParser, stop : Char) -> String {
   let buf = StringBuilder::new()
-  while not(self.is_end()) && self.peek() != stop {
+  while !self.is_end() && self.peek() != stop {
     buf.write_char(self.advance())
   }
   buf.to_string()
@@ -173,7 +173,7 @@ fn SVGParser::read_until(self : SVGParser, stop : Char) -> String {
 ///|
 fn SVGParser::read_name(self : SVGParser) -> String {
   let buf = StringBuilder::new()
-  while not(self.is_end()) {
+  while !self.is_end() {
     let c = self.peek()
     if is_name_char(c) {
       buf.write_char(self.advance())
@@ -197,7 +197,7 @@ fn is_name_char(c : Char) -> Bool {
 ///|
 fn SVGParser::read_attr_value(self : SVGParser) -> String {
   self.skip_whitespace()
-  if not(self.expect_char('=')) {
+  if !self.expect_char('=') {
     return ""
   }
   self.skip_whitespace()
@@ -248,7 +248,7 @@ fn parse_element(
 ) -> SVGNode? {
   parser.skip_whitespace()
   // Skip comments and declarations
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     if parser.peek() == '<' {
       let _ = parser.advance()
       if parser.peek() == '!' || parser.peek() == '?' {
@@ -285,7 +285,7 @@ fn parse_element(
   }
   match tag_name {
     "defs" => {
-      if not(self_closing) {
+      if !self_closing {
         let temp = SVGNode::new(Group)
         parse_children(parser, temp, tag_name, ctx)
       }
@@ -318,7 +318,7 @@ fn parse_element(
         Some(v) => parse_preserve_aspect_ratio(v)
         None => PreserveAspectRatio::default()
       }
-      if not(self_closing) {
+      if !self_closing {
         parse_children(parser, symbol_node, tag_name, ctx)
       }
       let symbol = match view_box {
@@ -335,7 +335,7 @@ fn parse_element(
       Group |> SVGNode::new |> Some
     }
     "clipPath" => {
-      if not(self_closing) {
+      if !self_closing {
         parse_clip_path(parser, attrs, ctx, tag_name)
       } else {
         parse_clip_path_from_attrs(attrs, ctx)
@@ -343,7 +343,7 @@ fn parse_element(
       Group |> SVGNode::new |> Some
     }
     "mask" => {
-      if not(self_closing) {
+      if !self_closing {
         parse_mask(parser, attrs, ctx, tag_name)
       } else {
         parse_mask_from_attrs(attrs, ctx)
@@ -351,7 +351,7 @@ fn parse_element(
       Group |> SVGNode::new |> Some
     }
     "marker" => {
-      if not(self_closing) {
+      if !self_closing {
         parse_marker(parser, attrs, ctx, tag_name, parent_tag)
       } else {
         parse_marker_from_attrs(attrs, ctx, parent_tag)
@@ -360,13 +360,13 @@ fn parse_element(
     }
     "image" => {
       let node = parse_image(attrs)
-      if not(self_closing) {
+      if !self_closing {
         skip_to_end_tag(parser, tag_name)
       }
       node
     }
     "pattern" => {
-      if not(self_closing) {
+      if !self_closing {
         parse_pattern(parser, attrs, ctx, tag_name, parent_tag)
       } else {
         parse_pattern_from_attrs(attrs, ctx, parent_tag)
@@ -374,7 +374,7 @@ fn parse_element(
       Group |> SVGNode::new |> Some
     }
     "linearGradient" => {
-      if not(self_closing) {
+      if !self_closing {
         parse_linear_gradient(parser, attrs, ctx, tag_name, parent_tag)
       } else {
         parse_linear_gradient_from_attrs(attrs, ctx, parent_tag)
@@ -382,7 +382,7 @@ fn parse_element(
       Group |> SVGNode::new |> Some
     }
     "radialGradient" => {
-      if not(self_closing) {
+      if !self_closing {
         parse_radial_gradient(parser, attrs, ctx, tag_name, parent_tag)
       } else {
         parse_radial_gradient_from_attrs(attrs, ctx, parent_tag)
@@ -391,7 +391,7 @@ fn parse_element(
     }
     "use" => {
       let node = parse_use(attrs, ctx)
-      if not(self_closing) {
+      if !self_closing {
         skip_to_end_tag(parser, tag_name)
       }
       match node {
@@ -431,7 +431,7 @@ fn parse_element(
         }
       }
       let mut pushed = false
-      if tag_name == "svg" && not(self_closing) {
+      if tag_name == "svg" && !self_closing {
         match (node.viewport_width, node.viewport_height) {
           (Some(w), Some(h)) => {
             ctx.viewport_stack.push((w, h))
@@ -441,7 +441,7 @@ fn parse_element(
         }
       }
       // Parse children (for container elements)
-      if not(self_closing) {
+      if !self_closing {
         match node.shape {
           Group => parse_children(parser, node, tag_name, ctx)
           _ =>
@@ -460,7 +460,7 @@ fn parse_element(
 ///|
 fn skip_comment_or_decl(parser : SVGParser) -> Unit {
   // Skip until we find '>'
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     if parser.advance() == '>' {
       break
     }
@@ -470,7 +470,7 @@ fn skip_comment_or_decl(parser : SVGParser) -> Unit {
 ///|
 fn skip_to_end_tag(parser : SVGParser, _tag_name : String) -> Unit {
   // Skip until we find the closing tag
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     if parser.peek() == '<' {
       let _ = parser.advance()
       if parser.peek() == '/' {
@@ -496,11 +496,11 @@ fn parse_children(
   let parent_style = ctx.current_style()
   apply_inherited_style(parent, parent_style)
   ctx.style_stack.push(inherited_style_from_node(parent))
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     parser.skip_whitespace()
     if parser.peek() != '<' {
       // Skip text content
-      while not(parser.is_end()) && parser.peek() != '<' {
+      while !parser.is_end() && parser.peek() != '<' {
         let _ = parser.advance()
       }
       continue
@@ -516,7 +516,7 @@ fn parse_children(
         break
       }
       // Skip malformed end tag
-      while not(parser.is_end()) && parser.advance() != '>' {
+      while !parser.is_end() && parser.advance() != '>' {
 
       }
       continue
@@ -564,7 +564,7 @@ fn create_node_for_tag(tag_name : String) -> SVGNode {
 ///|
 fn parse_attributes(parser : SVGParser) -> Array[(String, String)] {
   let attrs : Array[(String, String)] = []
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     parser.skip_whitespace()
     let c = parser.peek()
     if c == '>' || c == '/' {
@@ -1638,7 +1638,7 @@ fn decode_base64_local(value : String) -> String? {
 ///|
 fn decode_data_svg(href : String) -> String? {
   let v = trim_string(href)
-  if not(string_starts_with(v, "data:image/svg+xml")) {
+  if !string_starts_with(v, "data:image/svg+xml") {
     return None
   }
   let comma = find_first(v, ',')
@@ -1941,7 +1941,7 @@ fn parse_pattern_from_attrs(
   ctx : SVGParseContext,
   parent_tag : String,
 ) -> Unit {
-  if not(is_paint_server_context(parent_tag)) {
+  if !is_paint_server_context(parent_tag) {
     return
   }
   parse_pattern_with_content(attrs, [], ctx)
@@ -1955,7 +1955,7 @@ fn parse_pattern(
   tag_name : String,
   parent_tag : String,
 ) -> Unit {
-  if not(is_paint_server_context(parent_tag)) {
+  if !is_paint_server_context(parent_tag) {
     skip_to_end_tag(parser, tag_name)
     return
   }
@@ -2048,7 +2048,7 @@ fn parse_marker_with_content(
   content.preserve_aspect_ratio_is_set = false
   // Marker viewport clipping is handled at render time.
   content.clip_overflow = false
-  let clip_overflow = not(overflow_visible)
+  let clip_overflow = !overflow_visible
   let marker = {
     ..Marker::new(id, content),
     ref_x,
@@ -2163,7 +2163,7 @@ fn parse_linear_gradient_from_attrs(
   ctx : SVGParseContext,
   parent_tag : String,
 ) -> Unit {
-  if not(is_paint_server_context(parent_tag)) {
+  if !is_paint_server_context(parent_tag) {
     return
   }
   parse_linear_gradient_with_stops(attrs, [], ctx)
@@ -2177,7 +2177,7 @@ fn parse_linear_gradient(
   tag_name : String,
   parent_tag : String,
 ) -> Unit {
-  if not(is_paint_server_context(parent_tag)) {
+  if !is_paint_server_context(parent_tag) {
     skip_to_end_tag(parser, tag_name)
     return
   }
@@ -2229,7 +2229,7 @@ fn parse_radial_gradient_from_attrs(
   ctx : SVGParseContext,
   parent_tag : String,
 ) -> Unit {
-  if not(is_paint_server_context(parent_tag)) {
+  if !is_paint_server_context(parent_tag) {
     return
   }
   parse_radial_gradient_with_stops(attrs, [], ctx)
@@ -2243,7 +2243,7 @@ fn parse_radial_gradient(
   tag_name : String,
   parent_tag : String,
 ) -> Unit {
-  if not(is_paint_server_context(parent_tag)) {
+  if !is_paint_server_context(parent_tag) {
     skip_to_end_tag(parser, tag_name)
     return
   }
@@ -2324,11 +2324,11 @@ fn parse_gradient_stops(
   parent_tag : String,
 ) -> Array[GradientStop] {
   let stops : Array[GradientStop] = []
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     parser.skip_whitespace()
     if parser.peek() != '<' {
       // Skip text content
-      while not(parser.is_end()) && parser.peek() != '<' {
+      while !parser.is_end() && parser.peek() != '<' {
         let _ = parser.advance()
       }
       continue
@@ -2343,7 +2343,7 @@ fn parse_gradient_stops(
         let _ = parser.expect_char('>')
         break
       }
-      while not(parser.is_end()) && parser.advance() != '>' {
+      while !parser.is_end() && parser.advance() != '>' {
 
       }
       continue
@@ -2369,7 +2369,7 @@ fn parse_gradient_stops(
     if tag_name == "stop" {
       stops.push(parse_gradient_stop(attrs))
     }
-    if not(self_closing) {
+    if !self_closing {
       skip_to_end_tag(parser, tag_name)
     }
   }
@@ -2716,22 +2716,22 @@ fn parse_paint_order(value : String) -> PaintOrder {
   let order : Array[PaintOrderItem] = []
   for t in tokens {
     match t {
-      "fill" => if not(order.contains(Fill)) { order.push(Fill) }
-      "stroke" => if not(order.contains(Stroke)) { order.push(Stroke) }
-      "markers" => if not(order.contains(Markers)) { order.push(Markers) }
+      "fill" => if !order.contains(Fill) { order.push(Fill) }
+      "stroke" => if !order.contains(Stroke) { order.push(Stroke) }
+      "markers" => if !order.contains(Markers) { order.push(Markers) }
       _ => ()
     }
   }
   if order.length() == 0 {
     return PaintOrder::default()
   }
-  if not(order.contains(Fill)) {
+  if !order.contains(Fill) {
     order.push(Fill)
   }
-  if not(order.contains(Stroke)) {
+  if !order.contains(Stroke) {
     order.push(Stroke)
   }
-  if not(order.contains(Markers)) {
+  if !order.contains(Markers) {
     order.push(Markers)
   }
   PaintOrder::{ order, }

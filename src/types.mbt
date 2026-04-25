@@ -77,14 +77,14 @@ pub(all) enum Align {
   XMinYMax
   XMidYMax
   XMaxYMax
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// preserveAspectRatio meet/slice
 pub(all) enum MeetOrSlice {
   Meet // Scale to fit entirely (default)
   Slice // Scale to cover entirely
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Complete preserveAspectRatio setting
@@ -182,7 +182,7 @@ pub(all) enum PathCommand {
   QuadraticCurveToRel(Double, Double, Double, Double) // q dx1 dy1 dx dy
   SmoothQuadraticCurveToRel(Double, Double) // t dx dy
   ArcToRel(Double, Double, Double, Bool, Bool, Double, Double) // a rx ry rotation large-arc sweep dx dy
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// SVG shape primitives
@@ -210,7 +210,7 @@ pub(all) enum Shape {
     href~ : String
   )
   Group // Container for children
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Gradient stop (position 0.0-1.0 and color)
@@ -359,7 +359,7 @@ pub(all) enum SpreadMethod {
   Pad // Extend with end colors (default)
   Repeat // Repeat pattern
   Reflect // Mirror pattern
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Build a lookup table for fast gradient color sampling
@@ -393,7 +393,7 @@ pub fn lut_color_at(lut : Array[Color], t : Double) -> Color {
 pub(all) enum GradientUnits {
   UserSpaceOnUse
   ObjectBoundingBox
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Paint style (fill or stroke)
@@ -444,21 +444,21 @@ pub(all) enum LineCap {
   Butt
   Round
   Square
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 pub(all) enum LineJoin {
   Miter
   Round
   Bevel
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Fill rule for paths and polygons
 pub(all) enum FillRule {
   NonZero // Default
   EvenOdd
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// SVG node (element in the scene graph)
@@ -917,7 +917,7 @@ fn hit_test_polygon(
     let (xj, yj) = points[j]
     // Ray casting: count intersections with polygon edges
     if (yi > py) != (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi {
-      inside = not(inside)
+      inside = !inside
     }
     j = i
   }
@@ -1044,7 +1044,7 @@ pub(all) enum Easing {
   EaseInCubic
   EaseOutCubic
   EaseInOutCubic
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Apply easing function to a normalized time (0.0 to 1.0)
@@ -1137,7 +1137,7 @@ pub fn Tween::update(self : Tween, dt : Double, node : SVGNode) -> Bool {
     return false
   }
   // Capture start values on first update
-  if not(self.started) {
+  if !self.started {
     self.start_value = capture_property(node, self.property)
     self.started = true
   }
@@ -1331,7 +1331,7 @@ pub(all) enum EventType {
   DragStart
   DragMove
   DragEnd
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Event listener entry
@@ -1415,7 +1415,7 @@ pub fn EventManager::dispatch_mouse_down(
     let event = PointerEvent::new(x, y, button, node.id)
     self.dispatch_to_node(node.id, MouseDown, event)
     // Start drag
-    if not(event.propagation_stopped) {
+    if !event.propagation_stopped {
       self.dragging_node = Some(node.id)
       self.drag_start_x = x
       self.drag_start_y = y
@@ -1671,7 +1671,7 @@ pub fn SVGNode::collides_with(self : SVGNode, other : SVGNode) -> Bool {
   // Get transformed bounding boxes for quick rejection
   let bbox1 = self.transform.apply_bbox(get_shape_bbox(self.shape))
   let bbox2 = other.transform.apply_bbox(get_shape_bbox(other.shape))
-  if not(bbox1.intersects(bbox2)) {
+  if !bbox1.intersects(bbox2) {
     return false
   }
   // For now, use bounding box collision
@@ -1986,7 +1986,7 @@ pub fn ParticleEmitter::update(self : ParticleEmitter, dt : Double) -> Unit {
 fn ParticleEmitter::emit_one(self : ParticleEmitter) -> Unit {
   // Find inactive particle
   for p in self.particles {
-    if not(p.active) {
+    if !p.active {
       p.active = true
       p.x = self.x
       p.y = self.y
@@ -2213,14 +2213,14 @@ pub(all) enum BlendMode {
   Saturation
   ColorMode // 'color' in CSS
   Luminosity
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS isolation values
 pub(all) enum Isolation {
   Auto
   Isolate
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Blend two colors using the specified blend mode
@@ -3698,7 +3698,7 @@ pub fn AnimatedSprite::from_range(
 ///|
 /// Update animation with delta time
 pub fn AnimatedSprite::update(self : AnimatedSprite, dt : Double) -> Unit {
-  if not(self.playing) || self.frames.is_empty() {
+  if !self.playing || self.frames.is_empty() {
     return
   }
   self.elapsed = self.elapsed + dt
@@ -3780,7 +3780,7 @@ pub(all) struct ClipPath {
 pub(all) enum ClipPathUnits {
   UserSpaceOnUse
   ObjectBoundingBox
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 pub fn ClipPath::new(id : String, shape : Shape) -> ClipPath {
@@ -3842,14 +3842,14 @@ pub fn ClipPathRegistry::get(self : ClipPathRegistry, id : String) -> ClipPath? 
 pub(all) enum MaskUnits {
   UserSpaceOnUse // Coordinates relative to current user space
   ObjectBoundingBox // Coordinates relative to bounding box (0-1)
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Mask type - how mask values are interpreted
 pub(all) enum MaskType {
   Luminance // Use luminance (brightness) as mask value
   Alpha // Use alpha channel as mask value
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Mask definition for transparency masking
@@ -4158,7 +4158,7 @@ pub fn Pattern::get_color_at(
   let (cx, cy) = match self.view_box {
     Some(view_box) => {
       let t = view_box.get_transform(pw, ph, self.preserve_aspect_ratio)
-      if not(t.is_invertible()) {
+      if !t.is_invertible() {
         return None
       }
       t.inverse().apply(cx, cy)
@@ -4248,7 +4248,7 @@ pub(all) enum WritingMode {
   HorizontalTB // Left to right, top to bottom (default)
   VerticalRL // Top to bottom, right to left (Japanese, Chinese)
   VerticalLR // Top to bottom, left to right
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Text orientation for vertical writing (SVG 2.0)
@@ -4256,7 +4256,7 @@ pub(all) enum TextOrientation {
   Mixed // Upright for CJK, rotated for others (default)
   Upright // All characters upright
   Sideways // All characters rotated 90°
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// White space handling (SVG 2.0)
@@ -4267,7 +4267,7 @@ pub(all) enum WhiteSpace {
   PreWrap // Preserve whitespace, wrap at boundaries
   PreLine // Collapse spaces, preserve newlines, wrap
   BreakSpaces // Like pre-wrap but break at any space
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Text overflow handling (SVG 2.0)
@@ -4275,7 +4275,7 @@ pub(all) enum TextOverflow {
   Clip // Clip at boundary
   Ellipsis // Show "..." at overflow
   Custom(String) // Custom overflow indicator
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Text decoration style (SVG 2.0)
@@ -4285,7 +4285,7 @@ pub(all) enum TextDecorationStyle {
   Dotted
   Dashed
   Wavy
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Extended text decoration (SVG 2.0)
@@ -4307,13 +4307,13 @@ pub(all) enum PaintOrderItem {
   Fill
   Stroke
   Markers
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Paint order specification (SVG 2.0)
 pub(all) struct PaintOrder {
   order : Array[PaintOrderItem]
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 pub fn PaintOrder::default() -> PaintOrder {
@@ -4340,7 +4340,7 @@ pub(all) enum TextDecoration {
   Underline
   Overline
   LineThrough
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Font weight
@@ -4644,7 +4644,7 @@ pub fn process_white_space(text : String, mode : WhiteSpace) -> String {
           result = result + "\n"
           prev_space = false
         } else if c == ' ' || c == '\t' {
-          if not(prev_space) {
+          if !prev_space {
             result = result + " "
             prev_space = true
           }
@@ -4661,7 +4661,7 @@ pub fn process_white_space(text : String, mode : WhiteSpace) -> String {
       let mut prev_space = false
       for c in text {
         if c == ' ' || c == '\t' || c == '\n' {
-          if not(prev_space) {
+          if !prev_space {
             result = result + " "
             prev_space = true
           }
@@ -5268,4 +5268,69 @@ pub fn MarkedLine::get_angle_at(self : MarkedLine, index : Int) -> Double {
       angle_from(sx, sy)
     }
   }
+}
+
+///|
+pub impl Show for Align with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for MeetOrSlice with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for LineCap with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for LineJoin with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for FillRule with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for MaskType with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for WritingMode with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for TextOrientation with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for WhiteSpace with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for TextOverflow with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for TextDecorationStyle with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for PaintOrderItem with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
+}
+
+///|
+pub impl Show for TextDecoration with output(self, logger) {
+  logger.write_string(@debug.to_string(self))
 }

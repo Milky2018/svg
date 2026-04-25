@@ -776,7 +776,7 @@ test "wpt rect-05 zero size" {
       let mut any_drawn = false
       for y in 0..<image.height {
         for x in 0..<image.width {
-          if not(image.get_pixel(x, y).is_transparent()) {
+          if !image.get_pixel(x, y).is_transparent() {
             any_drawn = true
           }
         }
@@ -801,7 +801,7 @@ test "wpt circle-01 r0" {
       let mut any_drawn = false
       for y in 0..<image.height {
         for x in 0..<image.width {
-          if not(image.get_pixel(x, y).is_transparent()) {
+          if !image.get_pixel(x, y).is_transparent() {
             any_drawn = true
           }
         }
@@ -826,7 +826,7 @@ test "wpt ellipse-09 zero" {
       let mut any_drawn = false
       for y in 0..<image.height {
         for x in 0..<image.width {
-          if not(image.get_pixel(x, y).is_transparent()) {
+          if !image.get_pixel(x, y).is_transparent() {
             any_drawn = true
           }
         }
@@ -1039,7 +1039,7 @@ test "disabled polyline empty points" {
       let mut any_drawn = false
       for y in 0..<image.height {
         for x in 0..<image.width {
-          if not(image.get_pixel(x, y).is_transparent()) {
+          if !image.get_pixel(x, y).is_transparent() {
             any_drawn = true
           }
         }
@@ -1064,7 +1064,7 @@ test "disabled polyline single point" {
       let mut any_drawn = false
       for y in 0..<image.height {
         for x in 0..<image.width {
-          if not(image.get_pixel(x, y).is_transparent()) {
+          if !image.get_pixel(x, y).is_transparent() {
             any_drawn = true
           }
         }
@@ -1089,7 +1089,7 @@ test "disabled polygon too few points" {
       let mut any_drawn = false
       for y in 0..<image.height {
         for x in 0..<image.width {
-          if not(image.get_pixel(x, y).is_transparent()) {
+          if !image.get_pixel(x, y).is_transparent() {
             any_drawn = true
           }
         }
@@ -1150,7 +1150,7 @@ test "disabled circle negative r" {
       let mut any_drawn = false
       for y in 0..<image.height {
         for x in 0..<image.width {
-          if not(image.get_pixel(x, y).is_transparent()) {
+          if !image.get_pixel(x, y).is_transparent() {
             any_drawn = true
           }
         }
@@ -1175,7 +1175,7 @@ test "disabled circle style negative r" {
       let mut any_drawn = false
       for y in 0..<image.height {
         for x in 0..<image.width {
-          if not(image.get_pixel(x, y).is_transparent()) {
+          if !image.get_pixel(x, y).is_transparent() {
             any_drawn = true
           }
         }
@@ -1200,7 +1200,7 @@ test "disabled ellipse negative rx" {
       let mut any_drawn = false
       for y in 0..<image.height {
         for x in 0..<image.width {
-          if not(image.get_pixel(x, y).is_transparent()) {
+          if !image.get_pixel(x, y).is_transparent() {
             any_drawn = true
           }
         }
@@ -1225,7 +1225,7 @@ test "disabled ellipse style auto" {
       let mut any_drawn = false
       for y in 0..<image.height {
         for x in 0..<image.width {
-          if not(image.get_pixel(x, y).is_transparent()) {
+          if !image.get_pixel(x, y).is_transparent() {
             any_drawn = true
           }
         }
@@ -1286,7 +1286,7 @@ test "rect zero size not rendered" {
   let mut any_drawn = false
   for y in 0..<image.height {
     for x in 0..<image.width {
-      if not(image.get_pixel(x, y).is_transparent()) {
+      if !image.get_pixel(x, y).is_transparent() {
         any_drawn = true
       }
     }

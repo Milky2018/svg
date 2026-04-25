@@ -28,7 +28,7 @@ fn diff_images(a : @svg.Image, b : @svg.Image, tol : Int) -> Int {
   for i in 0..<total {
     let ca = a.pixels[i]
     let cb = b.pixels[i]
-    if not(color_close(ca, cb, tol)) {
+    if !color_close(ca, cb, tol) {
       diff = diff + 1
     }
   }
@@ -71,7 +71,7 @@ fn bbox_not_green(img : @svg.Image) -> (Int, Int, Int, Int)? {
       let i = y * img.width + x
       let c = img.pixels[i]
       let is_green = c.r == 0 && c.g == 128 && c.b == 0 && c.a == 255
-      if not(is_green) {
+      if !is_green {
         if x < min_x {
           min_x = x
         }

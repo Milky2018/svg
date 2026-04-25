@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/svg"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub fn apply_blur(Array[Array[Color]], Int) -> Array[Array[Color]]
 
@@ -166,8 +170,7 @@ pub(all) enum Align {
   XMinYMax
   XMidYMax
   XMaxYMax
-}
-pub impl Eq for Align
+} derive(Eq, @debug.Debug)
 pub impl Show for Align
 
 pub(all) enum AnimProperty {
@@ -232,9 +235,7 @@ pub(all) enum BlendMode {
   Saturation
   ColorMode
   Luminosity
-}
-pub impl Eq for BlendMode
-pub impl Show for BlendMode
+} derive(Eq, @debug.Debug)
 
 pub(all) struct BoundingBox {
   min_x : Double
@@ -290,9 +291,7 @@ pub fn ClipPathRegistry::new() -> Self
 pub(all) enum ClipPathUnits {
   UserSpaceOnUse
   ObjectBoundingBox
-}
-pub impl Eq for ClipPathUnits
-pub impl Show for ClipPathUnits
+} derive(Eq, @debug.Debug)
 
 pub(all) struct ClipRect {
   x : Int
@@ -344,10 +343,8 @@ pub(all) enum Easing {
   EaseInCubic
   EaseOutCubic
   EaseInOutCubic
-}
+} derive(Eq, @debug.Debug)
 pub fn Easing::apply(Self, Double) -> Double
-pub impl Eq for Easing
-pub impl Show for Easing
 
 pub(all) struct EmitterConfig {
   emit_rate : Double
@@ -400,15 +397,12 @@ pub(all) enum EventType {
   DragStart
   DragMove
   DragEnd
-}
-pub impl Eq for EventType
-pub impl Show for EventType
+} derive(Eq, @debug.Debug)
 
 pub(all) enum FillRule {
   NonZero
   EvenOdd
-}
-pub impl Eq for FillRule
+} derive(Eq, @debug.Debug)
 pub impl Show for FillRule
 
 pub(all) enum Filter {
@@ -458,9 +452,7 @@ pub(all) struct GradientStop {
 pub(all) enum GradientUnits {
   UserSpaceOnUse
   ObjectBoundingBox
-}
-pub impl Eq for GradientUnits
-pub impl Show for GradientUnits
+} derive(Eq, @debug.Debug)
 
 pub(all) struct Image {
   width : Int
@@ -495,24 +487,20 @@ pub fn Image::sub_image(Self, Int, Int, Int, Int) -> Self
 pub(all) enum Isolation {
   Auto
   Isolate
-}
-pub impl Eq for Isolation
-pub impl Show for Isolation
+} derive(Eq, @debug.Debug)
 
 pub(all) enum LineCap {
   Butt
   Round
   Square
-}
-pub impl Eq for LineCap
+} derive(Eq, @debug.Debug)
 pub impl Show for LineCap
 
 pub(all) enum LineJoin {
   Miter
   Round
   Bevel
-}
-pub impl Eq for LineJoin
+} derive(Eq, @debug.Debug)
 pub impl Show for LineJoin
 
 pub(all) struct LinearGradient {
@@ -606,22 +594,18 @@ pub fn MaskRegistry::new() -> Self
 pub(all) enum MaskType {
   Luminance
   Alpha
-}
-pub impl Eq for MaskType
+} derive(Eq, @debug.Debug)
 pub impl Show for MaskType
 
 pub(all) enum MaskUnits {
   UserSpaceOnUse
   ObjectBoundingBox
-}
-pub impl Eq for MaskUnits
-pub impl Show for MaskUnits
+} derive(Eq, @debug.Debug)
 
 pub(all) enum MeetOrSlice {
   Meet
   Slice
-}
-pub impl Eq for MeetOrSlice
+} derive(Eq, @debug.Debug)
 pub impl Show for MeetOrSlice
 
 pub(all) struct ObjectPool[T] {
@@ -651,17 +635,14 @@ pub(all) enum PaintFallback {
 
 pub(all) struct PaintOrder {
   order : Array[PaintOrderItem]
-}
+} derive(Eq, @debug.Debug)
 pub fn PaintOrder::default() -> Self
-pub impl Eq for PaintOrder
-pub impl Show for PaintOrder
 
 pub(all) enum PaintOrderItem {
   Fill
   Stroke
   Markers
-}
-pub impl Eq for PaintOrderItem
+} derive(Eq, @debug.Debug)
 pub impl Show for PaintOrderItem
 
 pub(all) struct Particle {
@@ -709,8 +690,7 @@ pub(all) enum PathCommand {
   QuadraticCurveToRel(Double, Double, Double, Double)
   SmoothQuadraticCurveToRel(Double, Double)
   ArcToRel(Double, Double, Double, Bool, Bool, Double, Double)
-}
-pub impl Show for PathCommand
+} derive(@debug.Debug)
 
 pub(all) struct PathFollower {
   path : Array[PathCommand]
@@ -901,8 +881,7 @@ pub(all) enum Shape {
   Text(x~ : Double, y~ : Double, text~ : String, font_size~ : Double)
   Image(x~ : Double, y~ : Double, width~ : Double, height~ : Double, href~ : String)
   Group
-}
-pub impl Show for Shape
+} derive(@debug.Debug)
 
 pub(all) struct SimpleRNG {
   mut state : Int
@@ -915,9 +894,7 @@ pub(all) enum SpreadMethod {
   Pad
   Repeat
   Reflect
-}
-pub impl Eq for SpreadMethod
-pub impl Show for SpreadMethod
+} derive(Eq, @debug.Debug)
 
 pub(all) struct Sprite {
   image : Image
@@ -1004,8 +981,7 @@ pub(all) enum TextDecoration {
   Underline
   Overline
   LineThrough
-}
-pub impl Eq for TextDecoration
+} derive(Eq, @debug.Debug)
 pub impl Show for TextDecoration
 
 pub(all) struct TextDecorationFull {
@@ -1022,24 +998,21 @@ pub(all) enum TextDecorationStyle {
   Dotted
   Dashed
   Wavy
-}
-pub impl Eq for TextDecorationStyle
+} derive(Eq, @debug.Debug)
 pub impl Show for TextDecorationStyle
 
 pub(all) enum TextOrientation {
   Mixed
   Upright
   Sideways
-}
-pub impl Eq for TextOrientation
+} derive(Eq, @debug.Debug)
 pub impl Show for TextOrientation
 
 pub(all) enum TextOverflow {
   Clip
   Ellipsis
   Custom(String)
-}
-pub impl Eq for TextOverflow
+} derive(Eq, @debug.Debug)
 pub impl Show for TextOverflow
 
 pub(all) struct TextSpan {
@@ -1142,16 +1115,14 @@ pub(all) enum WhiteSpace {
   PreWrap
   PreLine
   BreakSpaces
-}
-pub impl Eq for WhiteSpace
+} derive(Eq, @debug.Debug)
 pub impl Show for WhiteSpace
 
 pub(all) enum WritingMode {
   HorizontalTB
   VerticalRL
   VerticalLR
-}
-pub impl Eq for WritingMode
+} derive(Eq, @debug.Debug)
 pub impl Show for WritingMode
 
 // Type aliases

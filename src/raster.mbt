@@ -399,10 +399,8 @@ pub fn raster_rounded_rect_stroke_thick(
         ) {
         if inner_w <= 0.0 || inner_h <= 0.0 {
           setter.pixel(px, py, color)
-        } else if not(
-            point_in_rounded_rect(
-              cx, cy, inner_x, inner_y, inner_w, inner_h, inner_rx, inner_ry,
-            ),
+        } else if !point_in_rounded_rect(
+            cx, cy, inner_x, inner_y, inner_w, inner_h, inner_rx, inner_ry,
           ) {
           setter.pixel(px, py, color)
         }
@@ -989,7 +987,7 @@ pub fn raster_polygons_fill_rule(
     }
     for i in 0..<poly.length() {
       let y = poly[i].1
-      if not(has_point) {
+      if !has_point {
         min_y = y
         max_y = y
         has_point = true
@@ -1003,7 +1001,7 @@ pub fn raster_polygons_fill_rule(
       }
     }
   }
-  if not(has_point) {
+  if !has_point {
     return
   }
   // Scanline fill
