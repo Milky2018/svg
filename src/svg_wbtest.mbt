@@ -333,6 +333,32 @@ test "parse svg style fill and stroke" {
 }
 
 ///|
+test "inline style overrides presentation attributes regardless of order" {
+  let style_first = "<rect style=\"fill: red; opacity: 0.5; x: 7\" fill=\"blue\" opacity=\"1\" x=\"2\" width=\"10\" height=\"10\"/>"
+  let style_last = "<rect fill=\"blue\" opacity=\"1\" x=\"2\" width=\"10\" height=\"10\" style=\"fill: red; opacity: 0.5; x: 7\"/>"
+  for svg in [style_first, style_last] {
+    match parse_svg(svg) {
+      Some(node) => {
+        match node.fill {
+          SolidColor(color) => {
+            assert_eq(color.r, 255)
+            assert_eq(color.g, 0)
+            assert_eq(color.b, 0)
+          }
+          _ => fail("expected a solid fill")
+        }
+        assert_eq(node.opacity, 0.5)
+        match node.shape {
+          Rect(x~, ..) => assert_eq(x, 7.0)
+          _ => fail("expected a rect")
+        }
+      }
+      None => fail("expected SVG parsing to succeed")
+    }
+  }
+}
+
+///|
 test "parse svg style stroke-dasharray" {
   let svg = "<rect style=\"stroke: blue; stroke-dasharray: 5,3,2\" width=\"10\" height=\"10\"/>"
   match parse_svg(svg) {
@@ -2056,6 +2082,34 @@ test "use element from defs" {
     None => false
   }
   inspect(has_rect, content="true")
+}
+
+///|
+test "use inline style overrides presentation attributes regardless of order" {
+  let style_first = "<svg><defs><rect id=\"source\" width=\"10\" height=\"10\"/></defs><use id=\"instance\" href=\"#source\" style=\"fill: red; paint-order: stroke fill\" fill=\"blue\" paint-order=\"fill stroke\"/></svg>"
+  let style_last = "<svg><defs><rect id=\"source\" width=\"10\" height=\"10\"/></defs><use id=\"instance\" href=\"#source\" fill=\"blue\" paint-order=\"fill stroke\" style=\"fill: red; paint-order: stroke fill\"/></svg>"
+  for svg in [style_first, style_last] {
+    match parse_svg_document(svg) {
+      Some(document) => {
+        let scene = Scene::new(document.root)
+        match scene.find_node("instance") {
+          Some(node) => {
+            match node.fill {
+              SolidColor(color) => {
+                assert_eq(color.r, 255)
+                assert_eq(color.g, 0)
+                assert_eq(color.b, 0)
+              }
+              _ => fail("expected a solid fill")
+            }
+            assert_true(node.paint_order.order[0] is Stroke)
+          }
+          None => fail("expected the use instance")
+        }
+      }
+      None => fail("expected SVG parsing to succeed")
+    }
+  }
 }
 
 ///|

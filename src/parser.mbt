@@ -583,7 +583,14 @@ fn parse_attributes(parser : SVGParser) -> Array[(String, String)] {
 ///|
 fn apply_attributes(node : SVGNode, attrs : Array[(String, String)]) -> Unit {
   for attr in attrs {
-    apply_presentation_attribute(node, attr.0, attr.1)
+    if attr.0 != "style" {
+      apply_presentation_attribute(node, attr.0, attr.1)
+    }
+  }
+  for attr in attrs {
+    if attr.0 == "style" {
+      apply_style_attributes(node, attr.1)
+    }
   }
 }
 
@@ -937,7 +944,8 @@ fn apply_presentation_attributes(
 ) -> Unit {
   for attr in attrs {
     let name = attr.0
-    if name == "id" ||
+    if name == "style" ||
+      name == "id" ||
       name == "x" ||
       name == "y" ||
       name == "width" ||
@@ -947,19 +955,17 @@ fn apply_presentation_attributes(
       name == "transform" {
       continue
     }
-    if name == "style" {
+    apply_presentation_attribute(node, name, attr.1)
+  }
+  for attr in attrs {
+    if attr.0 == "style" {
       apply_style_attributes_filtered(node, attr.1)
-    } else {
-      apply_presentation_attribute(node, name, attr.1)
     }
   }
 }
 
 ///|
 fn extract_paint_order(attrs : Array[(String, String)]) -> PaintOrder? {
-  if get_attr(attrs, "paint-order") is Some(v) {
-    return v |> parse_paint_order |> Some
-  }
   if get_attr(attrs, "style") is Some(style) {
     let pairs = parse_style_pairs(style)
     for pair in pairs {
@@ -969,7 +975,7 @@ fn extract_paint_order(attrs : Array[(String, String)]) -> PaintOrder? {
       }
     }
   }
-  None
+  get_attr(attrs, "paint-order").map(parse_paint_order)
 }
 
 ///|
