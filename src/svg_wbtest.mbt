@@ -1387,6 +1387,18 @@ test "hit test polygon" {
 }
 
 ///|
+test "hit test path fill" {
+  let shape = Path(commands=[
+    MoveTo(10.0, 10.0),
+    LineTo(40.0, 10.0),
+    LineTo(25.0, 40.0),
+    ClosePath,
+  ])
+  inspect(hit_test_shape(25.0, 20.0, shape), content="true")
+  inspect(hit_test_shape(5.0, 20.0, shape), content="false")
+}
+
+///|
 test "hit test node with transform" {
   let node = rect("test", 0.0, 0.0, 50.0, 50.0)
   node.transform = Transform::translate(100.0, 100.0)

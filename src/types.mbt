@@ -9,7 +9,7 @@ pub(all) struct Color {
   g : Int
   b : Int
   a : Int // Alpha (0-255, 255 = opaque)
-}
+} derive(Debug)
 
 ///|
 pub fn Color::rgb(r : Int, g : Int, b : Int) -> Color {
@@ -980,7 +980,8 @@ pub fn hit_test_shape(px : Double, py : Double, shape : Shape) -> Bool {
       false
     }
     Polygon(points~) => hit_test_polygon(px, py, points)
-    Path(_) => false // TODO: convert path to polygon for hit testing
+    Path(commands~) =>
+      clip_polylines_contain(path_to_polylines(commands, 0.25), px, py, NonZero)
     Text(x~, y~, text~, font_size~) => {
       // Approximate text bounding box
       let char_width = font_size * 0.6
@@ -1000,7 +1001,16 @@ pub fn SVGNode::hit_test(self : SVGNode, px : Double, py : Double) -> Bool {
   // Apply inverse transform to the point
   let inv = self.transform.inverse()
   let (local_x, local_y) = inv.apply(px, py)
-  hit_test_shape(local_x, local_y, self.shape)
+  match self.shape {
+    Path(commands~) =>
+      clip_polylines_contain(
+        path_to_polylines(commands, 0.25),
+        local_x,
+        local_y,
+        self.fill_rule,
+      )
+    shape => hit_test_shape(local_x, local_y, shape)
+  }
 }
 
 ///|
@@ -4007,7 +4017,12 @@ pub(all) enum FilterGraphPrimitive {
     result~ : String,
     matrix~ : FixedArray[Double]
   )
-  GraphGaussianBlur(input~ : String, result~ : String, radius~ : Double)
+  GraphGaussianBlur(
+    input~ : String,
+    result~ : String,
+    radius_x~ : Double,
+    radius_y~ : Double
+  )
   GraphOffset(input~ : String, result~ : String, dx~ : Double, dy~ : Double)
   GraphBlend(
     input~ : String,
@@ -4024,6 +4039,125 @@ pub(all) enum FilterGraphPrimitive {
     k2~ : Double,
     k3~ : Double,
     k4~ : Double
+  )
+  GraphFlood(result~ : String, color~ : Color)
+  GraphMerge(result~ : String, inputs~ : Array[String])
+  GraphComponentTransfer(
+    input~ : String,
+    result~ : String,
+    red~ : ComponentTransferFunction,
+    green~ : ComponentTransferFunction,
+    blue~ : ComponentTransferFunction,
+    alpha~ : ComponentTransferFunction
+  )
+  GraphMorphology(
+    input~ : String,
+    result~ : String,
+    radius_x~ : Double,
+    radius_y~ : Double,
+    operator~ : MorphologyOperator
+  )
+  GraphConvolveMatrix(
+    input~ : String,
+    result~ : String,
+    order_x~ : Int,
+    order_y~ : Int,
+    kernel~ : Array[Double],
+    divisor~ : Double,
+    bias~ : Double,
+    target_x~ : Int,
+    target_y~ : Int,
+    edge_mode~ : FilterEdgeMode,
+    preserve_alpha~ : Bool
+  )
+  GraphDisplacementMap(
+    input~ : String,
+    input2~ : String,
+    result~ : String,
+    scale~ : Double,
+    x_channel~ : FilterChannel,
+    y_channel~ : FilterChannel
+  )
+  GraphTurbulence(
+    result~ : String,
+    base_x~ : Double,
+    base_y~ : Double,
+    octaves~ : Int,
+    seed~ : Double,
+    stitch~ : Bool,
+    fractal_noise~ : Bool
+  )
+  GraphTile(input~ : String, result~ : String)
+  GraphImage(
+    result~ : String,
+    href~ : String,
+    x~ : Double,
+    y~ : Double,
+    width~ : Double,
+    height~ : Double
+  )
+  GraphDiffuseLighting(
+    input~ : String,
+    result~ : String,
+    surface_scale~ : Double,
+    diffuse_constant~ : Double,
+    color~ : Color,
+    light~ : FilterLight
+  )
+  GraphSpecularLighting(
+    input~ : String,
+    result~ : String,
+    surface_scale~ : Double,
+    specular_constant~ : Double,
+    specular_exponent~ : Double,
+    color~ : Color,
+    light~ : FilterLight
+  )
+} derive(Debug)
+
+///|
+pub(all) enum ComponentTransferFunction {
+  TransferIdentity
+  TransferTable(Array[Double])
+  TransferDiscrete(Array[Double])
+  TransferLinear(slope~ : Double, intercept~ : Double)
+  TransferGamma(amplitude~ : Double, exponent~ : Double, offset~ : Double)
+} derive(Debug)
+
+///|
+pub(all) enum MorphologyOperator {
+  MorphologyErode
+  MorphologyDilate
+} derive(Debug, Eq)
+
+///|
+pub(all) enum FilterEdgeMode {
+  EdgeDuplicate
+  EdgeWrap
+  EdgeNone
+} derive(Debug, Eq)
+
+///|
+pub(all) enum FilterChannel {
+  ChannelR
+  ChannelG
+  ChannelB
+  ChannelA
+} derive(Debug, Eq)
+
+///|
+pub(all) enum FilterLight {
+  DistantLight(azimuth~ : Double, elevation~ : Double)
+  PointLight(x~ : Double, y~ : Double, z~ : Double)
+  SpotLight(
+    x~ : Double,
+    y~ : Double,
+    z~ : Double,
+    points_at_x~ : Double,
+    points_at_y~ : Double,
+    points_at_z~ : Double,
+    exponent~ : Double,
+    limiting_cone_angle~ : Double?
   )
 } derive(Debug)
 
@@ -4042,6 +4176,7 @@ pub(all) struct FilterGraph {
   id : String
   primitives : Array[FilterGraphPrimitive]
   units : MaskUnits
+  primitive_units : MaskUnits
   x : Double
   y : Double
   width : Double

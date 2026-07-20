@@ -318,13 +318,21 @@ pub(all) struct Color {
   g : Int
   b : Int
   a : Int
-}
+} derive(@debug.Debug)
 pub fn Color::black() -> Self
 pub fn Color::is_transparent(Self) -> Bool
 pub fn Color::rgb(Int, Int, Int) -> Self
 pub fn Color::rgba(Int, Int, Int, Int) -> Self
 pub fn Color::transparent() -> Self
 pub fn Color::white() -> Self
+
+pub(all) enum ComponentTransferFunction {
+  TransferIdentity
+  TransferTable(Array[Double])
+  TransferDiscrete(Array[Double])
+  TransferLinear(slope~ : Double, intercept~ : Double)
+  TransferGamma(amplitude~ : Double, exponent~ : Double, offset~ : Double)
+} derive(@debug.Debug)
 
 pub(all) struct DefsRegistry {
   elements : Map[String, SVGNode]
@@ -427,6 +435,13 @@ pub(all) enum Filter {
   ColorMatrix(FixedArray[Double])
 }
 
+pub(all) enum FilterChannel {
+  ChannelR
+  ChannelG
+  ChannelB
+  ChannelA
+} derive(Eq, @debug.Debug)
+
 pub(all) enum FilterCompositeOperator {
   CompositeOver
   CompositeIn
@@ -436,10 +451,17 @@ pub(all) enum FilterCompositeOperator {
   CompositeArithmetic
 } derive(Eq, @debug.Debug)
 
+pub(all) enum FilterEdgeMode {
+  EdgeDuplicate
+  EdgeWrap
+  EdgeNone
+} derive(Eq, @debug.Debug)
+
 pub(all) struct FilterGraph {
   id : String
   primitives : Array[FilterGraphPrimitive]
   units : MaskUnits
+  primitive_units : MaskUnits
   x : Double
   y : Double
   width : Double
@@ -453,10 +475,21 @@ pub fn FilterGraph::get_filter_bounds(Self, BoundingBox) -> BoundingBox
 
 pub(all) enum FilterGraphPrimitive {
   GraphColorMatrix(input~ : String, result~ : String, matrix~ : FixedArray[Double])
-  GraphGaussianBlur(input~ : String, result~ : String, radius~ : Double)
+  GraphGaussianBlur(input~ : String, result~ : String, radius_x~ : Double, radius_y~ : Double)
   GraphOffset(input~ : String, result~ : String, dx~ : Double, dy~ : Double)
   GraphBlend(input~ : String, input2~ : String, result~ : String, mode~ : BlendMode)
   GraphComposite(input~ : String, input2~ : String, result~ : String, operator~ : FilterCompositeOperator, k1~ : Double, k2~ : Double, k3~ : Double, k4~ : Double)
+  GraphFlood(result~ : String, color~ : Color)
+  GraphMerge(result~ : String, inputs~ : Array[String])
+  GraphComponentTransfer(input~ : String, result~ : String, red~ : ComponentTransferFunction, green~ : ComponentTransferFunction, blue~ : ComponentTransferFunction, alpha~ : ComponentTransferFunction)
+  GraphMorphology(input~ : String, result~ : String, radius_x~ : Double, radius_y~ : Double, operator~ : MorphologyOperator)
+  GraphConvolveMatrix(input~ : String, result~ : String, order_x~ : Int, order_y~ : Int, kernel~ : Array[Double], divisor~ : Double, bias~ : Double, target_x~ : Int, target_y~ : Int, edge_mode~ : FilterEdgeMode, preserve_alpha~ : Bool)
+  GraphDisplacementMap(input~ : String, input2~ : String, result~ : String, scale~ : Double, x_channel~ : FilterChannel, y_channel~ : FilterChannel)
+  GraphTurbulence(result~ : String, base_x~ : Double, base_y~ : Double, octaves~ : Int, seed~ : Double, stitch~ : Bool, fractal_noise~ : Bool)
+  GraphTile(input~ : String, result~ : String)
+  GraphImage(result~ : String, href~ : String, x~ : Double, y~ : Double, width~ : Double, height~ : Double)
+  GraphDiffuseLighting(input~ : String, result~ : String, surface_scale~ : Double, diffuse_constant~ : Double, color~ : Color, light~ : FilterLight)
+  GraphSpecularLighting(input~ : String, result~ : String, surface_scale~ : Double, specular_constant~ : Double, specular_exponent~ : Double, color~ : Color, light~ : FilterLight)
 } derive(@debug.Debug)
 
 pub(all) struct FilterGraphRegistry {
@@ -465,6 +498,12 @@ pub(all) struct FilterGraphRegistry {
 pub fn FilterGraphRegistry::add(Self, FilterGraph) -> Unit
 pub fn FilterGraphRegistry::get(Self, String) -> FilterGraph?
 pub fn FilterGraphRegistry::new() -> Self
+
+pub(all) enum FilterLight {
+  DistantLight(azimuth~ : Double, elevation~ : Double)
+  PointLight(x~ : Double, y~ : Double, z~ : Double)
+  SpotLight(x~ : Double, y~ : Double, z~ : Double, points_at_x~ : Double, points_at_y~ : Double, points_at_z~ : Double, exponent~ : Double, limiting_cone_angle~ : Double?)
+} derive(@debug.Debug)
 
 pub(all) enum FontStyle {
   NormalStyle
@@ -657,6 +696,11 @@ pub(all) enum MeetOrSlice {
   Slice
 } derive(Eq, @debug.Debug)
 pub impl Show for MeetOrSlice
+
+pub(all) enum MorphologyOperator {
+  MorphologyErode
+  MorphologyDilate
+} derive(Eq, @debug.Debug)
 
 pub(all) struct ObjectPool[T] {
   available : Array[T]

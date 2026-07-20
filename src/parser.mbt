@@ -2397,9 +2397,118 @@ fn parse_filter_matrix(value : String) -> FixedArray[Double]? {
 }
 
 ///|
+priv struct FilterPrimitiveChild {
+  tag : String
+  attrs : Array[(String, String)]
+}
+
+///|
+fn parse_filter_channel(value : String) -> FilterChannel {
+  match value {
+    "R" => ChannelR
+    "G" => ChannelG
+    "B" => ChannelB
+    _ => ChannelA
+  }
+}
+
+///|
+fn parse_component_transfer_function(
+  attrs : Array[(String, String)],
+) -> ComponentTransferFunction {
+  match get_attr(attrs, "type").unwrap_or("identity") {
+    "table" =>
+      TransferTable(
+        get_attr(attrs, "tableValues").map(parse_number_list).unwrap_or([]),
+      )
+    "discrete" =>
+      TransferDiscrete(
+        get_attr(attrs, "tableValues").map(parse_number_list).unwrap_or([]),
+      )
+    "linear" =>
+      TransferLinear(
+        slope=get_attr(attrs, "slope").map(parse_number).unwrap_or(1.0),
+        intercept=get_attr(attrs, "intercept").map(parse_number).unwrap_or(0.0),
+      )
+    "gamma" =>
+      TransferGamma(
+        amplitude=get_attr(attrs, "amplitude").map(parse_number).unwrap_or(1.0),
+        exponent=get_attr(attrs, "exponent").map(parse_number).unwrap_or(1.0),
+        offset=get_attr(attrs, "offset").map(parse_number).unwrap_or(0.0),
+      )
+    _ => TransferIdentity
+  }
+}
+
+///|
+fn filter_child_attrs(
+  children : Array[FilterPrimitiveChild],
+  tag : String,
+) -> Array[(String, String)]? {
+  for child in children {
+    if child.tag == tag {
+      return Some(child.attrs)
+    }
+  }
+  None
+}
+
+///|
+fn parse_filter_light(children : Array[FilterPrimitiveChild]) -> FilterLight {
+  for child in children {
+    match child.tag {
+      "fePointLight" =>
+        return PointLight(
+          x=get_attr(child.attrs, "x").map(parse_number).unwrap_or(0.0),
+          y=get_attr(child.attrs, "y").map(parse_number).unwrap_or(0.0),
+          z=get_attr(child.attrs, "z").map(parse_number).unwrap_or(0.0),
+        )
+      "feSpotLight" =>
+        return SpotLight(
+          x=get_attr(child.attrs, "x").map(parse_number).unwrap_or(0.0),
+          y=get_attr(child.attrs, "y").map(parse_number).unwrap_or(0.0),
+          z=get_attr(child.attrs, "z").map(parse_number).unwrap_or(0.0),
+          points_at_x=get_attr(child.attrs, "pointsAtX")
+            .map(parse_number)
+            .unwrap_or(0.0),
+          points_at_y=get_attr(child.attrs, "pointsAtY")
+            .map(parse_number)
+            .unwrap_or(0.0),
+          points_at_z=get_attr(child.attrs, "pointsAtZ")
+            .map(parse_number)
+            .unwrap_or(0.0),
+          exponent=get_attr(child.attrs, "specularExponent")
+            .map(parse_number)
+            .unwrap_or(1.0),
+          limiting_cone_angle=get_attr(child.attrs, "limitingConeAngle").map(
+            parse_number,
+          ),
+        )
+      "feDistantLight" =>
+        return DistantLight(
+          azimuth=get_attr(child.attrs, "azimuth")
+            .map(parse_number)
+            .unwrap_or(0.0),
+          elevation=get_attr(child.attrs, "elevation")
+            .map(parse_number)
+            .unwrap_or(0.0),
+        )
+      _ => ()
+    }
+  }
+  DistantLight(azimuth=0.0, elevation=0.0)
+}
+
+///|
+fn parse_filter_lighting_color(attrs : Array[(String, String)]) -> Color {
+  parse_color(get_attr(attrs, "lighting-color").unwrap_or("white"))
+}
+
+///|
 fn parse_filter_primitive(
   tag : String,
   attrs : Array[(String, String)],
+  children : Array[FilterPrimitiveChild],
 ) -> FilterGraphPrimitive? {
   let input = get_attr(attrs, "in").unwrap_or("")
   let result = get_attr(attrs, "result").unwrap_or("")
@@ -2420,8 +2529,9 @@ fn parse_filter_primitive(
       let values = get_attr(attrs, "stdDeviation")
         .map(parse_number_list)
         .unwrap_or([])
-      let radius = if values.length() == 0 { 0.0 } else { values[0] }
-      Some(GraphGaussianBlur(input~, result~, radius~))
+      let radius_x = if values.length() == 0 { 0.0 } else { values[0] }
+      let radius_y = if values.length() < 2 { radius_x } else { values[1] }
+      Some(GraphGaussianBlur(input~, result~, radius_x~, radius_y~))
     }
     "feOffset" =>
       Some(
@@ -2463,8 +2573,234 @@ fn parse_filter_primitive(
         ),
       )
     }
+    "feFlood" => {
+      let base = parse_color(get_attr(attrs, "flood-color").unwrap_or("black"))
+      let opacity = get_attr(attrs, "flood-opacity")
+        .map(parse_number)
+        .unwrap_or(1.0)
+      let alpha = (base.a.to_double() * opacity).round().to_int()
+      Some(GraphFlood(result~, color={ ..base, a: alpha }))
+    }
+    "feMerge" => {
+      let inputs : Array[String] = []
+      for child in children {
+        if child.tag == "feMergeNode" {
+          inputs.push(get_attr(child.attrs, "in").unwrap_or(""))
+        }
+      }
+      Some(GraphMerge(result~, inputs~))
+    }
+    "feComponentTransfer" =>
+      Some(
+        GraphComponentTransfer(
+          input~,
+          result~,
+          red=filter_child_attrs(children, "feFuncR")
+            .map(parse_component_transfer_function)
+            .unwrap_or(TransferIdentity),
+          green=filter_child_attrs(children, "feFuncG")
+            .map(parse_component_transfer_function)
+            .unwrap_or(TransferIdentity),
+          blue=filter_child_attrs(children, "feFuncB")
+            .map(parse_component_transfer_function)
+            .unwrap_or(TransferIdentity),
+          alpha=filter_child_attrs(children, "feFuncA")
+            .map(parse_component_transfer_function)
+            .unwrap_or(TransferIdentity),
+        ),
+      )
+    "feMorphology" => {
+      let radii = get_attr(attrs, "radius").map(parse_number_list).unwrap_or([])
+      let radius_x = if radii.length() == 0 { 0.0 } else { radii[0] }
+      let radius_y = if radii.length() < 2 { radius_x } else { radii[1] }
+      Some(
+        GraphMorphology(
+          input~,
+          result~,
+          radius_x~,
+          radius_y~,
+          operator=if get_attr(attrs, "operator").unwrap_or("erode") == "dilate" {
+            MorphologyDilate
+          } else {
+            MorphologyErode
+          },
+        ),
+      )
+    }
+    "feConvolveMatrix" => {
+      let order = get_attr(attrs, "order").map(parse_number_list).unwrap_or([])
+      let order_x = if order.length() == 0 { 3 } else { order[0].to_int() }
+      let order_y = if order.length() < 2 { order_x } else { order[1].to_int() }
+      let kernel = get_attr(attrs, "kernelMatrix")
+        .map(parse_number_list)
+        .unwrap_or([])
+      let kernel_sum = kernel.fold(init=0.0, (sum, value) => sum + value)
+      let default_divisor = if kernel_sum.abs() <= 0.000001 {
+        1.0
+      } else {
+        kernel_sum
+      }
+      Some(
+        GraphConvolveMatrix(
+          input~,
+          result~,
+          order_x~,
+          order_y~,
+          kernel~,
+          divisor=get_attr(attrs, "divisor")
+            .map(parse_number)
+            .unwrap_or(default_divisor),
+          bias=get_attr(attrs, "bias").map(parse_number).unwrap_or(0.0),
+          target_x=get_attr(attrs, "targetX")
+            .map(parse_number)
+            .map(fn(v) { v.to_int() })
+            .unwrap_or(order_x / 2),
+          target_y=get_attr(attrs, "targetY")
+            .map(parse_number)
+            .map(fn(v) { v.to_int() })
+            .unwrap_or(order_y / 2),
+          edge_mode=match get_attr(attrs, "edgeMode").unwrap_or("duplicate") {
+            "wrap" => EdgeWrap
+            "none" => EdgeNone
+            _ => EdgeDuplicate
+          },
+          preserve_alpha=get_attr(attrs, "preserveAlpha").unwrap_or("false") ==
+            "true",
+        ),
+      )
+    }
+    "feDisplacementMap" =>
+      Some(
+        GraphDisplacementMap(
+          input~,
+          input2=get_attr(attrs, "in2").unwrap_or(""),
+          result~,
+          scale=get_attr(attrs, "scale").map(parse_number).unwrap_or(0.0),
+          x_channel=parse_filter_channel(
+            get_attr(attrs, "xChannelSelector").unwrap_or("A"),
+          ),
+          y_channel=parse_filter_channel(
+            get_attr(attrs, "yChannelSelector").unwrap_or("A"),
+          ),
+        ),
+      )
+    "feTurbulence" => {
+      let base = get_attr(attrs, "baseFrequency")
+        .map(parse_number_list)
+        .unwrap_or([])
+      let base_x = if base.length() == 0 { 0.0 } else { base[0] }
+      let base_y = if base.length() < 2 { base_x } else { base[1] }
+      Some(
+        GraphTurbulence(
+          result~,
+          base_x~,
+          base_y~,
+          octaves=get_attr(attrs, "numOctaves")
+            .map(parse_number)
+            .map(fn(v) { v.to_int() })
+            .unwrap_or(1),
+          seed=get_attr(attrs, "seed").map(parse_number).unwrap_or(0.0),
+          stitch=get_attr(attrs, "stitchTiles").unwrap_or("noStitch") ==
+            "stitch",
+          fractal_noise=get_attr(attrs, "type").unwrap_or("turbulence") ==
+            "fractalNoise",
+        ),
+      )
+    }
+    "feTile" => Some(GraphTile(input~, result~))
+    "feImage" =>
+      Some(
+        GraphImage(
+          result~,
+          href=match get_attr(attrs, "href") {
+            Some(value) => value
+            None => get_attr(attrs, "xlink:href").unwrap_or("")
+          },
+          x=get_attr(attrs, "x").map(parse_number).unwrap_or(0.0),
+          y=get_attr(attrs, "y").map(parse_number).unwrap_or(0.0),
+          width=get_attr(attrs, "width").map(parse_number).unwrap_or(0.0),
+          height=get_attr(attrs, "height").map(parse_number).unwrap_or(0.0),
+        ),
+      )
+    "feDiffuseLighting" =>
+      Some(
+        GraphDiffuseLighting(
+          input~,
+          result~,
+          surface_scale=get_attr(attrs, "surfaceScale")
+            .map(parse_number)
+            .unwrap_or(1.0),
+          diffuse_constant=get_attr(attrs, "diffuseConstant")
+            .map(parse_number)
+            .unwrap_or(1.0),
+          color=parse_filter_lighting_color(attrs),
+          light=parse_filter_light(children),
+        ),
+      )
+    "feSpecularLighting" =>
+      Some(
+        GraphSpecularLighting(
+          input~,
+          result~,
+          surface_scale=get_attr(attrs, "surfaceScale")
+            .map(parse_number)
+            .unwrap_or(1.0),
+          specular_constant=get_attr(attrs, "specularConstant")
+            .map(parse_number)
+            .unwrap_or(1.0),
+          specular_exponent=get_attr(attrs, "specularExponent")
+            .map(parse_number)
+            .unwrap_or(1.0),
+          color=parse_filter_lighting_color(attrs),
+          light=parse_filter_light(children),
+        ),
+      )
     _ => None
   }
+}
+
+///|
+fn parse_filter_primitive_children(
+  parser : SVGParser,
+  parent_tag : String,
+) -> Array[FilterPrimitiveChild] {
+  let children : Array[FilterPrimitiveChild] = []
+  while !parser.is_end() {
+    parser.skip_whitespace()
+    if parser.peek() != '<' {
+      let _ = parser.advance()
+      continue
+    }
+    let _ = parser.advance()
+    if parser.peek() == '/' {
+      let _ = parser.advance()
+      let end_tag = parser.read_name()
+      while !parser.is_end() && parser.advance() != '>' {
+
+      }
+      if end_tag == parent_tag {
+        break
+      }
+      continue
+    }
+    if parser.peek() == '!' || parser.peek() == '?' {
+      skip_comment_or_decl(parser)
+      continue
+    }
+    let tag = parser.read_name()
+    let attrs = parse_attributes(parser)
+    parser.skip_whitespace()
+    let self_closing = parser.peek() == '/'
+    if self_closing {
+      let _ = parser.advance()
+    }
+    let _ = parser.expect_char('>')
+    children.push({ tag, attrs })
+    if !self_closing {
+      skip_to_end_tag(parser, tag)
+    }
+  }
+  children
 }
 
 ///|
@@ -2505,12 +2841,15 @@ fn parse_filter_graph(
       let _ = parser.advance()
     }
     let _ = parser.expect_char('>')
-    match parse_filter_primitive(primitive_tag, primitive_attrs) {
+    let primitive_children = if self_closing {
+      []
+    } else {
+      parse_filter_primitive_children(parser, primitive_tag)
+    }
+    match
+      parse_filter_primitive(primitive_tag, primitive_attrs, primitive_children) {
       Some(primitive) => primitives.push(primitive)
       None => ()
-    }
-    if !self_closing {
-      skip_to_end_tag(parser, primitive_tag)
     }
   }
   let id = get_attr(attrs, "id").unwrap_or("")
@@ -2520,6 +2859,10 @@ fn parse_filter_graph(
   let units = match get_attr(attrs, "filterUnits") {
     Some(value) => parse_mask_units(value)
     None => MaskUnits::ObjectBoundingBox
+  }
+  let primitive_units = match get_attr(attrs, "primitiveUnits") {
+    Some(value) => parse_mask_units(value)
+    None => MaskUnits::UserSpaceOnUse
   }
   let (default_x, default_y, default_width, default_height) = match units {
     MaskUnits::ObjectBoundingBox => (-0.1, -0.1, 1.2, 1.2)
@@ -2545,6 +2888,7 @@ fn parse_filter_graph(
     id,
     primitives,
     units,
+    primitive_units,
     x,
     y,
     width,
