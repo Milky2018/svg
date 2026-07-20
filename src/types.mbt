@@ -483,6 +483,8 @@ pub(all) struct SVGNode {
   mut stroke_width_is_set : Bool
   mut stroke_opacity : Double
   mut opacity : Double
+  mut blend_mode : BlendMode
+  mut isolation : Isolation
   mut marker_start : String?
   mut marker_start_is_set : Bool
   mut marker_mid : String?
@@ -493,6 +495,7 @@ pub(all) struct SVGNode {
   mut node_dirty : Bool // Per-node dirty flag
   mut prev_bounds : BoundingBox? // Previous bounding box for dirty rect
   mut filters : Array[Filter] // Filter effects to apply
+  mut filter_graph_id : String? // Reference to an SVG filter graph by ID
   mut mask_id : String? // Reference to mask by ID
   mut clip_path_id : String? // Reference to clip path by ID
   mut clip_overflow : Bool
@@ -522,6 +525,8 @@ pub fn SVGNode::new(shape : Shape) -> SVGNode {
     stroke_width_is_set: false,
     stroke_opacity: 1.0,
     opacity: 1.0,
+    blend_mode: Normal,
+    isolation: Auto,
     marker_start: None,
     marker_start_is_set: false,
     marker_mid: None,
@@ -532,6 +537,7 @@ pub fn SVGNode::new(shape : Shape) -> SVGNode {
     node_dirty: true,
     prev_bounds: None,
     filters: [],
+    filter_graph_id: None,
     mask_id: None,
     clip_path_id: None,
     clip_overflow: true,
@@ -2326,19 +2332,34 @@ pub fn blend_with_mode(
     ColorMode => blend_color_mode(bd_r, bd_g, bd_b, src_r, src_g, src_b)
     Luminosity => blend_luminosity(bd_r, bd_g, bd_b, src_r, src_g, src_b)
   }
-  // Porter-Duff compositing with source-over
+  // W3C compositing and blending formula in premultiplied form.
   let out_a = src_a + bd_a * (1.0 - src_a)
   if out_a < 0.001 {
     return Color::transparent()
   }
-  let out_r = (src_a * blended_r + bd_a * bd_r * (1.0 - src_a)) / out_a
-  let out_g = (src_a * blended_g + bd_a * bd_g * (1.0 - src_a)) / out_a
-  let out_b = (src_a * blended_b + bd_a * bd_b * (1.0 - src_a)) / out_a
+  let out_r = (
+      src_a * (1.0 - bd_a) * src_r +
+      src_a * bd_a * blended_r +
+      (1.0 - src_a) * bd_a * bd_r
+    ) /
+    out_a
+  let out_g = (
+      src_a * (1.0 - bd_a) * src_g +
+      src_a * bd_a * blended_g +
+      (1.0 - src_a) * bd_a * bd_g
+    ) /
+    out_a
+  let out_b = (
+      src_a * (1.0 - bd_a) * src_b +
+      src_a * bd_a * blended_b +
+      (1.0 - src_a) * bd_a * bd_b
+    ) /
+    out_a
   Color::rgba(
-    clamp_int((out_r * 255.0).to_int(), 0, 255),
-    clamp_int((out_g * 255.0).to_int(), 0, 255),
-    clamp_int((out_b * 255.0).to_int(), 0, 255),
-    clamp_int((out_a * 255.0).to_int(), 0, 255),
+    clamp_int((out_r * 255.0).round().to_int(), 0, 255),
+    clamp_int((out_g * 255.0).round().to_int(), 0, 255),
+    clamp_int((out_b * 255.0).round().to_int(), 0, 255),
+    clamp_int((out_a * 255.0).round().to_int(), 0, 255),
   )
 }
 
@@ -2957,10 +2978,10 @@ pub fn apply_color_matrix(color : Color, matrix : FixedArray[Double]) -> Color {
     a * matrix[18] +
     matrix[19]
   {
-    r: clamp_int((new_r * 255.0).to_int(), 0, 255),
-    g: clamp_int((new_g * 255.0).to_int(), 0, 255),
-    b: clamp_int((new_b * 255.0).to_int(), 0, 255),
-    a: clamp_int((new_a * 255.0).to_int(), 0, 255),
+    r: clamp_int((new_r * 255.0).round().to_int(), 0, 255),
+    g: clamp_int((new_g * 255.0).round().to_int(), 0, 255),
+    b: clamp_int((new_b * 255.0).round().to_int(), 0, 255),
+    a: clamp_int((new_a * 255.0).round().to_int(), 0, 255),
   }
 }
 
@@ -3118,7 +3139,12 @@ fn alpha_blend(fg : Color, bg : Color) -> Color {
     out_a
   let b = (fg.b.to_double() * fg_a + bg.b.to_double() * bg_a * (1.0 - fg_a)) /
     out_a
-  Color::rgba(r.to_int(), g.to_int(), b.to_int(), (out_a * 255.0).to_int())
+  Color::rgba(
+    r.round().to_int(),
+    g.round().to_int(),
+    b.round().to_int(),
+    (out_a * 255.0).round().to_int(),
+  )
 }
 
 ///|
@@ -3642,12 +3668,18 @@ fn blend_colors(dst : Color, src : Color) -> Color {
     return Color::transparent()
   }
   let r = ((src.r.to_double() * sa + dst.r.to_double() * da * (1.0 - sa)) /
-  out_a).to_int()
+    out_a)
+    .round()
+    .to_int()
   let g = ((src.g.to_double() * sa + dst.g.to_double() * da * (1.0 - sa)) /
-  out_a).to_int()
+    out_a)
+    .round()
+    .to_int()
   let b = ((src.b.to_double() * sa + dst.b.to_double() * da * (1.0 - sa)) /
-  out_a).to_int()
-  { r, g, b, a: (out_a * 255.0).to_int() }
+    out_a)
+    .round()
+    .to_int()
+  { r, g, b, a: (out_a * 255.0).round().to_int() }
 }
 
 ///|
@@ -3870,6 +3902,135 @@ pub(all) struct Mask {
 }
 
 ///|
+pub(all) enum FilterGraphPrimitive {
+  GraphColorMatrix(
+    input~ : String,
+    result~ : String,
+    matrix~ : FixedArray[Double]
+  )
+  GraphGaussianBlur(input~ : String, result~ : String, radius~ : Double)
+  GraphOffset(input~ : String, result~ : String, dx~ : Double, dy~ : Double)
+  GraphBlend(
+    input~ : String,
+    input2~ : String,
+    result~ : String,
+    mode~ : BlendMode
+  )
+  GraphComposite(
+    input~ : String,
+    input2~ : String,
+    result~ : String,
+    operator~ : FilterCompositeOperator,
+    k1~ : Double,
+    k2~ : Double,
+    k3~ : Double,
+    k4~ : Double
+  )
+} derive(Debug)
+
+///|
+pub(all) enum FilterCompositeOperator {
+  CompositeOver
+  CompositeIn
+  CompositeOut
+  CompositeAtop
+  CompositeXor
+  CompositeArithmetic
+} derive(Debug, Eq)
+
+///|
+pub(all) struct FilterGraph {
+  id : String
+  primitives : Array[FilterGraphPrimitive]
+  units : MaskUnits
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  x_is_percent : Bool
+  y_is_percent : Bool
+  width_is_percent : Bool
+  height_is_percent : Bool
+}
+
+///|
+pub fn FilterGraph::get_filter_bounds(
+  self : FilterGraph,
+  target : BoundingBox,
+) -> BoundingBox {
+  match self.units {
+    MaskUnits::ObjectBoundingBox => {
+      let width = target.width()
+      let height = target.height()
+      {
+        min_x: target.min_x + self.x * width,
+        min_y: target.min_y + self.y * height,
+        max_x: target.min_x + (self.x + self.width) * width,
+        max_y: target.min_y + (self.y + self.height) * height,
+      }
+    }
+    MaskUnits::UserSpaceOnUse => {
+      let width = target.width()
+      let height = target.height()
+      let min_x = resolve_mask_coord(
+        self.x,
+        self.x_is_percent,
+        target.min_x,
+        width,
+      )
+      let min_y = resolve_mask_coord(
+        self.y,
+        self.y_is_percent,
+        target.min_y,
+        height,
+      )
+      let filter_width = resolve_mask_size(
+        self.width,
+        self.width_is_percent,
+        width,
+      )
+      let filter_height = resolve_mask_size(
+        self.height,
+        self.height_is_percent,
+        height,
+      )
+      {
+        min_x,
+        min_y,
+        max_x: min_x + filter_width,
+        max_y: min_y + filter_height,
+      }
+    }
+  }
+}
+
+///|
+pub(all) struct FilterGraphRegistry {
+  graphs : Map[String, FilterGraph]
+}
+
+///|
+pub fn FilterGraphRegistry::new() -> FilterGraphRegistry {
+  { graphs: Map([]) }
+}
+
+///|
+pub fn FilterGraphRegistry::add(
+  self : FilterGraphRegistry,
+  graph : FilterGraph,
+) -> Unit {
+  self.graphs.set(graph.id, graph)
+}
+
+///|
+pub fn FilterGraphRegistry::get(
+  self : FilterGraphRegistry,
+  id : String,
+) -> FilterGraph? {
+  self.graphs.get(id)
+}
+
+///|
 pub fn Mask::new(id : String, content : Array[SVGNode]) -> Mask {
   {
     id,
@@ -3987,6 +4148,7 @@ pub(all) struct SVGDocument {
   symbols : SymbolRegistry
   clips : ClipPathRegistry
   masks : MaskRegistry
+  filter_graphs : FilterGraphRegistry
   patterns : PatternRegistry
   gradients : GradientRegistry
   markers : MarkerRegistry
@@ -3999,6 +4161,7 @@ pub fn SVGDocument::new(root : SVGNode) -> SVGDocument {
     symbols: SymbolRegistry::new(),
     clips: ClipPathRegistry::new(),
     masks: MaskRegistry::new(),
+    filter_graphs: FilterGraphRegistry::new(),
     patterns: PatternRegistry::new(),
     gradients: GradientRegistry::new(),
     markers: MarkerRegistry::new(),
@@ -4069,7 +4232,7 @@ pub fn apply_mask_to_image(
         Alpha => compute_alpha_mask(mask_color)
       }
       // Apply mask to alpha
-      let new_alpha = (src_color.a.to_double() * mask_value).to_int()
+      let new_alpha = (src_color.a.to_double() * mask_value).round().to_int()
       result.set_pixel(
         x,
         y,
@@ -4999,6 +5162,8 @@ pub fn SVGNode::clone(self : SVGNode) -> SVGNode {
     stroke_width_is_set: self.stroke_width_is_set,
     stroke_opacity: self.stroke_opacity,
     opacity: self.opacity,
+    blend_mode: self.blend_mode,
+    isolation: self.isolation,
     marker_start: self.marker_start,
     marker_start_is_set: self.marker_start_is_set,
     marker_mid: self.marker_mid,
@@ -5009,6 +5174,7 @@ pub fn SVGNode::clone(self : SVGNode) -> SVGNode {
     node_dirty: self.node_dirty,
     prev_bounds: self.prev_bounds,
     filters,
+    filter_graph_id: self.filter_graph_id,
     mask_id: self.mask_id,
     clip_path_id: self.clip_path_id,
     clip_overflow: self.clip_overflow,
@@ -5271,66 +5437,66 @@ pub fn MarkedLine::get_angle_at(self : MarkedLine, index : Int) -> Double {
 }
 
 ///|
-pub impl Show for Align with output(self, logger) {
+pub impl Show for Align with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for MeetOrSlice with output(self, logger) {
+pub impl Show for MeetOrSlice with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for LineCap with output(self, logger) {
+pub impl Show for LineCap with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for LineJoin with output(self, logger) {
+pub impl Show for LineJoin with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for FillRule with output(self, logger) {
+pub impl Show for FillRule with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for MaskType with output(self, logger) {
+pub impl Show for MaskType with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for WritingMode with output(self, logger) {
+pub impl Show for WritingMode with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for TextOrientation with output(self, logger) {
+pub impl Show for TextOrientation with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for WhiteSpace with output(self, logger) {
+pub impl Show for WhiteSpace with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for TextOverflow with output(self, logger) {
+pub impl Show for TextOverflow with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for TextDecorationStyle with output(self, logger) {
+pub impl Show for TextDecorationStyle with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for PaintOrderItem with output(self, logger) {
+pub impl Show for PaintOrderItem with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
 ///|
-pub impl Show for TextDecoration with output(self, logger) {
+pub impl Show for TextDecoration with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }

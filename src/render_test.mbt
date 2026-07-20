@@ -34,6 +34,246 @@ test "render_svg_viewbox_root" {
 }
 
 ///|
+test "opacity uses browser-compatible alpha quantization" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\" opacity=\"0.5\"/>" +
+    "</svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  inspect(image.get_pixel(4, 4).a, content="128")
+}
+
+///|
+test "group opacity composites children through an isolated layer" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"8\">" +
+    "<g opacity=\"0.5\">" +
+    "<rect x=\"0\" y=\"0\" width=\"8\" height=\"8\" fill=\"red\"/>" +
+    "<rect x=\"4\" y=\"0\" width=\"8\" height=\"8\" fill=\"red\"/>" +
+    "</g></svg>"
+  let image = match render_svg_to_image(svg, 12, 8) {
+    Some(image) => image
+    None => Image::new(12, 8)
+  }
+  inspect(image.get_pixel(2, 4).a, content="128")
+  inspect(image.get_pixel(6, 4).a, content="128")
+}
+
+///|
+test "overlapping translucent elements use source-over compositing" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +
+    "<rect width=\"8\" height=\"8\" fill=\"blue\" opacity=\"0.5\"/>" +
+    "</svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  let pixel = image.get_pixel(4, 4)
+  inspect(pixel.r, content="127")
+  inspect(pixel.g, content="0")
+  inspect(pixel.b, content="128")
+  inspect(pixel.a, content="255")
+}
+
+///|
+test "container mask is applied after isolated group rendering" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"8\">" +
+    "<defs><mask id=\"half\" mask-type=\"alpha\">" +
+    "<rect x=\"0\" y=\"0\" width=\"12\" height=\"8\" fill=\"white\" opacity=\"0.5\"/>" +
+    "</mask></defs>" +
+    "<g mask=\"url(#half)\">" +
+    "<rect x=\"0\" y=\"0\" width=\"8\" height=\"8\" fill=\"red\"/>" +
+    "<rect x=\"4\" y=\"0\" width=\"8\" height=\"8\" fill=\"blue\"/>" +
+    "</g></svg>"
+  let image = match render_svg_to_image(svg, 12, 8) {
+    Some(image) => image
+    None => Image::new(12, 8)
+  }
+  inspect(image.get_pixel(2, 4).a, content="128")
+  inspect(image.get_pixel(6, 4).a, content="128")
+  inspect(image.get_pixel(10, 4).a, content="128")
+}
+
+///|
+test "group opacity is applied after its container mask" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<defs><mask id=\"half\" mask-type=\"alpha\">" +
+    "<rect width=\"8\" height=\"8\" fill=\"white\" opacity=\"0.5\"/>" +
+    "</mask></defs>" +
+    "<g opacity=\"0.5\" mask=\"url(#half)\">" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +
+    "</g></svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  inspect(image.get_pixel(4, 4).a, content="64")
+}
+
+///|
+test "container filters process the isolated group result" {
+  let child = rect("child", 0.0, 0.0, 8.0, 8.0)
+  child.fill = SolidColor(Color::rgb(255, 0, 0))
+  let root = group("filtered", [child])
+  root.add_filter(Invert(1.0))
+  let pixel = render_svg_node_to_image(root, 8, 8).get_pixel(4, 4)
+  inspect(pixel.r, content="0")
+  inspect(pixel.g, content="255")
+  inspect(pixel.b, content="255")
+  inspect(pixel.a, content="255")
+}
+
+///|
+test "mix-blend-mode composites against the current backdrop" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<style>.mixed { mix-blend-mode: multiply; }</style>" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +
+    "<rect class=\"mixed\" width=\"8\" height=\"8\" fill=\"blue\"/>" +
+    "</svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  let pixel = image.get_pixel(4, 4)
+  inspect(pixel.r, content="0")
+  inspect(pixel.g, content="0")
+  inspect(pixel.b, content="0")
+  inspect(pixel.a, content="255")
+}
+
+///|
+test "isolation prevents descendants from blending with outside backdrop" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +
+    "<g style=\"isolation: isolate\">" +
+    "<rect width=\"8\" height=\"8\" fill=\"blue\" style=\"mix-blend-mode: multiply\"/>" +
+    "</g></svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  let pixel = image.get_pixel(4, 4)
+  inspect(pixel.r, content="0")
+  inspect(pixel.g, content="0")
+  inspect(pixel.b, content="255")
+  inspect(pixel.a, content="255")
+}
+
+///|
+test "SVG filter graph evaluates a color matrix on SourceGraphic" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<style>.filtered { filter: url(#invert); }</style>" +
+    "<defs><filter id=\"invert\">" +
+    "<feColorMatrix type=\"matrix\" values=\"-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0\"/>" +
+    "</filter></defs>" +
+    "<rect class=\"filtered\" width=\"8\" height=\"8\" fill=\"red\"/>" +
+    "</svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  let pixel = image.get_pixel(4, 4)
+  inspect(pixel.r, content="0")
+  inspect(pixel.g, content="255")
+  inspect(pixel.b, content="255")
+  inspect(pixel.a, content="255")
+}
+
+///|
+test "SVG filter graph resolves named results for multi-input blend" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<defs><filter id=\"named\">" +
+    "<feColorMatrix in=\"SourceGraphic\" result=\"blue\" type=\"matrix\" values=\"0 0 0 0 0  0 0 0 0 0  1 0 0 0 0  0 0 0 1 0\"/>" +
+    "<feBlend in=\"SourceGraphic\" in2=\"blue\" mode=\"multiply\"/>" +
+    "</filter></defs>" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\" filter=\"url(#named)\"/>" +
+    "</svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  let pixel = image.get_pixel(4, 4)
+  inspect(pixel.r, content="0")
+  inspect(pixel.g, content="0")
+  inspect(pixel.b, content="0")
+  inspect(pixel.a, content="255")
+}
+
+///|
+test "SVG filter region clips graph output" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<defs><filter id=\"half\" x=\"0\" y=\"0\" width=\"50%\" height=\"100%\">" +
+    "<feColorMatrix type=\"matrix\" values=\"1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0\"/>" +
+    "</filter></defs>" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\" filter=\"url(#half)\"/>" +
+    "</svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  inspect(image.get_pixel(2, 4).a, content="255")
+  inspect(image.get_pixel(6, 4).a, content="0")
+}
+
+///|
+test "SVG filter graph evaluates named feComposite inputs" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<defs><filter id=\"composite\">" +
+    "<feColorMatrix in=\"SourceAlpha\" result=\"half\" type=\"matrix\" values=\"0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0\"/>" +
+    "<feComposite in=\"SourceGraphic\" in2=\"half\" operator=\"in\"/>" +
+    "</filter></defs>" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\" filter=\"url(#composite)\"/>" +
+    "</svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  let pixel = image.get_pixel(4, 4)
+  inspect(pixel.r, content="255")
+  inspect(pixel.g, content="0")
+  inspect(pixel.b, content="0")
+  inspect(pixel.a, content="128")
+}
+
+///|
+test "container pipeline applies filter then mask then opacity" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<defs>" +
+    "<filter id=\"invert\"><feColorMatrix type=\"matrix\" values=\"-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0\"/></filter>" +
+    "<mask id=\"half\" mask-type=\"alpha\"><rect width=\"8\" height=\"8\" fill=\"white\" opacity=\"0.5\"/></mask>" +
+    "</defs>" +
+    "<g filter=\"url(#invert)\" mask=\"url(#half)\" opacity=\"0.5\">" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +
+    "</g></svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  let pixel = image.get_pixel(4, 4)
+  inspect(pixel.r, content="0")
+  inspect(pixel.g, content="255")
+  inspect(pixel.b, content="255")
+  inspect(pixel.a, content="64")
+}
+
+///|
+test "filter graph offset samples outside the image as transparent" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<defs><filter id=\"outside\" x=\"-100%\" y=\"-100%\" width=\"300%\" height=\"300%\">" +
+    "<feOffset in=\"SourceGraphic\" dx=\"20\" dy=\"0\"/>" +
+    "</filter></defs>" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\" filter=\"url(#outside)\"/>" +
+    "</svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  inspect(image.get_pixel(4, 4).a, content="0")
+}
+
+///|
 fn image_difference_count(a : Image, b : Image) -> Int {
   let mut count = 0
   for y in 0..<a.height {

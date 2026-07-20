@@ -10,10 +10,11 @@ pub fn render_svg_document_to_image(
   height : Int,
 ) -> Image {
   let image = Image::new(width, height)
-  let setter : PixelSetter = {
-    set: (x, y, color) => image.set_pixel(x, y, color),
+  let setter = make_image_compositing_setter(image)
+  let ctx = {
+    ..RenderContext::new(setter, width, height),
+    target_image: Some(image),
   }
-  let ctx = RenderContext::new(setter, width, height)
   doc.render(ctx)
   image
 }
@@ -26,10 +27,11 @@ pub fn render_svg_scene_to_image(
   height : Int,
 ) -> Image {
   let image = Image::new(width, height)
-  let setter : PixelSetter = {
-    set: (x, y, color) => image.set_pixel(x, y, color),
+  let setter = make_image_compositing_setter(image)
+  let ctx = {
+    ..RenderContext::new(setter, width, height),
+    target_image: Some(image),
   }
-  let ctx = RenderContext::new(setter, width, height)
   scene.render(ctx)
   image
 }

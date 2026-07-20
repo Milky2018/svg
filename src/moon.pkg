@@ -1,4 +1,10 @@
 import {
+  "mizchi/css",
+  "mizchi/css/cascade" @css_cascade,
+  "mizchi/css/computed" @css_computed,
+  "mizchi/css/media" @css_media,
+  "mizchi/css/selector" @css_selector,
+  "mizchi/css/style" @css_style,
   "moonbitlang/core/bench",
   "moonbitlang/core/debug",
   "moonbitlang/core/double",

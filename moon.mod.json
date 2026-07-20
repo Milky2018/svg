@@ -2,7 +2,9 @@
   "name": "Milky2018/svg",
   "version": "0.2.1",
   "description": "Standalone SVG scene graph and renderer",
-  "deps": {},
+  "deps": {
+    "mizchi/css": "0.7.3"
+  },
   "source": "src",
   "readme": "README.md",
   "repository": "https://github.com/Milky2018/svg",

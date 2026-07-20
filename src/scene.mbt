@@ -187,6 +187,11 @@ fn update_node_recursive(
     node.stroke = updated.stroke
     node.stroke_opacity = updated.stroke_opacity
     node.opacity = updated.opacity
+    node.blend_mode = updated.blend_mode
+    node.isolation = updated.isolation
+    node.filters = updated.filters
+    node.filter_graph_id = updated.filter_graph_id
+    node.mask_id = updated.mask_id
     return true
   }
   for child in node.children {
@@ -586,12 +591,14 @@ pub(all) struct RenderContext {
   clip : ClipRect? // Optional clipping rectangle for culling
   /// Font callback: (codepoint, font_size) -> (path_commands, advance_width)
   text_to_paths : ((Int, Double) -> (Array[PathCommand], Double))?
+  target_image : Image?
 }
 
 ///|
 priv struct RenderResources {
   clips : ClipPathRegistry
   masks : MaskRegistry
+  filter_graphs : FilterGraphRegistry
   patterns : PatternRegistry
   gradients : GradientRegistry
   markers : MarkerRegistry
@@ -602,6 +609,7 @@ fn RenderResources::empty() -> RenderResources {
   {
     clips: ClipPathRegistry::new(),
     masks: MaskRegistry::new(),
+    filter_graphs: FilterGraphRegistry::new(),
     patterns: PatternRegistry::new(),
     gradients: GradientRegistry::new(),
     markers: MarkerRegistry::new(),
@@ -614,6 +622,7 @@ pub fn SVGDocument::render(self : SVGDocument, ctx : RenderContext) -> Unit {
   let resources = {
     clips: self.clips,
     masks: self.masks,
+    filter_graphs: self.filter_graphs,
     patterns: self.patterns,
     gradients: self.gradients,
     markers: self.markers,
@@ -777,6 +786,25 @@ fn render_node(
   if node.opacity <= 0.0 {
     return
   }
+  let needs_group_opacity = match node.shape {
+    Group => node.opacity < 1.0
+    _ => false
+  }
+  let has_mask = node.mask_id is Some(_)
+  let has_filter_graph = node.filter_graph_id is Some(_)
+  let needs_image_mask = has_mask && ctx.target_image is Some(_)
+  if allow_mask &&
+    (
+      needs_group_opacity ||
+      !node.filters.is_empty() ||
+      has_filter_graph ||
+      needs_image_mask ||
+      node.blend_mode != Normal ||
+      node.isolation == Isolate
+    ) {
+    render_isolated_node(node, parent_transform, ctx, resources, parent_color)
+    return
+  }
   let node_color = match node.color {
     Some(c) => c
     None => parent_color
@@ -932,6 +960,381 @@ fn render_node(
 }
 
 ///|
+fn render_isolated_node(
+  node : SVGNode,
+  parent_transform : Transform,
+  ctx : RenderContext,
+  resources : RenderResources,
+  parent_color : Color,
+) -> Unit {
+  let layer = Image::new(ctx.width, ctx.height)
+  let layer_ctx = {
+    ..ctx,
+    setter: make_image_compositing_setter(layer),
+    target_image: Some(layer),
+  }
+  let layer_node = node.clone()
+  layer_node.opacity = 1.0
+  layer_node.blend_mode = Normal
+  layer_node.isolation = Auto
+  layer_node.clear_filters()
+  layer_node.filter_graph_id = None
+  layer_node.mask_id = None
+  render_node(
+    layer_node, parent_transform, layer_ctx, resources, true, parent_color,
+  )
+  let mut result = layer
+  for filter in node.filters {
+    result = apply_filter(result, filter)
+  }
+  match node.filter_graph_id {
+    Some(id) =>
+      match resources.filter_graphs.get(id) {
+        Some(graph) =>
+          result = evaluate_filter_graph(
+            graph,
+            result,
+            compute_bounds(node, parent_transform),
+          )
+        None => ()
+      }
+    None => ()
+  }
+  match node.mask_id {
+    Some(id) =>
+      match resources.masks.get(id) {
+        Some(mask) =>
+          result = apply_mask_to_isolated_layer(
+            result, node, parent_transform, ctx, resources, mask, parent_color,
+          )
+        None => ()
+      }
+    None => ()
+  }
+  for y in 0..<result.height {
+    for x in 0..<result.width {
+      let color = result.get_pixel(x, y)
+      if color.a > 0 {
+        result.set_pixel(x, y, apply_opacity(color, node.opacity))
+      }
+    }
+  }
+  composite_image_to_context(result, ctx, 0, 0, node.blend_mode)
+}
+
+///|
+fn filter_source_alpha(source : Image) -> Image {
+  let result = Image::new(source.width, source.height)
+  for y in 0..<source.height {
+    for x in 0..<source.width {
+      let alpha = source.get_pixel(x, y).a
+      if alpha > 0 {
+        result.set_pixel(x, y, Color::rgba(0, 0, 0, alpha))
+      }
+    }
+  }
+  result
+}
+
+///|
+fn resolve_filter_graph_input(
+  name : String,
+  source : Image,
+  source_alpha : Image,
+  previous : Image,
+  named : Map[String, Image],
+) -> Image {
+  match name {
+    "SourceGraphic" => source
+    "SourceAlpha" => source_alpha
+    "" => previous
+    _ => named.get(name).unwrap_or(Image::new(source.width, source.height))
+  }
+}
+
+///|
+fn offset_filter_image(source : Image, dx : Double, dy : Double) -> Image {
+  let result = Image::new(source.width, source.height)
+  let offset_x = dx.round().to_int()
+  let offset_y = dy.round().to_int()
+  for y in 0..<source.height {
+    for x in 0..<source.width {
+      let color = source.get_pixel(x, y)
+      if color.a > 0 {
+        result.set_pixel(x + offset_x, y + offset_y, color)
+      }
+    }
+  }
+  result
+}
+
+///|
+fn clamp_filter_unit(value : Double) -> Double {
+  if value < 0.0 {
+    0.0
+  } else if value > 1.0 {
+    1.0
+  } else {
+    value
+  }
+}
+
+///|
+fn composite_filter_pixel(
+  source : Color,
+  backdrop : Color,
+  operator : FilterCompositeOperator,
+  k1 : Double,
+  k2 : Double,
+  k3 : Double,
+  k4 : Double,
+) -> Color {
+  let source_alpha = source.a.to_double() / 255.0
+  let backdrop_alpha = backdrop.a.to_double() / 255.0
+  let (source_factor, backdrop_factor) = match operator {
+    CompositeOver => (1.0, 1.0 - source_alpha)
+    CompositeIn => (backdrop_alpha, 0.0)
+    CompositeOut => (1.0 - backdrop_alpha, 0.0)
+    CompositeAtop => (backdrop_alpha, 1.0 - source_alpha)
+    CompositeXor => (1.0 - backdrop_alpha, 1.0 - source_alpha)
+    CompositeArithmetic => (0.0, 0.0)
+  }
+  let output_alpha = if operator == CompositeArithmetic {
+    clamp_filter_unit(
+      k1 * source_alpha * backdrop_alpha +
+      k2 * source_alpha +
+      k3 * backdrop_alpha +
+      k4,
+    )
+  } else {
+    clamp_filter_unit(
+      source_alpha * source_factor + backdrop_alpha * backdrop_factor,
+    )
+  }
+  if output_alpha <= 0.0 {
+    return Color::transparent()
+  }
+  fn channel(source_channel : Int, backdrop_channel : Int) -> Int {
+    let source_premultiplied = source_channel.to_double() / 255.0 * source_alpha
+    let backdrop_premultiplied = backdrop_channel.to_double() /
+      255.0 *
+      backdrop_alpha
+    let output_premultiplied = if operator == CompositeArithmetic {
+      clamp_filter_unit(
+        k1 * source_premultiplied * backdrop_premultiplied +
+        k2 * source_premultiplied +
+        k3 * backdrop_premultiplied +
+        k4,
+      )
+    } else {
+      source_premultiplied * source_factor +
+      backdrop_premultiplied * backdrop_factor
+    }
+    (clamp_filter_unit(output_premultiplied / output_alpha) * 255.0)
+    .round()
+    .to_int()
+  }
+  Color::rgba(
+    channel(source.r, backdrop.r),
+    channel(source.g, backdrop.g),
+    channel(source.b, backdrop.b),
+    (output_alpha * 255.0).round().to_int(),
+  )
+}
+
+///|
+fn composite_filter_images(
+  source : Image,
+  backdrop : Image,
+  operator : FilterCompositeOperator,
+  k1 : Double,
+  k2 : Double,
+  k3 : Double,
+  k4 : Double,
+) -> Image {
+  let width = if source.width < backdrop.width {
+    source.width
+  } else {
+    backdrop.width
+  }
+  let height = if source.height < backdrop.height {
+    source.height
+  } else {
+    backdrop.height
+  }
+  let result = Image::new(width, height)
+  for y in 0..<height {
+    for x in 0..<width {
+      result.set_pixel(
+        x,
+        y,
+        composite_filter_pixel(
+          source.get_pixel(x, y),
+          backdrop.get_pixel(x, y),
+          operator,
+          k1,
+          k2,
+          k3,
+          k4,
+        ),
+      )
+    }
+  }
+  result
+}
+
+///|
+fn clip_filter_result(result : Image, bounds : BoundingBox) -> Image {
+  let min_x = floor_to_int(bounds.min_x)
+  let min_y = floor_to_int(bounds.min_y)
+  let max_x = ceil_to_int(bounds.max_x)
+  let max_y = ceil_to_int(bounds.max_y)
+  for y in 0..<result.height {
+    for x in 0..<result.width {
+      if x < min_x || x >= max_x || y < min_y || y >= max_y {
+        result.set_pixel(x, y, Color::transparent())
+      }
+    }
+  }
+  result
+}
+
+///|
+fn evaluate_filter_graph(
+  graph : FilterGraph,
+  source : Image,
+  target_bounds : BoundingBox,
+) -> Image {
+  let source_alpha = filter_source_alpha(source)
+  let named : Map[String, Image] = Map([])
+  let mut previous = source
+  for primitive in graph.primitives {
+    let (output, result_name) = match primitive {
+      GraphColorMatrix(input~, result~, matrix~) =>
+        (
+          apply_filter(
+            resolve_filter_graph_input(
+              input, source, source_alpha, previous, named,
+            ),
+            ColorMatrix(matrix),
+          ),
+          result,
+        )
+      GraphGaussianBlur(input~, result~, radius~) =>
+        (
+          apply_filter(
+            resolve_filter_graph_input(
+              input, source, source_alpha, previous, named,
+            ),
+            Blur(radius),
+          ),
+          result,
+        )
+      GraphOffset(input~, result~, dx~, dy~) =>
+        (
+          offset_filter_image(
+            resolve_filter_graph_input(
+              input, source, source_alpha, previous, named,
+            ),
+            dx,
+            dy,
+          ),
+          result,
+        )
+      GraphBlend(input~, input2~, result~, mode~) =>
+        (
+          blend_images(
+            resolve_filter_graph_input(
+              input2, source, source_alpha, previous, named,
+            ),
+            resolve_filter_graph_input(
+              input, source, source_alpha, previous, named,
+            ),
+            mode,
+          ),
+          result,
+        )
+      GraphComposite(input~, input2~, result~, operator~, k1~, k2~, k3~, k4~) =>
+        (
+          composite_filter_images(
+            resolve_filter_graph_input(
+              input, source, source_alpha, previous, named,
+            ),
+            resolve_filter_graph_input(
+              input2, source, source_alpha, previous, named,
+            ),
+            operator,
+            k1,
+            k2,
+            k3,
+            k4,
+          ),
+          result,
+        )
+    }
+    previous = output
+    if result_name.length() > 0 {
+      named.set(result_name, output)
+    }
+  }
+  clip_filter_result(previous, graph.get_filter_bounds(target_bounds))
+}
+
+///|
+fn apply_mask_to_isolated_layer(
+  source : Image,
+  node : SVGNode,
+  parent_transform : Transform,
+  ctx : RenderContext,
+  resources : RenderResources,
+  mask : Mask,
+  parent_color : Color,
+) -> Image {
+  let bbox_local = compute_bounds_without_self_transform(
+    node,
+    Transform::identity(),
+  )
+  if bbox_local.is_empty() {
+    return Image::new(source.width, source.height)
+  }
+  let element_transform = parent_transform.multiply(node.transform)
+  let mask_image = Image::new(source.width, source.height)
+  let base_mask_ctx = {
+    ..ctx,
+    setter: make_image_compositing_setter(mask_image),
+    target_image: Some(mask_image),
+  }
+  let mask_bounds = element_transform.apply_bbox(
+    mask.get_mask_bounds(bbox_local),
+  )
+  let clip = ClipRect::new(
+    floor_to_int(mask_bounds.min_x),
+    floor_to_int(mask_bounds.min_y),
+    ceil_to_int(mask_bounds.width()),
+    ceil_to_int(mask_bounds.height()),
+  )
+  let mask_ctx = {
+    ..base_mask_ctx,
+    setter: base_mask_ctx.setter.with_clip(clip),
+    clip: Some(clip),
+  }
+  let mask_parent = match mask.mask_content_units {
+    MaskUnits::ObjectBoundingBox => {
+      let translate = Transform::translate(bbox_local.min_x, bbox_local.min_y)
+      let scale = Transform::scale(bbox_local.width(), bbox_local.height())
+      element_transform.multiply(translate.multiply(scale))
+    }
+    MaskUnits::UserSpaceOnUse => element_transform
+  }
+  for content_node in mask.content {
+    render_node(
+      content_node, mask_parent, mask_ctx, resources, true, parent_color,
+    )
+  }
+  apply_mask_to_image(source, mask_image, mask.mask_type)
+}
+
+///|
 fn apply_clip_path(
   ctx : RenderContext,
   clip : ClipPath,
@@ -1057,10 +1460,64 @@ fn make_image_context(
   height : Int,
   flatness : Double,
 ) -> RenderContext {
-  let setter : PixelSetter = {
-    set: (x, y, color) => image.set_pixel(x, y, color),
+  let setter = make_image_compositing_setter(image)
+  {
+    setter,
+    width,
+    height,
+    flatness,
+    clip: None,
+    text_to_paths: None,
+    target_image: Some(image),
   }
-  { setter, width, height, flatness, clip: None, text_to_paths: None }
+}
+
+///|
+fn make_image_compositing_setter(image : Image) -> PixelSetter {
+  {
+    set: fn(x, y, source) {
+      let backdrop = image.get_pixel(x, y)
+      image.set_pixel(x, y, blend_colors(backdrop, source))
+    },
+  }
+}
+
+///|
+fn composite_image_to_context(
+  image : Image,
+  ctx : RenderContext,
+  offset_x : Int,
+  offset_y : Int,
+  mode : BlendMode,
+) -> Unit {
+  if mode == Normal {
+    blit_image_to_context(image, ctx, offset_x, offset_y)
+    return
+  }
+  match ctx.target_image {
+    Some(target) =>
+      for y in 0..<image.height {
+        for x in 0..<image.width {
+          let source = image.get_pixel(x, y)
+          if source.a > 0 {
+            let tx = x + offset_x
+            let ty = y + offset_y
+            let visible = match ctx.clip {
+              Some(clip) => clip.contains(tx, ty)
+              None => true
+            }
+            if visible {
+              target.set_pixel(
+                tx,
+                ty,
+                blend_with_mode(target.get_pixel(tx, ty), source, mode),
+              )
+            }
+          }
+        }
+      }
+    None => blit_image_to_context(image, ctx, offset_x, offset_y)
+  }
 }
 
 ///|
@@ -1568,10 +2025,11 @@ fn render_image(
         }
       }
       let image = Image::new(iw, ih)
-      let setter : PixelSetter = {
-        set: (px, py, color) => image.set_pixel(px, py, color),
+      let setter = make_image_compositing_setter(image)
+      let image_ctx = {
+        ..RenderContext::new(setter, iw, ih),
+        target_image: Some(image),
       }
-      let image_ctx = RenderContext::new(setter, iw, ih)
       doc.render(image_ctx)
       blit_image_to_context(image, ctx, ix, iy)
     }
@@ -1702,14 +2160,21 @@ fn render_rect(
                 ctx.setter,
               )
             } else {
-              raster_rect_stroke_thick(
-                ix,
-                iy,
-                iw,
-                ih,
+              let rect_points = [
+                transform.apply(x, y),
+                transform.apply(x + width, y),
+                transform.apply(x + width, y + height),
+                transform.apply(x, y + height),
+              ].map(fn(point) {
+                (quantize_geometry(point.0), quantize_geometry(point.1))
+              })
+              raster_normalized_stroke(
+                rect_points,
+                node.stroke,
                 stroke_px,
                 stroke_color,
                 ctx.setter,
+                true,
               )
             }
           }
@@ -1751,7 +2216,16 @@ fn render_circle(
             color,
             node.fill_opacity * node.opacity,
           )
-          raster_circle_fill(icx, icy, tr, fill_color, ctx.setter)
+          raster_rounded_rect_fill(
+            icx - tr,
+            icy - tr,
+            tr * 2,
+            tr * 2,
+            tr,
+            tr,
+            fill_color,
+            ctx.setter,
+          )
         }
       ResolvedPaint::RadialGrad(grad) =>
         if node.fill_opacity > 0.0 {
@@ -1786,7 +2260,18 @@ fn render_circle(
             color,
             node.stroke_opacity * node.opacity,
           )
-          raster_circle_stroke(icx, icy, tr, stroke_color, ctx.setter)
+          let stroke_px = ceil_to_int(node.stroke.width * (sx + sy) / 2.0)
+          raster_rounded_rect_stroke_thick(
+            icx - tr,
+            icy - tr,
+            tr * 2,
+            tr * 2,
+            tr,
+            tr,
+            stroke_px,
+            stroke_color,
+            ctx.setter,
+          )
         }
       _ => ()
     }
@@ -1827,7 +2312,16 @@ fn render_ellipse(
             color,
             node.fill_opacity * node.opacity,
           )
-          raster_ellipse_fill(icx, icy, trx, try_, fill_color, ctx.setter)
+          raster_rounded_rect_fill(
+            icx - trx,
+            icy - try_,
+            trx * 2,
+            try_ * 2,
+            trx,
+            try_,
+            fill_color,
+            ctx.setter,
+          )
         }
       ResolvedPaint::RadialGrad(grad) =>
         if node.fill_opacity > 0.0 {
@@ -1863,7 +2357,18 @@ fn render_ellipse(
             color,
             node.stroke_opacity * node.opacity,
           )
-          raster_ellipse_stroke(icx, icy, trx, try_, stroke_color, ctx.setter)
+          let stroke_px = ceil_to_int(node.stroke.width * (sx + sy) / 2.0)
+          raster_rounded_rect_stroke_thick(
+            icx - trx,
+            icy - try_,
+            trx * 2,
+            try_ * 2,
+            trx,
+            try_,
+            stroke_px,
+            stroke_color,
+            ctx.setter,
+          )
         }
       _ => ()
     }
@@ -1890,6 +2395,12 @@ fn render_line(
   let iy1 = quantize_geometry(ty1)
   let ix2 = quantize_geometry(tx2)
   let iy2 = quantize_geometry(ty2)
+  let (sx, sy) = transform.get_scale()
+  let stroke_px = if node.stroke.width > 0.0 {
+    ceil_to_int(node.stroke.width * (sx + sy) / 2.0)
+  } else {
+    0
+  }
   fn draw_stroke() -> Unit {
     match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
       ResolvedPaint::SolidColor(color) =>
@@ -1898,60 +2409,23 @@ fn render_line(
             color,
             node.stroke_opacity * node.opacity,
           )
-          let stroke_px = node.stroke.width.to_int()
-          // Check for dash pattern
-          match node.stroke.dasharray {
-            Some(dasharray) =>
-              raster_line_dashed(
-                ix1,
-                iy1,
-                ix2,
-                iy2,
-                stroke_color,
-                dasharray,
-                node.stroke.dashoffset,
-                ctx.setter,
-              )
-            None =>
-              if node.stroke.width <= 1.0 {
-                raster_line(
-                  ix1,
-                  iy1,
-                  ix2,
-                  iy2,
-                  stroke_color,
-                  ctx.setter,
-                )
-              } else {
-                raster_thick_line(
-                  ix1,
-                  iy1,
-                  ix2,
-                  iy2,
-                  stroke_px,
-                  stroke_color,
-                  ctx.setter,
-                )
-                draw_line_caps(
-                  ix1,
-                  iy1,
-                  ix2,
-                  iy2,
-                  stroke_px,
-                  node.stroke.linecap,
-                  stroke_color,
-                  ctx.setter,
-                )
-              }
-          }
+          raster_normalized_stroke(
+            [(ix1, iy1), (ix2, iy2)],
+            node.stroke,
+            stroke_px,
+            stroke_color,
+            ctx.setter,
+            false,
+          )
         }
       _ => ()
     }
   }
 
   fn draw_markers() -> Unit {
-    render_markers_for_points(
+    render_markers_for_linear_shape(
       [(x1, y1), (x2, y2)],
+      false,
       node,
       transform,
       ctx,
@@ -1961,47 +2435,6 @@ fn render_line(
   }
 
   render_paint_order(node.paint_order, () => (), draw_stroke, draw_markers)
-}
-
-///|
-fn draw_line_caps(
-  x0 : Int,
-  y0 : Int,
-  x1 : Int,
-  y1 : Int,
-  width : Int,
-  linecap : LineCap,
-  color : Color,
-  setter : PixelSetter,
-) -> Unit {
-  if width <= 1 {
-    return
-  }
-  match linecap {
-    Butt => ()
-    Round => {
-      let half_w = width / 2
-      raster_circle_fill(x0, y0, half_w, color, setter)
-      raster_circle_fill(x1, y1, half_w, color, setter)
-    }
-    Square => {
-      let dx = (x1 - x0).to_double()
-      let dy = (y1 - y0).to_double()
-      let len = (dx * dx + dy * dy).sqrt()
-      if len < 0.001 {
-        let half_w = width / 2
-        raster_circle_fill(x0, y0, half_w, color, setter)
-        return
-      }
-      let ux = dx / len
-      let uy = dy / len
-      let half_w = width / 2
-      let ex = (ux * half_w.to_double()).to_int()
-      let ey = (uy * half_w.to_double()).to_int()
-      raster_thick_line(x0 - ex, y0 - ey, x0, y0, width, color, setter)
-      raster_thick_line(x1, y1, x1 + ex, y1 + ey, width, color, setter)
-    }
-  }
 }
 
 ///|
@@ -2140,305 +2573,229 @@ fn marker_viewport_transform(
 }
 
 ///|
-fn render_markers_for_points(
+fn render_markers_for_linear_shape(
   points : Array[(Double, Double)],
+  closed : Bool,
   node : SVGNode,
   transform : Transform,
   ctx : RenderContext,
   resources : RenderResources,
   node_color : Color,
 ) -> Unit {
-  if points.length() < 2 {
+  if points.length() == 0 {
     return
   }
-  if node.marker_start is None &&
-    node.marker_mid is None &&
-    node.marker_end is None {
-    return
+  let commands : Array[PathCommand] = [MoveTo(points[0].0, points[0].1)]
+  for index in 1..<points.length() {
+    commands.push(LineTo(points[index].0, points[index].1))
   }
-  let (sx, sy) = transform.get_scale()
-  let skew = transform.a * transform.c + transform.b * transform.d
-  let use_transformed = (sx - sy).abs() > 0.0001 || skew.abs() > 0.0001
-  let angle_points = if use_transformed {
-    points.map(p => transform.apply(p.0, p.1))
-  } else {
-    points
+  if closed {
+    commands.push(ClosePath)
   }
-  let line = MarkedLine::new(angle_points)
-  let inv = transform.inverse()
-  fn to_local_angle(angle : Double) -> Double {
-    let dx = @math.cos(angle)
-    let dy = @math.sin(angle)
-    let lx = inv.a * dx + inv.c * dy
-    let ly = inv.b * dx + inv.d * dy
-    @math.atan2(ly, lx)
-  }
+  render_markers_for_path_commands(
+    commands, node, transform, ctx, resources, node_color,
+  )
+}
 
-  let last = points.length() - 1
-  for i in 0..<points.length() {
-    let marker_id = if i == 0 {
-      node.marker_start
-    } else if i == last {
-      node.marker_end
-    } else {
-      node.marker_mid
+///|
+fn normalize_dash_pattern(dasharray : Array[Double]) -> Array[Double] {
+  let normalized : Array[Double] = []
+  for value in dasharray {
+    if value < 0.0 {
+      return []
     }
-    match marker_id {
-      Some(id) =>
-        match resources.markers.get(id) {
-          Some(marker) => {
-            let (x, y) = points[i]
-            let angle = if use_transformed {
-              to_local_angle(line.get_angle_at(i))
-            } else {
-              line.get_angle_at(i)
-            }
-            render_marker_instance(
-              marker, x, y, angle, node, transform, ctx, resources, node_color,
-            )
-          }
-          None => ()
-        }
-      None => ()
+    normalized.push(value)
+  }
+  if normalized.length() % 2 == 1 {
+    for value in dasharray {
+      normalized.push(value)
     }
+  }
+  normalized
+}
+
+///|
+fn push_distinct_point(points : Array[(Int, Int)], point : (Int, Int)) -> Unit {
+  if points.length() == 0 || points[points.length() - 1] != point {
+    points.push(point)
   }
 }
 
 ///|
-fn is_closed_polyline_double(points : Array[(Double, Double)]) -> Bool {
+fn dash_polyline_pieces(
+  points : Array[(Int, Int)],
+  dasharray : Array[Double],
+  dashoffset : Double,
+) -> Array[Array[(Int, Int)]] {
+  let pieces : Array[Array[(Int, Int)]] = []
   if points.length() < 2 {
-    false
-  } else {
-    let last = points.length() - 1
-    let (x0, y0) = points[0]
-    let (x1, y1) = points[last]
-    x0 == x1 && y0 == y1
+    return pieces
   }
-}
-
-///|
-fn render_markers_for_polylines(
-  polylines : Array[Array[(Double, Double)]],
-  node : SVGNode,
-  transform : Transform,
-  ctx : RenderContext,
-  resources : RenderResources,
-  node_color : Color,
-) -> Unit {
-  if node.marker_start is None &&
-    node.marker_mid is None &&
-    node.marker_end is None {
-    return
+  let pattern = normalize_dash_pattern(dasharray)
+  if pattern.length() == 0 {
+    pieces.push(points)
+    return pieces
   }
-  if polylines.length() == 0 {
-    return
+  let total = pattern.fold(init=0.0, (sum, value) => sum + value)
+  if total <= 0.0 {
+    return pieces
   }
-  // Find first/last non-empty polyline
-  let mut first_idx = -1
-  let mut last_idx = -1
-  for i in 0..<polylines.length() {
-    if polylines[i].length() >= 2 {
-      if first_idx < 0 {
-        first_idx = i
-      }
-      last_idx = i
-    }
+  let epsilon = 0.000001
+  let mut position = -dashoffset
+  while position < 0.0 {
+    position += total
   }
-  if first_idx < 0 || last_idx < 0 {
-    return
+  while position >= total {
+    position -= total
   }
-  let eps = 0.0001
-  let (sx, sy) = transform.get_scale()
-  let skew = transform.a * transform.c + transform.b * transform.d
-  let use_transformed = (sx - sy).abs() > eps || skew.abs() > eps
-  let inv = transform.inverse()
-  fn angle_from(dx : Double, dy : Double) -> Double {
-    if use_transformed {
-      let lx = inv.a * dx + inv.c * dy
-      let ly = inv.b * dx + inv.d * dy
-      @math.atan2(ly, lx)
-    } else {
-      @math.atan2(dy, dx)
-    }
+  let mut pattern_index = 0
+  while position >= pattern[pattern_index] && pattern[pattern_index] > epsilon {
+    position -= pattern[pattern_index]
+    pattern_index = (pattern_index + 1) % pattern.length()
   }
-
-  fn normalize(dx : Double, dy : Double) -> (Double, Double, Double) {
-    let len = (dx * dx + dy * dy).sqrt()
-    if len < eps {
-      (0.0, 0.0, len)
-    } else {
-      (dx / len, dy / len, len)
-    }
+  let mut remaining = pattern[pattern_index] - position
+  let mut drawing = pattern_index % 2 == 0
+  let mut zero_guard = 0
+  while remaining <= epsilon && zero_guard < pattern.length() {
+    pattern_index = (pattern_index + 1) % pattern.length()
+    remaining = pattern[pattern_index]
+    drawing = pattern_index % 2 == 0
+    zero_guard += 1
   }
-
-  fn angle_start(points : Array[(Double, Double)]) -> Double {
-    if points.length() < 2 {
-      return 0.0
-    }
-    for i in 1..<points.length() {
-      let dx = points[i].0 - points[0].0
-      let dy = points[i].1 - points[0].1
-      let (_, _, l) = normalize(dx, dy)
-      if l >= eps {
-        return angle_from(dx, dy)
-      }
-    }
-    0.0
-  }
-
-  fn angle_end(points : Array[(Double, Double)]) -> Double {
-    if points.length() < 2 {
-      return 0.0
-    }
-    for i = points.length() - 1; i > 0; i = i - 1 {
-      let dx = points[i].0 - points[i - 1].0
-      let dy = points[i].1 - points[i - 1].1
-      let (_, _, l) = normalize(dx, dy)
-      if l >= eps {
-        return angle_from(dx, dy)
-      }
-    }
-    0.0
-  }
-
-  fn angle_mid(
-    points : Array[(Double, Double)],
-    index : Int,
-    closed : Bool,
-    has_duplicate : Bool,
-  ) -> Double {
-    let len = points.length()
-    if len < 2 {
-      return 0.0
-    }
-    if !closed && index == 0 {
-      for i in 1..<len {
-        let dx = points[i].0 - points[0].0
-        let dy = points[i].1 - points[0].1
-        let (_, _, l) = normalize(dx, dy)
-        if l >= eps {
-          return angle_from(dx, dy)
-        }
-      }
-      return 0.0
-    }
-    if !closed && index >= len - 1 {
-      for i = len - 1; i > 0; i = i - 1 {
-        let dx = points[i].0 - points[i - 1].0
-        let dy = points[i].1 - points[i - 1].1
-        let (_, _, l) = normalize(dx, dy)
-        if l >= eps {
-          return angle_from(dx, dy)
-        }
-      }
-      return 0.0
-    }
-    let prev = if has_duplicate && closed {
-      if index == 0 || index == len - 1 {
-        if len > 1 {
-          len - 2
-        } else {
-          0
-        }
-      } else {
-        index - 1
-      }
-    } else if index == 0 {
-      len - 1
-    } else {
-      index - 1
-    }
-    let next = if has_duplicate && closed {
-      if index == len - 1 {
-        if len > 1 {
-          1
-        } else {
-          0
-        }
-      } else if index + 1 == len {
-        0
-      } else {
-        index + 1
-      }
-    } else if index + 1 == len {
-      0
-    } else {
-      index + 1
-    }
-    let dx1 = points[index].0 - points[prev].0
-    let dy1 = points[index].1 - points[prev].1
-    let dx2 = points[next].0 - points[index].0
-    let dy2 = points[next].1 - points[index].1
-    let (ux1, uy1, l1) = normalize(dx1, dy1)
-    let (ux2, uy2, l2) = normalize(dx2, dy2)
-    if l1 < eps && l2 < eps {
-      return 0.0
-    }
-    if l1 < eps {
-      return angle_from(dx2, dy2)
-    }
-    if l2 < eps {
-      return angle_from(dx1, dy1)
-    }
-    let sx = ux1 + ux2
-    let sy = uy1 + uy2
-    if sx * sx + sy * sy < eps * eps {
-      angle_from(dx2, dy2)
-    } else {
-      angle_from(sx, sy)
-    }
-  }
-
-  for poly_idx in 0..<polylines.length() {
-    let points = polylines[poly_idx]
-    if points.length() < 2 {
+  let mut current : Array[(Int, Int)] = []
+  for segment_index in 0..<(points.length() - 1) {
+    let start = points[segment_index]
+    let finish = points[segment_index + 1]
+    let dx = (finish.0 - start.0).to_double()
+    let dy = (finish.1 - start.1).to_double()
+    let length = (dx * dx + dy * dy).sqrt()
+    if length <= epsilon {
       continue
     }
-    let angle_points = if use_transformed {
-      points.map(p => transform.apply(p.0, p.1))
+    let mut traveled = 0.0
+    while traveled < length - epsilon {
+      let available = length - traveled
+      let step = if remaining < available { remaining } else { available }
+      let start_ratio = traveled / length
+      let end_ratio = (traveled + step) / length
+      let piece_start = (
+        quantize_geometry(start.0.to_double() + dx * start_ratio),
+        quantize_geometry(start.1.to_double() + dy * start_ratio),
+      )
+      let piece_end = (
+        quantize_geometry(start.0.to_double() + dx * end_ratio),
+        quantize_geometry(start.1.to_double() + dy * end_ratio),
+      )
+      if drawing {
+        push_distinct_point(current, piece_start)
+        push_distinct_point(current, piece_end)
+      }
+      traveled += step
+      remaining -= step
+      if remaining <= epsilon {
+        if drawing && current.length() >= 2 {
+          pieces.push(current)
+          current = []
+        }
+        pattern_index = (pattern_index + 1) % pattern.length()
+        remaining = pattern[pattern_index]
+        drawing = pattern_index % 2 == 0
+        zero_guard = 0
+        while remaining <= epsilon && zero_guard < pattern.length() {
+          pattern_index = (pattern_index + 1) % pattern.length()
+          remaining = pattern[pattern_index]
+          drawing = pattern_index % 2 == 0
+          zero_guard += 1
+        }
+      }
+    }
+  }
+  if drawing && current.length() >= 2 {
+    pieces.push(current)
+  }
+  pieces
+}
+
+///|
+fn raster_stroke_piece(
+  points : Array[(Int, Int)],
+  stroke_px : Int,
+  linecap : LineCap,
+  linejoin : LineJoin,
+  miterlimit : Double,
+  color : Color,
+  setter : PixelSetter,
+  closed : Bool,
+) -> Unit {
+  if points.length() < 2 || stroke_px <= 0 {
+    return
+  }
+  if stroke_px <= 1 {
+    if closed {
+      raster_polygon_stroke(points, color, setter)
     } else {
-      points
+      raster_polyline(points, color, setter)
     }
-    let closed = is_closed_polyline_double(points)
-    let has_duplicate = closed
-    let last = points.length() - 1
-    for i in 0..<points.length() {
-      let marker_id = if poly_idx == first_idx && i == 0 {
-        node.marker_start
-      } else if poly_idx == last_idx && i == last {
-        node.marker_end
-      } else {
-        node.marker_mid
-      }
-      match marker_id {
-        Some(id) =>
-          match resources.markers.get(id) {
-            Some(marker) => {
-              let (x, y) = points[i]
-              let angle = if i == 0 {
-                if closed {
-                  angle_mid(angle_points, i, closed, has_duplicate)
-                } else {
-                  angle_start(angle_points)
-                }
-              } else if i == last {
-                if closed {
-                  angle_mid(angle_points, i, closed, has_duplicate)
-                } else {
-                  angle_end(angle_points)
-                }
-              } else {
-                angle_mid(angle_points, i, closed, has_duplicate)
-              }
-              render_marker_instance(
-                marker, x, y, angle, node, transform, ctx, resources, node_color,
-              )
-            }
-            None => ()
-          }
-        None => ()
+    return
+  }
+  let segment_count = if closed { points.length() } else { points.length() - 1 }
+  for index in 0..<segment_count {
+    let next = if index + 1 == points.length() { 0 } else { index + 1 }
+    let start = points[index]
+    let finish = points[next]
+    if start != finish {
+      raster_thick_line(
+        start.0,
+        start.1,
+        finish.0,
+        finish.1,
+        stroke_px,
+        color,
+        setter,
+      )
+    }
+  }
+  draw_polyline_joins_caps(
+    points, stroke_px, linecap, linejoin, miterlimit, color, setter, closed,
+  )
+}
+
+///|
+fn raster_normalized_stroke(
+  points : Array[(Int, Int)],
+  stroke : StrokeStyle,
+  stroke_px : Int,
+  color : Color,
+  setter : PixelSetter,
+  closed : Bool,
+) -> Unit {
+  match stroke.dasharray {
+    Some(dasharray) => {
+      let pieces = dash_polyline_pieces(points, dasharray, stroke.dashoffset)
+      for piece in pieces {
+        raster_stroke_piece(
+          piece,
+          stroke_px,
+          stroke.linecap,
+          stroke.linejoin,
+          stroke.miterlimit,
+          color,
+          setter,
+          false,
+        )
       }
     }
+    None =>
+      raster_stroke_piece(
+        points,
+        stroke_px,
+        stroke.linecap,
+        stroke.linejoin,
+        stroke.miterlimit,
+        color,
+        setter,
+        closed,
+      )
   }
 }
 
@@ -3430,7 +3787,7 @@ fn draw_line_join(
   if cross.abs() < 0.0001 {
     return
   }
-  let side = select_join_side(x1, y1, ux0, uy0, ux1, uy1, width)
+  let side = if cross > 0.0 { -1.0 } else { 1.0 }
   match linejoin {
     Round => raster_circle_fill(x1, y1, width / 2, color, setter)
     Bevel =>
@@ -3440,65 +3797,6 @@ fn draw_line_join(
         x1, y1, ux0, uy0, ux1, uy1, side, width, miterlimit, color, setter,
       )
   }
-}
-
-///|
-fn select_join_side(
-  x1 : Int,
-  y1 : Int,
-  ux0 : Double,
-  uy0 : Double,
-  ux1 : Double,
-  uy1 : Double,
-  width : Int,
-) -> Double {
-  let half = width.to_double() / 2.0
-  let side_a = 1.0
-  let side_b = -1.0
-  let len_a = compute_miter_len_for_side(
-    x1, y1, ux0, uy0, ux1, uy1, side_a, half,
-  )
-  let len_b = compute_miter_len_for_side(
-    x1, y1, ux0, uy0, ux1, uy1, side_b, half,
-  )
-  if len_a < 0.0 && len_b < 0.0 {
-    side_a
-  } else if len_a < 0.0 {
-    side_b
-  } else if len_b < 0.0 {
-    side_a
-  } else if len_a >= len_b {
-    side_a
-  } else {
-    side_b
-  }
-}
-
-///|
-fn compute_miter_len_for_side(
-  x1 : Int,
-  y1 : Int,
-  ux0 : Double,
-  uy0 : Double,
-  ux1 : Double,
-  uy1 : Double,
-  side : Double,
-  half : Double,
-) -> Double {
-  let ox0 = x1.to_double() + side * -uy0 * half
-  let oy0 = y1.to_double() + side * ux0 * half
-  let ox1 = x1.to_double() + side * -uy1 * half
-  let oy1 = y1.to_double() + side * ux1 * half
-  let denom = ux0 * uy1 - uy0 * ux1
-  if denom.abs() < 0.0001 {
-    return -1.0
-  }
-  let t = ((ox1 - ox0) * uy1 - (oy1 - oy0) * ux1) / denom
-  let ix = ox0 + t * ux0
-  let iy = oy0 + t * uy0
-  let dx = ix - x1.to_double()
-  let dy = iy - y1.to_double()
-  (dx * dx + dy * dy).sqrt() / half
 }
 
 ///|
@@ -3596,6 +3894,30 @@ fn render_polyline(
   } else {
     0
   }
+  fn draw_fill() -> Unit {
+    match resolve_paint_for_render(node.fill, node_color, resources) {
+      ResolvedPaint::SolidColor(color) =>
+        if node.fill_opacity > 0.0 && transformed.length() >= 3 {
+          raster_polygon_fill_rule(
+            transformed,
+            apply_opacity(color, node.fill_opacity * node.opacity),
+            node.fill_rule,
+            ctx.setter,
+          )
+        }
+      ResolvedPaint::Pattern(pattern) =>
+        if node.fill_opacity > 0.0 {
+          render_pattern_fill(
+            node.shape,
+            transform,
+            ctx,
+            pattern,
+            node.fill_opacity * node.opacity,
+          )
+        }
+      _ => ()
+    }
+  }
   fn draw_stroke() -> Unit {
     match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
       ResolvedPaint::SolidColor(color) =>
@@ -3604,60 +3926,26 @@ fn render_polyline(
             color,
             node.stroke_opacity * node.opacity,
           )
-          if stroke_px <= 1 {
-            match node.stroke.dasharray {
-              Some(dasharray) =>
-                raster_polyline_dashed(
-                  transformed,
-                  stroke_color,
-                  dasharray,
-                  node.stroke.dashoffset,
-                  ctx.setter,
-                )
-              None => raster_polyline(transformed, stroke_color, ctx.setter)
-            }
-          } else {
-            for i = 0; i < transformed.length() - 1; i = i + 1 {
-              let (x1, y1) = transformed[i]
-              let (x2, y2) = transformed[i + 1]
-              raster_thick_line(
-                x1,
-                y1,
-                x2,
-                y2,
-                stroke_px,
-                stroke_color,
-                ctx.setter,
-              )
-            }
-            draw_polyline_joins_caps(
-              transformed,
-              stroke_px,
-              node.stroke.linecap,
-              node.stroke.linejoin,
-              node.stroke.miterlimit,
-              stroke_color,
-              ctx.setter,
-              false,
-            )
-          }
+          raster_normalized_stroke(
+            transformed,
+            node.stroke,
+            stroke_px,
+            stroke_color,
+            ctx.setter,
+            false,
+          )
         }
       _ => ()
     }
   }
 
   fn draw_markers() -> Unit {
-    render_markers_for_polylines(
-      [points],
-      node,
-      transform,
-      ctx,
-      resources,
-      node_color,
+    render_markers_for_linear_shape(
+      points, false, node, transform, ctx, resources, node_color,
     )
   }
 
-  render_paint_order(node.paint_order, () => (), draw_stroke, draw_markers)
+  render_paint_order(node.paint_order, draw_fill, draw_stroke, draw_markers)
 }
 
 ///|
@@ -3719,48 +4007,22 @@ fn render_polygon(
             color,
             node.stroke_opacity * node.opacity,
           )
-          if stroke_px <= 1 {
-            raster_polygon_stroke(transformed, stroke_color, ctx.setter)
-          } else {
-            let n = transformed.length()
-            for i in 0..<n {
-              let j = (i + 1) % n
-              let (x1, y1) = transformed[i]
-              let (x2, y2) = transformed[j]
-              raster_thick_line(
-                x1,
-                y1,
-                x2,
-                y2,
-                stroke_px,
-                stroke_color,
-                ctx.setter,
-              )
-            }
-            draw_polyline_joins_caps(
-              transformed,
-              stroke_px,
-              node.stroke.linecap,
-              node.stroke.linejoin,
-              node.stroke.miterlimit,
-              stroke_color,
-              ctx.setter,
-              true,
-            )
-          }
+          raster_normalized_stroke(
+            transformed,
+            node.stroke,
+            stroke_px,
+            stroke_color,
+            ctx.setter,
+            true,
+          )
         }
       _ => ()
     }
   }
 
   fn draw_markers() -> Unit {
-    render_markers_for_polylines(
-      [points],
-      node,
-      transform,
-      ctx,
-      resources,
-      node_color,
+    render_markers_for_linear_shape(
+      points, true, node, transform, ctx, resources, node_color,
     )
   }
 
@@ -3842,34 +4104,14 @@ fn render_path(
               color,
               node.stroke_opacity * node.opacity,
             )
-            if stroke_px <= 1 {
-              raster_polyline(polyline, stroke_color, ctx.setter)
-            } else {
-              for i = 0; i < polyline.length() - 1; i = i + 1 {
-                let (x1, y1) = polyline[i]
-                let (x2, y2) = polyline[i + 1]
-                raster_thick_line(
-                  x1,
-                  y1,
-                  x2,
-                  y2,
-                  stroke_px,
-                  stroke_color,
-                  ctx.setter,
-                )
-              }
-              let closed = is_closed_polyline(polyline)
-              draw_polyline_joins_caps(
-                polyline,
-                stroke_px,
-                node.stroke.linecap,
-                node.stroke.linejoin,
-                node.stroke.miterlimit,
-                stroke_color,
-                ctx.setter,
-                closed,
-              )
-            }
+            raster_normalized_stroke(
+              polyline,
+              node.stroke,
+              stroke_px,
+              stroke_color,
+              ctx.setter,
+              is_closed_polyline(polyline),
+            )
           }
         _ => ()
       }
@@ -3993,7 +4235,7 @@ fn apply_opacity(color : Color, opacity : Double) -> Color {
       r: color.r,
       g: color.g,
       b: color.b,
-      a: (color.a.to_double() * opacity).to_int(),
+      a: (color.a.to_double() * opacity).round().to_int(),
     }
   }
 }
@@ -4076,7 +4318,15 @@ pub fn RenderContext::new(
   width : Int,
   height : Int,
 ) -> RenderContext {
-  { setter, width, height, flatness: 0.5, clip: None, text_to_paths: None }
+  {
+    setter,
+    width,
+    height,
+    flatness: 0.5,
+    clip: None,
+    text_to_paths: None,
+    target_image: None,
+  }
 }
 
 ///|
@@ -4094,6 +4344,7 @@ pub fn RenderContext::with_clip(
     flatness: 0.5,
     clip: Some(clip),
     text_to_paths: None,
+    target_image: None,
   }
 }
 
@@ -4112,6 +4363,7 @@ pub fn RenderContext::with_font(
     flatness: 0.5,
     clip: None,
     text_to_paths: Some(text_to_paths),
+    target_image: None,
   }
 }
 
@@ -4129,5 +4381,6 @@ pub fn RenderContext::for_camera(
     flatness: 0.5,
     clip: Some(clip),
     text_to_paths: None,
+    target_image: None,
   }
 }

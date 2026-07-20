@@ -1,42 +1,6 @@
 ///|
-priv struct StyleElement {
-  tag : String
-  id : String
-  classes : Array[String]
-}
-
-///|
-priv struct SimpleSelector {
-  tag : String?
-  id : String?
-  classes : Array[String]
-}
-
-///|
-priv struct StaticSelector {
-  parts : Array[SimpleSelector]
-  child_relations : Array[Bool]
-  specificity : Int
-}
-
-///|
-priv struct StyleRule {
-  selector : StaticSelector
-  declarations : Array[StyleDeclaration]
-}
-
-///|
 fn css_is_whitespace(c : Char) -> Bool {
   c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
-}
-
-///|
-fn css_is_name_char(c : Char) -> Bool {
-  (c >= 'a' && c <= 'z') ||
-  (c >= 'A' && c <= 'Z') ||
-  (c >= '0' && c <= '9') ||
-  c == '-' ||
-  c == '_'
 }
 
 ///|
@@ -73,217 +37,8 @@ fn substring_starts_at(value : String, expected : String, start : Int) -> Bool {
 }
 
 ///|
-fn remove_css_comments(css : String) -> String {
-  let result = StringBuilder::new()
-  let mut i = 0
-  while i < css.length() {
-    if i + 1 < css.length() && css[i] == '/' && css[i + 1] == '*' {
-      let close = find_substring_from(css, "*/", i + 2)
-      if close < 0 {
-        break
-      }
-      i = close + 2
-    } else {
-      result.write_char(Int::unsafe_to_char(css[i].to_int()))
-      i += 1
-    }
-  }
-  result.to_string()
-}
-
-///|
-fn split_selector_list(value : String) -> Array[String] {
-  let result : Array[String] = []
-  let mut start = 0
-  for i in 0..<value.length() {
-    if value[i] == ',' {
-      let selector = trim_string(build_substring(value, start, i))
-      if selector.length() > 0 {
-        result.push(selector)
-      }
-      start = i + 1
-    }
-  }
-  let selector = trim_string(build_substring(value, start, value.length()))
-  if selector.length() > 0 {
-    result.push(selector)
-  }
-  result
-}
-
-///|
-fn tokenize_static_selector(value : String) -> Array[String]? {
-  let tokens : Array[String] = []
-  let mut buffer = StringBuilder::new()
-  fn flush(tokens : Array[String], buffer : StringBuilder) -> StringBuilder {
-    let token = buffer.to_string()
-    if token.length() > 0 {
-      tokens.push(token)
-    }
-    StringBuilder::new()
-  }
-  for i in 0..<value.length() {
-    let c = Int::unsafe_to_char(value[i].to_int())
-    if css_is_whitespace(c) {
-      buffer = flush(tokens, buffer)
-    } else if c == '>' {
-      buffer = flush(tokens, buffer)
-      if tokens.length() == 0 || tokens[tokens.length() - 1] == ">" {
-        return None
-      }
-      tokens.push(">")
-    } else {
-      buffer.write_char(c)
-    }
-  }
-  buffer = flush(tokens, buffer)
-  ignore(buffer)
-  if tokens.length() == 0 || tokens[tokens.length() - 1] == ">" {
-    None
-  } else {
-    Some(tokens)
-  }
-}
-
-///|
-fn parse_simple_selector(value : String) -> (SimpleSelector, Int)? {
-  let mut i = 0
-  let mut tag : String? = None
-  let mut id : String? = None
-  let classes : Array[String] = []
-  let mut specificity = 0
-  if value[0] == '*' {
-    i = 1
-  } else if value[0] != '.' && value[0] != '#' {
-    let start = i
-    while i < value.length() &&
-          css_is_name_char(Int::unsafe_to_char(value[i].to_int())) {
-      i += 1
-    }
-    if i == start {
-      return None
-    }
-    tag = Some(build_substring(value, start, i))
-    specificity += 1
-  }
-  while i < value.length() {
-    let prefix = value[i]
-    if prefix != '.' && prefix != '#' {
-      return None
-    }
-    i += 1
-    let start = i
-    while i < value.length() &&
-          css_is_name_char(Int::unsafe_to_char(value[i].to_int())) {
-      i += 1
-    }
-    if i == start {
-      return None
-    }
-    let name = build_substring(value, start, i)
-    if prefix == '#' {
-      if id is Some(_) {
-        return None
-      }
-      id = Some(name)
-      specificity += 10000
-    } else {
-      classes.push(name)
-      specificity += 100
-    }
-  }
-  Some(({ tag, id, classes }, specificity))
-}
-
-///|
-fn parse_static_selector(value : String) -> StaticSelector? {
-  let tokens = match tokenize_static_selector(value) {
-    Some(tokens) => tokens
-    None => return None
-  }
-  let parts : Array[SimpleSelector] = []
-  let child_relations : Array[Bool] = []
-  let mut specificity = 0
-  let first = match parse_simple_selector(tokens[0]) {
-    Some(parsed) => parsed
-    None => return None
-  }
-  parts.push(first.0)
-  specificity += first.1
-  let mut i = 1
-  while i < tokens.length() {
-    let child = tokens[i] == ">"
-    if child {
-      i += 1
-      if i >= tokens.length() {
-        return None
-      }
-    }
-    let parsed = match parse_simple_selector(tokens[i]) {
-      Some(parsed) => parsed
-      None => return None
-    }
-    child_relations.push(child)
-    parts.push(parsed.0)
-    specificity += parsed.1
-    i += 1
-  }
-  Some({ parts, child_relations, specificity })
-}
-
-///|
-fn parse_stylesheet(css : String, next_order : Array[Int]) -> Array[StyleRule] {
-  let rules : Array[StyleRule] = []
-  let css = remove_css_comments(css)
-  let mut start = 0
-  while start < css.length() {
-    let open = find_substring_from(css, "{", start)
-    if open < 0 {
-      break
-    }
-    let close = find_substring_from(css, "}", open + 1)
-    if close < 0 {
-      break
-    }
-    let selector_text = trim_string(build_substring(css, start, open))
-    if selector_text.length() > 0 && selector_text[0] != '@' {
-      let parsed_declarations = parse_inline_style_declarations(
-        build_substring(css, open + 1, close),
-      )
-      let declarations : Array[StyleDeclaration] = []
-      for declaration in parsed_declarations {
-        declarations.push({
-          ..declaration,
-          inline_style: false,
-          order: next_order[0],
-        })
-        next_order[0] += 1
-      }
-      for selector_text in split_selector_list(selector_text) {
-        match parse_static_selector(selector_text) {
-          Some(selector) => {
-            let selector_declarations : Array[StyleDeclaration] = []
-            for declaration in declarations {
-              selector_declarations.push({
-                ..declaration,
-                specificity: selector.specificity,
-              })
-            }
-            rules.push({ selector, declarations: selector_declarations })
-          }
-          None => ()
-        }
-      }
-    }
-    start = close + 1
-  }
-  rules
-}
-
-///|
-fn parse_embedded_stylesheets(svg : String) -> Array[StyleRule] {
-  let rules : Array[StyleRule] = []
-  let next_order = [0]
+fn parse_embedded_stylesheets(svg : String) -> Array[@css_cascade.Stylesheet] {
+  let stylesheets : Array[@css_cascade.Stylesheet] = []
   let mut pos = 0
   while pos < svg.length() {
     let open = find_substring_from(svg, "<", pos)
@@ -328,16 +83,14 @@ fn parse_embedded_stylesheets(svg : String) -> Array[StyleRule] {
     } else {
       raw_css
     }
-    for rule in parse_stylesheet(css, next_order) {
-      rules.push(rule)
-    }
+    stylesheets.push(@css.parse_stylesheet(css))
     let close_end = find_substring_from(svg, ">", close + 7)
     if close_end < 0 {
       break
     }
     pos = close_end + 1
   }
-  rules
+  stylesheets
 }
 
 ///|
@@ -360,94 +113,141 @@ fn split_class_names(value : String) -> Array[String] {
 }
 
 ///|
-fn style_element(tag : String, attrs : Array[(String, String)]) -> StyleElement {
-  {
-    tag,
-    id: get_attr(attrs, "id").unwrap_or(""),
-    classes: split_class_names(get_attr(attrs, "class").unwrap_or("")),
-  }
-}
-
-///|
-fn simple_selector_matches(
-  selector : SimpleSelector,
-  element : StyleElement,
-) -> Bool {
-  match selector.tag {
-    Some(tag) => if tag != element.tag { return false }
-    None => ()
-  }
-  match selector.id {
-    Some(id) => if id != element.id { return false }
-    None => ()
-  }
-  for class_name in selector.classes {
-    if !element.classes.contains(class_name) {
-      return false
-    }
-  }
-  true
-}
-
-///|
-fn static_selector_matches(
-  selector : StaticSelector,
-  element : StyleElement,
-  ancestors : Array[StyleElement],
-) -> Bool {
-  let last = selector.parts.length() - 1
-  if !simple_selector_matches(selector.parts[last], element) {
-    return false
-  }
-  let mut ancestor_index = ancestors.length() - 1
-  let mut part_index = last - 1
-  while part_index >= 0 {
-    if selector.child_relations[part_index] {
-      if ancestor_index < 0 ||
-        !simple_selector_matches(
-          selector.parts[part_index],
-          ancestors[ancestor_index],
-        ) {
-        return false
-      }
-      ancestor_index -= 1
-    } else {
-      let mut found = false
-      while ancestor_index >= 0 {
-        if simple_selector_matches(
-            selector.parts[part_index],
-            ancestors[ancestor_index],
-          ) {
-          found = true
-          ancestor_index -= 1
-          break
-        }
-        ancestor_index -= 1
-      }
-      if !found {
-        return false
-      }
-    }
-    part_index -= 1
-  }
-  true
-}
-
-///|
-fn matching_stylesheet_declarations(
-  rules : Array[StyleRule],
+fn style_element(
   tag : String,
   attrs : Array[(String, String)],
-  ancestors : Array[StyleElement],
-) -> Array[StyleDeclaration] {
-  let element = style_element(tag, attrs)
-  let result : Array[StyleDeclaration] = []
-  for rule in rules {
-    if static_selector_matches(rule.selector, element, ancestors) {
-      for declaration in rule.declarations {
-        result.push(declaration)
+  parent : @css_selector.Element?,
+  previous_sibling : @css_selector.Element?,
+  sibling_index : Int,
+  sibling_count : Int,
+) -> @css_selector.Element {
+  let mut element = @css_selector.Element::new(tag.to_lower())
+  for attr in attrs {
+    element = element.set_attribute(attr.0, attr.1)
+    if attr.0 == "id" {
+      element = element.set_id(attr.1)
+    } else if attr.0 == "class" {
+      for class_name in split_class_names(attr.1) {
+        element = element.add_class(class_name)
       }
     }
   }
-  result
+  element = element.set_sibling_info(sibling_index, sibling_count)
+  match previous_sibling {
+    Some(previous) => element = { ..element, prev_sibling: Some(previous) }
+    None => ()
+  }
+  match parent {
+    Some(parent) => element.set_parent(parent)
+    None => element
+  }
+}
+
+///|
+fn declarations_from_css_body(
+  value : String,
+) -> Array[@css_cascade.Declaration] {
+  let stylesheet = @css.parse_stylesheet("* {" + value + "}")
+  if stylesheet.rules.length() == 0 {
+    []
+  } else {
+    stylesheet.rules[0].declarations
+  }
+}
+
+///|
+fn presentation_stylesheet(
+  attrs : Array[(String, String)],
+) -> @css_cascade.Stylesheet? {
+  let declarations : Array[@css_cascade.Declaration] = []
+  for attr in attrs {
+    let name = attr.0
+    if name == name.to_lower() && is_computed_style_property(name) {
+      declarations.push(
+        @css_cascade.Declaration::new(name, trim_string(attr.1)),
+      )
+    }
+  }
+  if declarations.length() == 0 {
+    return None
+  }
+  let selector = match @css.parse_selector("*") {
+    Some(selector) => selector
+    None => return None
+  }
+  let stylesheet = @css_cascade.Stylesheet::new(@css_cascade.Author)
+  stylesheet.add_rule("*", selector, declarations)
+  Some(stylesheet)
+}
+
+///|
+fn inline_declarations(
+  attrs : Array[(String, String)],
+) -> Array[@css_cascade.Declaration] {
+  match get_attr(attrs, "style") {
+    Some(value) => declarations_from_css_body(value)
+    None => []
+  }
+}
+
+///|
+fn parse_inline_style_declarations(value : String) -> Array[StyleDeclaration] {
+  cascaded_style_declarations(
+    @css.cascade_declarations(declarations_from_css_body(value)),
+  )
+}
+
+///|
+fn inline_style_value(value : String, name : String) -> String? {
+  find_winning_declaration(parse_inline_style_declarations(value), name).map(fn(
+    declaration,
+  ) {
+    declaration.value
+  })
+}
+
+///|
+fn cascade_element_styles(
+  stylesheets : Array[@css_cascade.Stylesheet],
+  element : @css_selector.Element,
+  attrs : Array[(String, String)],
+  media_environment : @css_media.MediaEnvironment,
+) -> @css_cascade.CascadedValues {
+  let author_stylesheets : Array[@css_cascade.Stylesheet] = []
+  match presentation_stylesheet(attrs) {
+    Some(stylesheet) => author_stylesheets.push(stylesheet)
+    None => ()
+  }
+  for stylesheet in stylesheets {
+    author_stylesheets.push(stylesheet)
+  }
+  @css.cascade_element_with_media(
+    element,
+    author_stylesheets,
+    inline_declarations(attrs),
+    Some(media_environment),
+  )
+}
+
+///|
+fn property_value_text(value : @css_cascade.PropertyValue) -> String {
+  match value {
+    Value(value) => value
+    Inherit => "inherit"
+    Initial => "initial"
+    Unset => "unset"
+    Revert => "revert"
+    RevertLayer => "revert-layer"
+  }
+}
+
+///|
+fn cascaded_style_declarations(
+  values : @css_cascade.CascadedValues,
+) -> Array[StyleDeclaration] {
+  let declarations : Array[StyleDeclaration] = []
+  values.each(fn(name, declaration) {
+    declarations.push({ name, value: property_value_text(declaration.value) })
+  })
+  declarations
 }

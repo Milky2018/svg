@@ -166,3 +166,166 @@ test "stylesheet source order wins and commented styles are ignored" {
     None => fail("expected target")
   }
 }
+
+///|
+test "upstream attribute selectors and screen media rules are applied" {
+  let svg = "<svg><style>@media print { #target { fill: red; } } @media screen and (min-width: 100px) { g[data-theme~='hot'] > rect:first-child { fill: blue; } }</style><g data-theme=\"cold hot\"><rect id=\"target\" width=\"8\" height=\"8\"/></g></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => assert_solid_color(node.fill, 0, 0, 255, 255)
+    None => fail("expected target")
+  }
+}
+
+///|
+test "media queries use the active SVG viewport" {
+  let svg = "<svg width=\"200\" height=\"100\"><style>@media (min-width: 500px) { rect { fill: red; } } @media (max-width: 499px) { rect { fill: blue; } }</style><rect id=\"target\" width=\"8\" height=\"8\"/></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => assert_solid_color(node.fill, 0, 0, 255, 255)
+    None => fail("expected target")
+  }
+}
+
+///|
+test "upstream child indexes distinguish first and second children" {
+  let svg = "<svg><style>rect:first-child { fill: red; } rect:nth-child(2) { fill: blue; }</style><g><rect id=\"first\" width=\"8\" height=\"8\"/><rect id=\"second\" width=\"8\" height=\"8\"/></g></svg>"
+  match css_test_node(svg, "first") {
+    Some(node) => assert_solid_color(node.fill, 255, 0, 0, 255)
+    None => fail("expected first child")
+  }
+  match css_test_node(svg, "second") {
+    Some(node) => assert_solid_color(node.fill, 0, 0, 255, 255)
+    None => fail("expected second child")
+  }
+}
+
+///|
+test "upstream last-child selectors use the direct SVG child count" {
+  let svg = "<svg><style>rect:last-child { fill: blue; } rect:nth-last-child(2) { stroke: red; }</style><g><rect id=\"first\" width=\"8\" height=\"8\"/><rect id=\"last\" width=\"8\" height=\"8\"/></g></svg>"
+  match css_test_node(svg, "first") {
+    Some(node) => assert_solid_color(node.stroke.paint, 255, 0, 0, 255)
+    None => fail("expected first child")
+  }
+  match css_test_node(svg, "last") {
+    Some(node) => assert_solid_color(node.fill, 0, 0, 255, 255)
+    None => fail("expected last child")
+  }
+}
+
+///|
+test "upstream adjacent and subsequent sibling selectors use SVG order" {
+  let svg = "<svg><style>rect.lead + rect { fill: blue; } rect.lead ~ circle { stroke: red; }</style><g><rect class=\"lead\" width=\"8\" height=\"8\"/><rect id=\"adjacent\" width=\"8\" height=\"8\"/><circle id=\"later\" r=\"4\"/></g></svg>"
+  match css_test_node(svg, "adjacent") {
+    Some(node) => assert_solid_color(node.fill, 0, 0, 255, 255)
+    None => fail("expected adjacent sibling")
+  }
+  match css_test_node(svg, "later") {
+    Some(node) => assert_solid_color(node.stroke.paint, 255, 0, 0, 255)
+    None => fail("expected subsequent sibling")
+  }
+}
+
+///|
+test "upstream stylesheet recovery preserves later valid rules" {
+  let svg = "<svg><style>??? { fill: red; } rect.valid { fill: blue; }</style><rect id=\"target\" class=\"valid\" width=\"8\" height=\"8\"/></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => assert_solid_color(node.fill, 0, 0, 255, 255)
+    None => fail("expected recovered target")
+  }
+}
+
+///|
+test "linear gradient stops use the shared CSS cascade" {
+  let svg = "<svg><style>linearGradient { --accent: hsl(120, 100%, 25%); color: blue; stop-color: red; } #current { stop-color: currentColor !important; } stop.clamped { stop-opacity: 2; }</style><defs><linearGradient id=\"paint\"><stop offset=\"0\" style=\"stop-color: var(--accent); stop-opacity: -1\"/><stop id=\"current\" offset=\"0.5\" style=\"stop-color: yellow\"/><stop class=\"clamped\" offset=\"1\" stop-color=\"inherit\"/></linearGradient></defs></svg>"
+  match parse_svg_document(svg) {
+    Some(document) =>
+      match document.gradients.get("paint") {
+        Some(Linear(gradient)) => {
+          assert_eq(gradient.stops.length(), 3)
+          assert_eq(gradient.stops[0].color.r, 0)
+          assert_eq(gradient.stops[0].color.g, 128)
+          assert_eq(gradient.stops[0].color.b, 0)
+          assert_eq(gradient.stops[0].color.a, 0)
+          assert_eq(gradient.stops[1].color.r, 0)
+          assert_eq(gradient.stops[1].color.g, 0)
+          assert_eq(gradient.stops[1].color.b, 255)
+          assert_eq(gradient.stops[2].color.r, 255)
+          assert_eq(gradient.stops[2].color.g, 0)
+          assert_eq(gradient.stops[2].color.b, 0)
+        }
+        _ => fail("expected linear gradient")
+      }
+    None => fail("expected SVG document")
+  }
+}
+
+///|
+test "radial gradient stop selectors receive structural context" {
+  let svg = "<svg><style>radialGradient > stop:last-child { stop-color: hsl(300, 100%, 25%); stop-opacity: 0.5; }</style><defs><radialGradient id=\"paint\"><stop offset=\"0\" stop-color=\"white\"/><stop offset=\"1\" stop-color=\"black\"/></radialGradient></defs></svg>"
+  match parse_svg_document(svg) {
+    Some(document) =>
+      match document.gradients.get("paint") {
+        Some(Radial(gradient)) => {
+          assert_eq(gradient.stops.length(), 2)
+          assert_eq(gradient.stops[1].color.r, 128)
+          assert_eq(gradient.stops[1].color.g, 0)
+          assert_eq(gradient.stops[1].color.b, 128)
+          assert_eq(gradient.stops[1].color.a, 128)
+        }
+        _ => fail("expected radial gradient")
+      }
+    None => fail("expected SVG document")
+  }
+}
+
+///|
+test "text elements use computed font size and decode XML entities" {
+  let svg = "<svg><style>text { font-size: 12px; } #target { font-size: 18px !important; }</style><g class=\"copy\"><text id=\"target\" x=\"3\" y=\"7\" font-size=\"10\" style=\"font-size: 14px\">A &amp; &#x42;</text></g></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) =>
+      match node.shape {
+        Text(x~, y~, text~, font_size~) => {
+          assert_eq(x, 3.0)
+          assert_eq(y, 7.0)
+          assert_eq(text, "A & B")
+          assert_eq(font_size, 18.0)
+        }
+        _ => fail("expected text shape")
+      }
+    None => fail("expected text target")
+  }
+}
+
+///|
+test "text inherits computed font size" {
+  let svg = "<svg><g style=\"font-size: 20px\"><text id=\"target\">Inherited</text></g></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) =>
+      match node.shape {
+        Text(font_size~, ..) => assert_eq(font_size, 20.0)
+        _ => fail("expected text shape")
+      }
+    None => fail("expected text target")
+  }
+}
+
+///|
+test "font-size CSS-wide initial overrides inherited text size" {
+  let svg = "<svg font-size=\"24\"><text id=\"target\" style=\"font-size: initial\">Initial</text></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) =>
+      match node.shape {
+        Text(font_size~, ..) => assert_eq(font_size, 16.0)
+        _ => fail("expected text shape")
+      }
+    None => fail("expected text target")
+  }
+}
+
+///|
+test "nested SVG text is not misrepresented as flat text" {
+  let svg = "<svg><text id=\"target\">A<tspan>B</tspan></text></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => assert_true(node.shape is Group)
+    None => fail("expected unsupported text placeholder")
+  }
+}

@@ -29,33 +29,14 @@ fn miter_triangle_probe(
     return (x1, y1)
   }
   let half = width.to_double() / 2.0
-  let side_a = 1.0
-  let ox0_a = x1.to_double() + side_a * -uy0 * half
-  let oy0_a = y1.to_double() + side_a * ux0 * half
-  let ox1_a = x1.to_double() + side_a * -uy1 * half
-  let oy1_a = y1.to_double() + side_a * ux1 * half
-  let t_a = ((ox1_a - ox0_a) * uy1 - (oy1_a - oy0_a) * ux1) / denom
-  let ix_a = ox0_a + t_a * ux0
-  let iy_a = oy0_a + t_a * uy0
-  let dx_a = ix_a - x1.to_double()
-  let dy_a = iy_a - y1.to_double()
-  let len_a = (dx_a * dx_a + dy_a * dy_a).sqrt()
-  let side_b = -1.0
-  let ox0_b = x1.to_double() + side_b * -uy0 * half
-  let oy0_b = y1.to_double() + side_b * ux0 * half
-  let ox1_b = x1.to_double() + side_b * -uy1 * half
-  let oy1_b = y1.to_double() + side_b * ux1 * half
-  let t_b = ((ox1_b - ox0_b) * uy1 - (oy1_b - oy0_b) * ux1) / denom
-  let ix_b = ox0_b + t_b * ux0
-  let iy_b = oy0_b + t_b * uy0
-  let dx_b = ix_b - x1.to_double()
-  let dy_b = iy_b - y1.to_double()
-  let len_b = (dx_b * dx_b + dy_b * dy_b).sqrt()
-  let (ox0, oy0, ox1, oy1, ix, iy) = if len_a >= len_b {
-    (ox0_a, oy0_a, ox1_a, oy1_a, ix_a, iy_a)
-  } else {
-    (ox0_b, oy0_b, ox1_b, oy1_b, ix_b, iy_b)
-  }
+  let side = if denom > 0.0 { -1.0 } else { 1.0 }
+  let ox0 = x1.to_double() + side * -uy0 * half
+  let oy0 = y1.to_double() + side * ux0 * half
+  let ox1 = x1.to_double() + side * -uy1 * half
+  let oy1 = y1.to_double() + side * ux1 * half
+  let t = ((ox1 - ox0) * uy1 - (oy1 - oy0) * ux1) / denom
+  let ix = ox0 + t * ux0
+  let iy = oy0 + t * uy0
   let cx = (ox0 + ox1 + ix) / 3.0
   let cy = (oy0 + oy1 + iy) / 3.0
   (cx.to_int(), cy.to_int())
@@ -3415,9 +3396,9 @@ test "color matrix offset" {
     0.0, 0.0, 0.0, 1.0, 0.0,
   ]
   let result = apply_color_matrix(color, matrix)
-  inspect(result.r, content="127")
-  inspect(result.g, content="63")
-  inspect(result.b, content="31")
+  inspect(result.r, content="128")
+  inspect(result.g, content="64")
+  inspect(result.b, content="32")
 }
 
 ///|

@@ -418,6 +418,45 @@ pub(all) enum Filter {
   ColorMatrix(FixedArray[Double])
 }
 
+pub(all) enum FilterCompositeOperator {
+  CompositeOver
+  CompositeIn
+  CompositeOut
+  CompositeAtop
+  CompositeXor
+  CompositeArithmetic
+} derive(Eq, @debug.Debug)
+
+pub(all) struct FilterGraph {
+  id : String
+  primitives : Array[FilterGraphPrimitive]
+  units : MaskUnits
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  x_is_percent : Bool
+  y_is_percent : Bool
+  width_is_percent : Bool
+  height_is_percent : Bool
+}
+pub fn FilterGraph::get_filter_bounds(Self, BoundingBox) -> BoundingBox
+
+pub(all) enum FilterGraphPrimitive {
+  GraphColorMatrix(input~ : String, result~ : String, matrix~ : FixedArray[Double])
+  GraphGaussianBlur(input~ : String, result~ : String, radius~ : Double)
+  GraphOffset(input~ : String, result~ : String, dx~ : Double, dy~ : Double)
+  GraphBlend(input~ : String, input2~ : String, result~ : String, mode~ : BlendMode)
+  GraphComposite(input~ : String, input2~ : String, result~ : String, operator~ : FilterCompositeOperator, k1~ : Double, k2~ : Double, k3~ : Double, k4~ : Double)
+} derive(@debug.Debug)
+
+pub(all) struct FilterGraphRegistry {
+  graphs : Map[String, FilterGraph]
+}
+pub fn FilterGraphRegistry::add(Self, FilterGraph) -> Unit
+pub fn FilterGraphRegistry::get(Self, String) -> FilterGraph?
+pub fn FilterGraphRegistry::new() -> Self
+
 pub(all) enum FontStyle {
   NormalStyle
   Italic
@@ -775,6 +814,7 @@ pub(all) struct RenderContext {
   flatness : Double
   clip : ClipRect?
   text_to_paths : ((Int, Double) -> (Array[PathCommand], Double))?
+  target_image : Image?
 }
 pub fn RenderContext::for_camera(PixelSetter, Camera) -> Self
 pub fn RenderContext::new(PixelSetter, Int, Int) -> Self
@@ -786,6 +826,7 @@ pub(all) struct SVGDocument {
   symbols : SymbolRegistry
   clips : ClipPathRegistry
   masks : MaskRegistry
+  filter_graphs : FilterGraphRegistry
   patterns : PatternRegistry
   gradients : GradientRegistry
   markers : MarkerRegistry
@@ -814,6 +855,8 @@ pub(all) struct SVGNode {
   mut stroke_width_is_set : Bool
   mut stroke_opacity : Double
   mut opacity : Double
+  mut blend_mode : BlendMode
+  mut isolation : Isolation
   mut marker_start : String?
   mut marker_start_is_set : Bool
   mut marker_mid : String?
@@ -824,6 +867,7 @@ pub(all) struct SVGNode {
   mut node_dirty : Bool
   mut prev_bounds : BoundingBox?
   mut filters : Array[Filter]
+  mut filter_graph_id : String?
   mut mask_id : String?
   mut clip_path_id : String?
   mut clip_overflow : Bool

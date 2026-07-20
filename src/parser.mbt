@@ -17,27 +17,39 @@ priv struct SVGParseContext {
   defs : DefsRegistry
   clips : ClipPathRegistry
   masks : MaskRegistry
+  filter_graphs : FilterGraphRegistry
   patterns : PatternRegistry
   gradients : GradientRegistry
   markers : MarkerRegistry
-  style_rules : Array[StyleRule]
-  element_stack : Array[StyleElement]
+  stylesheets : Array[@css_cascade.Stylesheet]
+  element_stack : Array[@css_selector.Element]
+  sibling_index_stack : Array[Int]
+  sibling_count_stack : Array[Int]
+  previous_sibling_stack : Array[@css_selector.Element?]
+  selector_element_slots : Array[@css_selector.Element?]
   style_stack : Array[InheritedStyle]
   viewport_stack : Array[(Double, Double)]
 }
 
 ///|
-fn SVGParseContext::new(style_rules : Array[StyleRule]) -> SVGParseContext {
+fn SVGParseContext::new(
+  stylesheets : Array[@css_cascade.Stylesheet],
+) -> SVGParseContext {
   {
     symbols: SymbolRegistry::new(),
     defs: DefsRegistry::new(),
     clips: ClipPathRegistry::new(),
     masks: MaskRegistry::new(),
+    filter_graphs: FilterGraphRegistry::new(),
     patterns: PatternRegistry::new(),
     gradients: GradientRegistry::new(),
     markers: MarkerRegistry::new(),
-    style_rules,
+    stylesheets,
     element_stack: [],
+    sibling_index_stack: [],
+    sibling_count_stack: [],
+    previous_sibling_stack: [],
+    selector_element_slots: [],
     style_stack: [],
     viewport_stack: [],
   }
@@ -52,11 +64,13 @@ priv struct InheritedStyle {
   stroke_opacity : Double
   color : Color
   paint_order : PaintOrder
-  opacity : Double
   marker_start : String?
   marker_mid : String?
   marker_end : String?
-  custom_properties : Array[(String, String)]
+  stop_color : Color
+  stop_opacity : Double
+  css_style : @css_style.Style
+  custom_properties : Map[String, String]
 }
 
 ///|
@@ -69,11 +83,13 @@ fn InheritedStyle::default() -> InheritedStyle {
     stroke_opacity: 1.0,
     color: Color::black(),
     paint_order: PaintOrder::default(),
-    opacity: 1.0,
     marker_start: None,
     marker_mid: None,
     marker_end: None,
-    custom_properties: [],
+    stop_color: Color::black(),
+    stop_opacity: 1.0,
+    css_style: @css_style.Style::default(),
+    custom_properties: Map([]),
   }
 }
 
@@ -87,16 +103,81 @@ fn SVGParseContext::current_style(self : SVGParseContext) -> InheritedStyle {
 }
 
 ///|
-fn SVGParseContext::matching_declarations(
+fn SVGParseContext::current_sibling_index(self : SVGParseContext) -> Int {
+  if self.sibling_index_stack.length() == 0 {
+    1
+  } else {
+    self.sibling_index_stack[self.sibling_index_stack.length() - 1]
+  }
+}
+
+///|
+fn SVGParseContext::current_sibling_count(self : SVGParseContext) -> Int {
+  if self.sibling_count_stack.length() == 0 {
+    1
+  } else {
+    self.sibling_count_stack[self.sibling_count_stack.length() - 1]
+  }
+}
+
+///|
+fn SVGParseContext::current_previous_sibling(
+  self : SVGParseContext,
+) -> @css_selector.Element? {
+  if self.previous_sibling_stack.length() == 0 {
+    None
+  } else {
+    self.previous_sibling_stack[self.previous_sibling_stack.length() - 1]
+  }
+}
+
+///|
+fn SVGParseContext::record_selector_element(
   self : SVGParseContext,
   tag : String,
   attrs : Array[(String, String)],
-) -> Array[StyleDeclaration] {
-  matching_stylesheet_declarations(
-    self.style_rules,
+) -> @css_selector.Element {
+  let parent : @css_selector.Element? = if self.element_stack.length() == 0 {
+    None
+  } else {
+    Some(self.element_stack[self.element_stack.length() - 1])
+  }
+  let element = style_element(
     tag,
     attrs,
-    self.element_stack,
+    parent,
+    self.current_previous_sibling(),
+    self.current_sibling_index(),
+    self.current_sibling_count(),
+  )
+  let depth = self.element_stack.length()
+  while self.selector_element_slots.length() <= depth {
+    self.selector_element_slots.push(None)
+  }
+  self.selector_element_slots[depth] = Some(element)
+  element
+}
+
+///|
+fn SVGParseContext::cascaded_style(
+  self : SVGParseContext,
+  tag : String,
+  attrs : Array[(String, String)],
+) -> @css_cascade.CascadedValues {
+  let element = self.record_selector_element(tag, attrs)
+  let viewport = match self.current_viewport() {
+    Some(viewport) => viewport
+    None =>
+      (
+        get_attr(attrs, "width").map(parse_length).unwrap_or(300.0),
+        get_attr(attrs, "height").map(parse_length).unwrap_or(150.0),
+      )
+  }
+  cascade_element_styles(
+    self.stylesheets,
+    element,
+    attrs,
+    @css_media.MediaEnvironment::new(viewport.0, viewport.1),
   )
 }
 
@@ -112,7 +193,7 @@ fn resolve_element_computed_style(
   resolve_computed_style(
     node,
     attrs,
-    ctx.matching_declarations(tag, attrs),
+    ctx.cascaded_style(tag, attrs),
     parent,
     apply_noncomputed,
   )
@@ -125,13 +206,16 @@ fn element_style_property_is_declared(
   ctx : SVGParseContext,
   name : String,
 ) -> Bool {
-  style_property_is_declared(attrs, ctx.matching_declarations(tag, attrs), name)
+  ctx.cascaded_style(tag, attrs).has(name)
 }
 
 ///|
 fn inherited_style_from_node(
   node : SVGNode,
-  custom_properties : Array[(String, String)],
+  css_style : @css_style.Style,
+  custom_properties : Map[String, String],
+  stop_color : Color,
+  stop_opacity : Double,
 ) -> InheritedStyle {
   {
     fill: node.fill,
@@ -141,10 +225,12 @@ fn inherited_style_from_node(
     stroke_opacity: node.stroke_opacity,
     color: node.color.unwrap_or(Color::black()),
     paint_order: node.paint_order,
-    opacity: node.opacity,
     marker_start: node.marker_start,
     marker_mid: node.marker_mid,
     marker_end: node.marker_end,
+    stop_color,
+    stop_opacity,
+    css_style,
     custom_properties,
   }
 }
@@ -296,6 +382,7 @@ pub fn parse_svg_document(svg_str : String) -> SVGDocument? {
         symbols: ctx.symbols,
         clips: ctx.clips,
         masks: ctx.masks,
+        filter_graphs: ctx.filter_graphs,
         patterns: ctx.patterns,
         gradients: ctx.gradients,
         markers: ctx.markers,
@@ -336,6 +423,7 @@ fn parse_element(
   }
   // Parse attributes (raw)
   let attrs = parse_attributes(parser)
+  let _ = ctx.record_selector_element(tag_name, attrs)
   parser.skip_whitespace()
   // Check for self-closing tag
   let mut self_closing = false
@@ -432,6 +520,12 @@ fn parse_element(
       }
       Group |> SVGNode::new |> Some
     }
+    "filter" => {
+      if !self_closing {
+        parse_filter_graph(parser, attrs, ctx, tag_name)
+      }
+      Group |> SVGNode::new |> Some
+    }
     "marker" => {
       if !self_closing {
         parse_marker(parser, attrs, ctx, tag_name, parent_tag)
@@ -457,7 +551,18 @@ fn parse_element(
     }
     "linearGradient" => {
       if !self_closing {
-        parse_linear_gradient(parser, attrs, ctx, tag_name, parent_tag)
+        let temp = SVGNode::new(Group)
+        let gradient_style = resolve_element_computed_style(
+          temp,
+          tag_name,
+          attrs,
+          ctx,
+          ctx.current_style(),
+          false,
+        )
+        parse_linear_gradient(
+          parser, attrs, ctx, tag_name, parent_tag, gradient_style,
+        )
       } else {
         parse_linear_gradient_from_attrs(attrs, ctx, parent_tag)
       }
@@ -465,7 +570,18 @@ fn parse_element(
     }
     "radialGradient" => {
       if !self_closing {
-        parse_radial_gradient(parser, attrs, ctx, tag_name, parent_tag)
+        let temp = SVGNode::new(Group)
+        let gradient_style = resolve_element_computed_style(
+          temp,
+          tag_name,
+          attrs,
+          ctx,
+          ctx.current_style(),
+          false,
+        )
+        parse_radial_gradient(
+          parser, attrs, ctx, tag_name, parent_tag, gradient_style,
+        )
       } else {
         parse_radial_gradient_from_attrs(attrs, ctx, parent_tag)
       }
@@ -486,6 +602,41 @@ fn parse_element(
         skip_to_end_tag(parser, tag_name)
       }
       Group |> SVGNode::new |> Some
+    }
+    "text" => {
+      let content = if self_closing {
+        Some("")
+      } else {
+        parse_plain_text_content(parser, tag_name)
+      }
+      match content {
+        Some(text) => {
+          let x = get_attr(attrs, "x").map(parse_length).unwrap_or(0.0)
+          let y = get_attr(attrs, "y").map(parse_length).unwrap_or(0.0)
+          let node = SVGNode::new(Text(x~, y~, text~, font_size=16.0))
+          apply_attributes(node, attrs)
+          let computed_style = resolve_element_computed_style(
+            node,
+            tag_name,
+            attrs,
+            ctx,
+            ctx.current_style(),
+            true,
+          )
+          node.shape = Text(
+            x~,
+            y~,
+            text~,
+            font_size=computed_style.css_style.font_size,
+          )
+          Some(node)
+        }
+        None => {
+          let node = SVGNode::new(Group)
+          apply_attributes(node, attrs)
+          Some(node)
+        }
+      }
     }
     _ => {
       // Create node based on tag
@@ -528,13 +679,16 @@ fn parse_element(
       }
       let mut pushed = false
       if tag_name == "svg" && !self_closing {
-        match (node.viewport_width, node.viewport_height) {
-          (Some(w), Some(h)) => {
-            ctx.viewport_stack.push((w, h))
-            pushed = true
-          }
-          _ => ()
-        }
+        let viewport = (
+          node.viewport_width.unwrap_or(
+            get_attr(attrs, "width").map(parse_length).unwrap_or(300.0),
+          ),
+          node.viewport_height.unwrap_or(
+            get_attr(attrs, "height").map(parse_length).unwrap_or(150.0),
+          ),
+        )
+        ctx.viewport_stack.push(viewport)
+        pushed = true
       }
       // Parse children (for container elements)
       if !self_closing {
@@ -584,6 +738,180 @@ fn skip_to_end_tag(parser : SVGParser, _tag_name : String) -> Unit {
 }
 
 ///|
+fn xml_digit_value(c : Char, radix : Int) -> Int {
+  let value = if c >= '0' && c <= '9' {
+    c.to_int() - '0'.to_int()
+  } else if c >= 'a' && c <= 'f' {
+    c.to_int() - 'a'.to_int() + 10
+  } else if c >= 'A' && c <= 'F' {
+    c.to_int() - 'A'.to_int() + 10
+  } else {
+    -1
+  }
+  if value < radix {
+    value
+  } else {
+    -1
+  }
+}
+
+///|
+fn parse_xml_character_reference(value : String) -> Char? {
+  if value.length() < 2 || value[0] != '#' {
+    return None
+  }
+  let hexadecimal = value.length() > 2 && (value[1] == 'x' || value[1] == 'X')
+  let start = if hexadecimal { 2 } else { 1 }
+  let radix = if hexadecimal { 16 } else { 10 }
+  if start >= value.length() {
+    return None
+  }
+  let mut codepoint = 0
+  for i in start..<value.length() {
+    let digit = xml_digit_value(Int::unsafe_to_char(value[i].to_int()), radix)
+    if digit < 0 {
+      return None
+    }
+    codepoint = codepoint * radix + digit
+  }
+  Some(Int::unsafe_to_char(codepoint))
+}
+
+///|
+fn decode_xml_text(value : String) -> String {
+  let result = StringBuilder::new()
+  let mut i = 0
+  while i < value.length() {
+    if value[i] != '&' {
+      result.write_char(Int::unsafe_to_char(value[i].to_int()))
+      i += 1
+      continue
+    }
+    let semicolon = find_substring_from(value, ";", i + 1)
+    if semicolon < 0 {
+      result.write_char('&')
+      i += 1
+      continue
+    }
+    let entity = build_substring(value, i + 1, semicolon)
+    let decoded : Char? = match entity {
+      "amp" => Some('&')
+      "lt" => Some('<')
+      "gt" => Some('>')
+      "quot" => Some('"')
+      "apos" => Some('\'')
+      _ => parse_xml_character_reference(entity)
+    }
+    match decoded {
+      Some(character) => {
+        result.write_char(character)
+        i = semicolon + 1
+      }
+      None => {
+        result.write_char('&')
+        i += 1
+      }
+    }
+  }
+  result.to_string()
+}
+
+///|
+fn parse_plain_text_content(parser : SVGParser, tag_name : String) -> String? {
+  let close = find_substring_from(parser.data, "</" + tag_name, parser.pos)
+  if close < 0 {
+    parser.pos = parser.len
+    return None
+  }
+  let raw = build_substring(parser.data, parser.pos, close)
+  let close_end = find_substring_from(
+    parser.data,
+    ">",
+    close + tag_name.length() + 2,
+  )
+  parser.pos = if close_end < 0 { parser.len } else { close_end + 1 }
+  if raw.contains("<") {
+    None
+  } else {
+    Some(decode_xml_text(raw))
+  }
+}
+
+///|
+fn count_direct_child_elements(parser : SVGParser, parent_tag : String) -> Int {
+  let probe : SVGParser = {
+    data: parser.data,
+    pos: parser.pos,
+    len: parser.len,
+  }
+  let mut depth = 0
+  let mut count = 0
+  while !probe.is_end() {
+    while !probe.is_end() && probe.peek() != '<' {
+      let _ = probe.advance()
+    }
+    if probe.is_end() {
+      break
+    }
+    let open = probe.pos
+    let _ = probe.advance()
+    if substring_starts_at(probe.data, "!--", probe.pos) {
+      let close = find_substring_from(probe.data, "-->", probe.pos + 3)
+      if close < 0 {
+        break
+      }
+      probe.pos = close + 3
+      continue
+    }
+    if substring_starts_at(probe.data, "![CDATA[", probe.pos) {
+      let close = find_substring_from(probe.data, "]]>", probe.pos + 8)
+      if close < 0 {
+        break
+      }
+      probe.pos = close + 3
+      continue
+    }
+    if probe.peek() == '!' || probe.peek() == '?' {
+      skip_comment_or_decl(probe)
+      continue
+    }
+    if probe.peek() == '/' {
+      let _ = probe.advance()
+      let end_tag = probe.read_name()
+      while !probe.is_end() && probe.advance() != '>' {
+
+      }
+      if depth == 0 && end_tag == parent_tag {
+        break
+      }
+      if depth > 0 {
+        depth -= 1
+      }
+      continue
+    }
+    let tag = probe.read_name()
+    if tag.length() == 0 {
+      probe.pos = open + 1
+      continue
+    }
+    let _ = parse_attributes(probe)
+    probe.skip_whitespace()
+    let self_closing = probe.peek() == '/'
+    if self_closing {
+      let _ = probe.advance()
+    }
+    let _ = probe.expect_char('>')
+    if depth == 0 {
+      count += 1
+    }
+    if !self_closing {
+      depth += 1
+    }
+  }
+  count
+}
+
+///|
 fn parse_children(
   parser : SVGParser,
   parent : SVGNode,
@@ -592,8 +920,41 @@ fn parse_children(
   ctx : SVGParseContext,
   parent_style : InheritedStyle,
 ) -> Unit {
-  ctx.element_stack.push(style_element(parent_tag, parent_attrs))
+  let parent_element : @css_selector.Element? = if ctx.element_stack.length() ==
+    0 {
+    None
+  } else {
+    Some(ctx.element_stack[ctx.element_stack.length() - 1])
+  }
+  let depth = ctx.element_stack.length()
+  let parent_element = if depth < ctx.selector_element_slots.length() {
+    match ctx.selector_element_slots[depth] {
+      Some(element) => element
+      None =>
+        style_element(
+          parent_tag,
+          parent_attrs,
+          parent_element,
+          ctx.current_previous_sibling(),
+          ctx.current_sibling_index(),
+          ctx.current_sibling_count(),
+        )
+    }
+  } else {
+    style_element(
+      parent_tag,
+      parent_attrs,
+      parent_element,
+      ctx.current_previous_sibling(),
+      ctx.current_sibling_index(),
+      ctx.current_sibling_count(),
+    )
+  }
+  ctx.element_stack.push(parent_element)
   ctx.style_stack.push(parent_style)
+  ctx.sibling_index_stack.push(0)
+  ctx.sibling_count_stack.push(count_direct_child_elements(parser, parent_tag))
+  ctx.previous_sibling_stack.push(None)
   while !parser.is_end() {
     parser.skip_whitespace()
     if parser.peek() != '<' {
@@ -625,10 +986,16 @@ fn parse_children(
       continue
     }
     // Parse child element
+    let current_index = ctx.sibling_index_stack.length() - 1
+    ctx.sibling_index_stack[current_index] += 1
     // Backtrack the '<' we consumed
     parser.pos = parser.pos - 1
     match parse_element(parser, ctx, parent_tag) {
       Some(child) => {
+        let child_depth = ctx.element_stack.length()
+        if child_depth < ctx.selector_element_slots.length() {
+          ctx.previous_sibling_stack[current_index] = ctx.selector_element_slots[child_depth]
+        }
         let child_node = child
         apply_inherited_markers(child_node, parent)
         parent.children.push(child_node)
@@ -639,6 +1006,9 @@ fn parse_children(
       None => break
     }
   }
+  let _ = ctx.previous_sibling_stack.pop()
+  let _ = ctx.sibling_count_stack.pop()
+  let _ = ctx.sibling_index_stack.pop()
   let _ = ctx.style_stack.pop()
   let _ = ctx.element_stack.pop()
 }
@@ -689,6 +1059,32 @@ fn apply_attributes(node : SVGNode, attrs : Array[(String, String)]) -> Unit {
     if attr.0 == "style" {
       apply_style_attributes(node, attr.1)
     }
+  }
+  match node.shape {
+    Rect(..) as rect => {
+      let has_rx = get_attr(attrs, "rx") is Some(_)
+      let has_ry = get_attr(attrs, "ry") is Some(_)
+      if has_rx && !has_ry {
+        node.shape = Rect(
+          x=rect.x,
+          y=rect.y,
+          width=rect.width,
+          height=rect.height,
+          rx=rect.rx,
+          ry=rect.rx,
+        )
+      } else if has_ry && !has_rx {
+        node.shape = Rect(
+          x=rect.x,
+          y=rect.y,
+          width=rect.width,
+          height=rect.height,
+          rx=rect.ry,
+          ry=rect.ry,
+        )
+      }
+    }
+    _ => ()
   }
 }
 
@@ -935,6 +1331,9 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
     "opacity" => node.opacity = parse_number(value)
     "fill-opacity" => node.fill_opacity = parse_number(value)
     "stroke-opacity" => node.stroke_opacity = parse_number(value)
+    "filter" => node.filter_graph_id = parse_url_ref(value)
+    "mix-blend-mode" => node.blend_mode = parse_blend_mode(value)
+    "isolation" => node.isolation = parse_isolation(value)
     "transform" => node.transform = parse_transform(value)
     // Stroke detail attributes
     "stroke-linecap" =>
@@ -986,6 +1385,37 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
 }
 
 ///|
+fn parse_blend_mode(value : String) -> BlendMode {
+  match trim_string(value).to_lower() {
+    "multiply" => Multiply
+    "screen" => Screen
+    "overlay" => Overlay
+    "darken" => Darken
+    "lighten" => Lighten
+    "color-dodge" => ColorDodge
+    "color-burn" => ColorBurn
+    "hard-light" => HardLight
+    "soft-light" => SoftLight
+    "difference" => Difference
+    "exclusion" => Exclusion
+    "hue" => Hue
+    "saturation" => Saturation
+    "color" => ColorMode
+    "luminosity" => Luminosity
+    _ => Normal
+  }
+}
+
+///|
+fn parse_isolation(value : String) -> Isolation {
+  if trim_string(value).to_lower() == "isolate" {
+    Isolate
+  } else {
+    Auto
+  }
+}
+
+///|
 fn apply_presentation_attribute(
   node : SVGNode,
   name : String,
@@ -1016,8 +1446,7 @@ fn apply_style_attributes(node : SVGNode, value : String) -> Unit {
       continue
     }
     match winner {
-      Some(winner) if winner.order == declaration.order =>
-        apply_attribute(node, name, declaration.value)
+      Some(_) => apply_attribute(node, name, declaration.value)
       _ => ()
     }
   }
@@ -1039,8 +1468,7 @@ fn apply_style_attributes_filtered(node : SVGNode, value : String) -> Unit {
       continue
     }
     match winner {
-      Some(winner) if winner.order == declaration.order =>
-        apply_attribute(node, name, declaration.value)
+      Some(_) => apply_attribute(node, name, declaration.value)
       _ => ()
     }
   }
@@ -1078,51 +1506,6 @@ fn apply_paint_order_recursive(node : SVGNode, order : PaintOrder) -> Unit {
   node.paint_order = order
   for child in node.children {
     apply_paint_order_recursive(child, order)
-  }
-}
-
-///|
-fn parse_style_pairs(value : String) -> Array[(String, String)] {
-  let pairs : Array[(String, String)] = []
-  let mut buf = StringBuilder::new()
-  for i in 0..<value.length() {
-    let c = Int::unsafe_to_char(value[i].to_int())
-    if c == ';' {
-      let entry = trim_string(buf.to_string())
-      if entry.length() > 0 {
-        parse_style_entry(entry, pairs)
-      }
-      buf = StringBuilder::new()
-    } else {
-      buf.write_char(c)
-    }
-  }
-  let entry = trim_string(buf.to_string())
-  if entry.length() > 0 {
-    parse_style_entry(entry, pairs)
-  }
-  pairs
-}
-
-///|
-fn parse_style_entry(entry : String, pairs : Array[(String, String)]) -> Unit {
-  let mut colon_index = -1
-  for i in 0..<entry.length() {
-    let c = Int::unsafe_to_char(entry[i].to_int())
-    if c == ':' {
-      colon_index = i
-      break
-    }
-  }
-  if colon_index < 0 {
-    return
-  }
-  let key = trim_string(build_substring(entry, 0, colon_index))
-  let value = trim_string(
-    build_substring(entry, colon_index + 1, entry.length()),
-  )
-  if key.length() > 0 {
-    pairs.push((key, value))
   }
 }
 
@@ -1323,12 +1706,7 @@ fn parse_use(
       transform = parse_transform(value)
     }
   }
-  let use_elem = {
-    ..UseElement::new(href, x, y),
-    width,
-    height,
-    transform,
-  }
+  let use_elem = { ..UseElement::new(href, x, y), width, height, transform }
   let viewport_fallback = ctx.current_viewport()
   let (base_href, frag) = split_href_fragment(use_elem.href)
   let allow_data_url_use = false
@@ -1414,7 +1792,10 @@ fn parse_use(
           apply_presentation_attributes(node, attrs)
           let base_style = inherited_style_from_node(
             node,
+            ctx.current_style().css_style,
             ctx.current_style().custom_properties,
+            ctx.current_style().stop_color,
+            ctx.current_style().stop_opacity,
           )
           let _ = resolve_element_computed_style(
             node, "use", attrs, ctx, base_style, false,
@@ -1457,7 +1838,10 @@ fn parse_use(
           apply_presentation_attributes(node, attrs)
           let base_style = inherited_style_from_node(
             node,
+            ctx.current_style().css_style,
             ctx.current_style().custom_properties,
+            ctx.current_style().stop_color,
+            ctx.current_style().stop_opacity,
           )
           let _ = resolve_element_computed_style(
             node, "use", attrs, ctx, base_style, false,
@@ -1544,7 +1928,10 @@ fn parse_use(
               apply_presentation_attributes(node, attrs)
               let base_style = inherited_style_from_node(
                 node,
+                ctx.current_style().css_style,
                 ctx.current_style().custom_properties,
+                ctx.current_style().stop_color,
+                ctx.current_style().stop_opacity,
               )
               let _ = resolve_element_computed_style(
                 node, "use", attrs, ctx, base_style, false,
@@ -1984,6 +2371,196 @@ fn parse_clip_path(
 }
 
 ///|
+fn parse_filter_matrix(value : String) -> FixedArray[Double]? {
+  let numbers = parse_number_list(value)
+  if numbers.length() != 20 {
+    return None
+  }
+  Some([
+    numbers[0],
+    numbers[1],
+    numbers[2],
+    numbers[3],
+    numbers[4],
+    numbers[5],
+    numbers[6],
+    numbers[7],
+    numbers[8],
+    numbers[9],
+    numbers[10],
+    numbers[11],
+    numbers[12],
+    numbers[13],
+    numbers[14],
+    numbers[15],
+    numbers[16],
+    numbers[17],
+    numbers[18],
+    numbers[19],
+  ])
+}
+
+///|
+fn parse_filter_primitive(
+  tag : String,
+  attrs : Array[(String, String)],
+) -> FilterGraphPrimitive? {
+  let input = get_attr(attrs, "in").unwrap_or("")
+  let result = get_attr(attrs, "result").unwrap_or("")
+  match tag {
+    "feColorMatrix" =>
+      if get_attr(attrs, "type").unwrap_or("matrix") != "matrix" {
+        None
+      } else {
+        match get_attr(attrs, "values") {
+          Some(value) =>
+            parse_filter_matrix(value).map(fn(matrix) {
+              GraphColorMatrix(input~, result~, matrix~)
+            })
+          None => None
+        }
+      }
+    "feGaussianBlur" => {
+      let values = get_attr(attrs, "stdDeviation")
+        .map(parse_number_list)
+        .unwrap_or([])
+      let radius = if values.length() == 0 { 0.0 } else { values[0] }
+      Some(GraphGaussianBlur(input~, result~, radius~))
+    }
+    "feOffset" =>
+      Some(
+        GraphOffset(
+          input~,
+          result~,
+          dx=get_attr(attrs, "dx").map(parse_number).unwrap_or(0.0),
+          dy=get_attr(attrs, "dy").map(parse_number).unwrap_or(0.0),
+        ),
+      )
+    "feBlend" =>
+      Some(
+        GraphBlend(
+          input~,
+          input2=get_attr(attrs, "in2").unwrap_or(""),
+          result~,
+          mode=parse_blend_mode(get_attr(attrs, "mode").unwrap_or("normal")),
+        ),
+      )
+    "feComposite" => {
+      let operator = match get_attr(attrs, "operator").unwrap_or("over") {
+        "in" => CompositeIn
+        "out" => CompositeOut
+        "atop" => CompositeAtop
+        "xor" => CompositeXor
+        "arithmetic" => CompositeArithmetic
+        _ => CompositeOver
+      }
+      Some(
+        GraphComposite(
+          input~,
+          input2=get_attr(attrs, "in2").unwrap_or(""),
+          result~,
+          operator~,
+          k1=get_attr(attrs, "k1").map(parse_number).unwrap_or(0.0),
+          k2=get_attr(attrs, "k2").map(parse_number).unwrap_or(0.0),
+          k3=get_attr(attrs, "k3").map(parse_number).unwrap_or(0.0),
+          k4=get_attr(attrs, "k4").map(parse_number).unwrap_or(0.0),
+        ),
+      )
+    }
+    _ => None
+  }
+}
+
+///|
+fn parse_filter_graph(
+  parser : SVGParser,
+  attrs : Array[(String, String)],
+  ctx : SVGParseContext,
+  tag_name : String,
+) -> Unit {
+  let primitives : Array[FilterGraphPrimitive] = []
+  while !parser.is_end() {
+    parser.skip_whitespace()
+    if parser.peek() != '<' {
+      let _ = parser.advance()
+      continue
+    }
+    let _ = parser.advance()
+    if parser.peek() == '/' {
+      let _ = parser.advance()
+      let end_tag = parser.read_name()
+      while !parser.is_end() && parser.advance() != '>' {
+
+      }
+      if end_tag == tag_name {
+        break
+      }
+      continue
+    }
+    if parser.peek() == '!' || parser.peek() == '?' {
+      skip_comment_or_decl(parser)
+      continue
+    }
+    let primitive_tag = parser.read_name()
+    let primitive_attrs = parse_attributes(parser)
+    parser.skip_whitespace()
+    let self_closing = parser.peek() == '/'
+    if self_closing {
+      let _ = parser.advance()
+    }
+    let _ = parser.expect_char('>')
+    match parse_filter_primitive(primitive_tag, primitive_attrs) {
+      Some(primitive) => primitives.push(primitive)
+      None => ()
+    }
+    if !self_closing {
+      skip_to_end_tag(parser, primitive_tag)
+    }
+  }
+  let id = get_attr(attrs, "id").unwrap_or("")
+  if id.length() == 0 {
+    return
+  }
+  let units = match get_attr(attrs, "filterUnits") {
+    Some(value) => parse_mask_units(value)
+    None => MaskUnits::ObjectBoundingBox
+  }
+  let (default_x, default_y, default_width, default_height) = match units {
+    MaskUnits::ObjectBoundingBox => (-0.1, -0.1, 1.2, 1.2)
+    MaskUnits::UserSpaceOnUse => (-0.1, -0.1, 1.2, 1.2)
+  }
+  let (x, x_is_percent) = match get_attr(attrs, "x") {
+    Some(value) => parse_mask_length(value, units)
+    None => (default_x, true)
+  }
+  let (y, y_is_percent) = match get_attr(attrs, "y") {
+    Some(value) => parse_mask_length(value, units)
+    None => (default_y, true)
+  }
+  let (width, width_is_percent) = match get_attr(attrs, "width") {
+    Some(value) => parse_mask_length(value, units)
+    None => (default_width, true)
+  }
+  let (height, height_is_percent) = match get_attr(attrs, "height") {
+    Some(value) => parse_mask_length(value, units)
+    None => (default_height, true)
+  }
+  ctx.filter_graphs.add({
+    id,
+    primitives,
+    units,
+    x,
+    y,
+    width,
+    height,
+    x_is_percent,
+    y_is_percent,
+    width_is_percent,
+    height_is_percent,
+  })
+}
+
+///|
 fn parse_mask_from_attrs(
   attrs : Array[(String, String)],
   ctx : SVGParseContext,
@@ -2361,12 +2938,13 @@ fn parse_linear_gradient(
   ctx : SVGParseContext,
   tag_name : String,
   parent_tag : String,
+  gradient_style : InheritedStyle,
 ) -> Unit {
   if !is_paint_server_context(parent_tag) {
     skip_to_end_tag(parser, tag_name)
     return
   }
-  let stops = parse_gradient_stops(parser, tag_name)
+  let stops = parse_gradient_stops(parser, tag_name, attrs, ctx, gradient_style)
   parse_linear_gradient_with_stops(attrs, stops, ctx)
 }
 
@@ -2427,12 +3005,13 @@ fn parse_radial_gradient(
   ctx : SVGParseContext,
   tag_name : String,
   parent_tag : String,
+  gradient_style : InheritedStyle,
 ) -> Unit {
   if !is_paint_server_context(parent_tag) {
     skip_to_end_tag(parser, tag_name)
     return
   }
-  let stops = parse_gradient_stops(parser, tag_name)
+  let stops = parse_gradient_stops(parser, tag_name, attrs, ctx, gradient_style)
   parse_radial_gradient_with_stops(attrs, stops, ctx)
 }
 
@@ -2507,8 +3086,25 @@ fn parse_spread_method(value : String) -> SpreadMethod {
 fn parse_gradient_stops(
   parser : SVGParser,
   parent_tag : String,
+  parent_attrs : Array[(String, String)],
+  ctx : SVGParseContext,
+  parent_style : InheritedStyle,
 ) -> Array[GradientStop] {
   let stops : Array[GradientStop] = []
+  let depth = ctx.element_stack.length()
+  let parent_element = if depth < ctx.selector_element_slots.length() {
+    match ctx.selector_element_slots[depth] {
+      Some(element) => element
+      None => ctx.record_selector_element(parent_tag, parent_attrs)
+    }
+  } else {
+    ctx.record_selector_element(parent_tag, parent_attrs)
+  }
+  ctx.element_stack.push(parent_element)
+  ctx.style_stack.push(parent_style)
+  ctx.sibling_index_stack.push(0)
+  ctx.sibling_count_stack.push(count_direct_child_elements(parser, parent_tag))
+  ctx.previous_sibling_stack.push(None)
   while !parser.is_end() {
     parser.skip_whitespace()
     if parser.peek() != '<' {
@@ -2542,6 +3138,9 @@ fn parse_gradient_stops(
       continue
     }
     let attrs = parse_attributes(parser)
+    let current_index = ctx.sibling_index_stack.length() - 1
+    ctx.sibling_index_stack[current_index] += 1
+    let _ = ctx.record_selector_element(tag_name, attrs)
     parser.skip_whitespace()
     let mut self_closing = false
     if parser.peek() == '/' {
@@ -2552,40 +3151,44 @@ fn parse_gradient_stops(
       let _ = parser.expect_char('>')
     }
     if tag_name == "stop" {
-      stops.push(parse_gradient_stop(attrs))
+      let temp = SVGNode::new(Group)
+      let stop_cascaded = ctx.cascaded_style(tag_name, attrs)
+      let stop_style = resolve_computed_style(
+        temp,
+        attrs,
+        stop_cascaded,
+        ctx.current_style(),
+        false,
+      )
+      stops.push(parse_gradient_stop(attrs, stop_style))
+    }
+    let child_depth = ctx.element_stack.length()
+    if child_depth < ctx.selector_element_slots.length() {
+      ctx.previous_sibling_stack[current_index] = ctx.selector_element_slots[child_depth]
     }
     if !self_closing {
       skip_to_end_tag(parser, tag_name)
     }
   }
+  let _ = ctx.previous_sibling_stack.pop()
+  let _ = ctx.sibling_count_stack.pop()
+  let _ = ctx.sibling_index_stack.pop()
+  let _ = ctx.style_stack.pop()
+  let _ = ctx.element_stack.pop()
   stops
 }
 
 ///|
-fn parse_gradient_stop(attrs : Array[(String, String)]) -> GradientStop {
+fn parse_gradient_stop(
+  attrs : Array[(String, String)],
+  style : InheritedStyle,
+) -> GradientStop {
   let offset = match get_attr(attrs, "offset") {
     Some(v) => parse_gradient_offset(v)
     None => 0.0
   }
-  let mut color = Color::black()
-  let mut opacity = 1.0
-  if get_attr(attrs, "stop-color") is Some(v) {
-    color = parse_color(v)
-  }
-  if get_attr(attrs, "stop-opacity") is Some(v) {
-    opacity = parse_number(v)
-  }
-  if get_attr(attrs, "style") is Some(style) {
-    let pairs = parse_style_pairs(style)
-    for pair in pairs {
-      let key = pair.0.to_lower()
-      if key == "stop-color" {
-        color = parse_color(pair.1)
-      } else if key == "stop-opacity" {
-        opacity = parse_number(pair.1)
-      }
-    }
-  }
+  let color = style.stop_color
+  let mut opacity = style.stop_opacity
   if opacity < 0.0 {
     opacity = 0.0
   }
@@ -2597,7 +3200,7 @@ fn parse_gradient_stop(attrs : Array[(String, String)]) -> GradientStop {
       color.r,
       color.g,
       color.b,
-      (color.a.to_double() * opacity).to_int(),
+      (color.a.to_double() * opacity).round().to_int(),
     )
   } else {
     color
@@ -3023,11 +3626,7 @@ fn parse_rgb_color(value : String) -> Color {
       clamp_int(parse_number(v).round().to_int(), 0, 255)
     }
   }
-  let alpha = if args.length() >= 4 {
-    parse_color_alpha(args[3])
-  } else {
-    255
-  }
+  let alpha = if args.length() >= 4 { parse_color_alpha(args[3]) } else { 255 }
   Color::rgba(channel(args[0]), channel(args[1]), channel(args[2]), alpha)
 }
 
@@ -3121,11 +3720,7 @@ fn parse_hsl_color(value : String) -> Color {
   let r = clamp_int(((r1 + m) * 255.0).round().to_int(), 0, 255)
   let g = clamp_int(((g1 + m) * 255.0).round().to_int(), 0, 255)
   let b = clamp_int(((b1 + m) * 255.0).round().to_int(), 0, 255)
-  let a = if args.length() >= 4 {
-    parse_color_alpha(args[3])
-  } else {
-    255
-  }
+  let a = if args.length() >= 4 { parse_color_alpha(args[3]) } else { 255 }
   Color::rgba(r, g, b, a)
 }
 

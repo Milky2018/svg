@@ -334,12 +334,31 @@ pub fn raster_rounded_rect_fill(
   let fh = h.to_double()
   let frx = rx.to_double()
   let fry = ry.to_double()
+  let samples = 4
+  let sample_count = samples * samples
   for py in y..<(y + h) {
-    let cy = py.to_double() + 0.5
     for px in x..<(x + w) {
-      let cx = px.to_double() + 0.5
-      if point_in_rounded_rect(cx, cy, fx, fy, fw, fh, frx, fry) {
-        setter.pixel(px, py, color)
+      let mut covered = 0
+      for sample_y in 0..<samples {
+        for sample_x in 0..<samples {
+          let sample_px = px.to_double() +
+            (sample_x.to_double() + 0.5) / samples.to_double()
+          let sample_py = py.to_double() +
+            (sample_y.to_double() + 0.5) / samples.to_double()
+          if point_in_rounded_rect(
+              sample_px, sample_py, fx, fy, fw, fh, frx, fry,
+            ) {
+            covered += 1
+          }
+        }
+      }
+      if covered > 0 {
+        let alpha = (color.a.to_double() *
+          covered.to_double() /
+          sample_count.to_double())
+          .round()
+          .to_int()
+        setter.pixel(px, py, { ..color, a: alpha })
       }
     }
   }
