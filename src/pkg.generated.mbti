@@ -478,6 +478,8 @@ pub(all) enum Gradient {
 
 pub(all) struct GradientRegistry {
   gradients : Map[String, Gradient]
+  references : Map[String, String]
+  specified : Map[String, Int]
 }
 pub fn GradientRegistry::add(Self, String, Gradient) -> Unit
 pub fn GradientRegistry::get(Self, String) -> Gradient?
@@ -745,6 +747,8 @@ pub fn PathFollower::update(Self, Double, Double) -> Bool
 
 pub(all) struct Pattern {
   id : String
+  x : Double
+  y : Double
   width : Double
   height : Double
   content : Array[SVGNode]
@@ -759,6 +763,8 @@ pub fn Pattern::new(String, Double, Double, Array[SVGNode]) -> Self
 
 pub(all) struct PatternRegistry {
   patterns : Map[String, Pattern]
+  references : Map[String, String]
+  specified : Map[String, Int]
 }
 pub fn PatternRegistry::add(Self, Pattern) -> Unit
 pub fn PatternRegistry::get(Self, String) -> Pattern?

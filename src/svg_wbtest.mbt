@@ -594,16 +594,16 @@ test "linear gradient rendering" {
   scene.render(ctx)
   // Should have drawn pixels (100 * 50 = 5000)
   inspect(drawn_pixels.length(), content="5000")
-  // Check left edge is red
+  // Pixel centers lie just inside the gradient endpoints.
   let left = drawn_pixels[0]
-  inspect(left.2.r, content="255")
-  inspect(left.2.b, content="0")
-  // Check right edge is blue (last row, x=99)
+  inspect(left.2.r, content="253")
+  inspect(left.2.b, content="1")
+  // Check right edge is nearly blue (last row, x=99)
   let right = drawn_pixels.iter().find_first(p => p.0 == 99 && p.1 == 0)
   match right {
     Some((_, _, c)) => {
-      inspect(c.r, content="0")
-      inspect(c.b, content="255")
+      inspect(c.r, content="1")
+      inspect(c.b, content="253")
     }
     None => panic()
   }

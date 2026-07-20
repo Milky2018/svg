@@ -2865,8 +2865,26 @@ fn parse_pattern_with_content(
   if id.length() == 0 {
     return
   }
+  let reference = match get_attr(attrs, "href") {
+    Some(v) => parse_url_ref(v)
+    None =>
+      match get_attr(attrs, "xlink:href") {
+        Some(v) => parse_url_ref(v)
+        None => None
+      }
+  }
+  let mut x = 0.0
+  let mut y = 0.0
   let mut width = 0.0
   let mut height = 0.0
+  if get_attr(attrs, "x") is Some(v) {
+    let (val, _) = parse_length_or_percent(v)
+    x = val
+  }
+  if get_attr(attrs, "y") is Some(v) {
+    let (val, _) = parse_length_or_percent(v)
+    y = val
+  }
   if get_attr(attrs, "width") is Some(v) {
     let (val, _) = parse_length_or_percent(v)
     width = val
@@ -2891,14 +2909,52 @@ fn parse_pattern_with_content(
     Some(v) => parse_view_box(v)
     None => None
   }
+  let preserve_aspect_ratio = match get_attr(attrs, "preserveAspectRatio") {
+    Some(v) => parse_preserve_aspect_ratio(v)
+    None => PreserveAspectRatio::default()
+  }
   let pattern = {
     ..Pattern::new(id, width, height, content),
+    x,
+    y,
     pattern_units,
     pattern_content_units,
     transform,
     view_box,
+    preserve_aspect_ratio,
   }
-  ctx.patterns.add(pattern)
+  let mut specified = 0
+  if get_attr(attrs, "x") is Some(_) {
+    specified = specified | 1
+  }
+  if get_attr(attrs, "y") is Some(_) {
+    specified = specified | 2
+  }
+  if get_attr(attrs, "width") is Some(_) {
+    specified = specified | 4
+  }
+  if get_attr(attrs, "height") is Some(_) {
+    specified = specified | 8
+  }
+  if get_attr(attrs, "patternUnits") is Some(_) {
+    specified = specified | 16
+  }
+  if get_attr(attrs, "patternContentUnits") is Some(_) {
+    specified = specified | 32
+  }
+  if get_attr(attrs, "patternTransform") is Some(_) {
+    specified = specified | 64
+  }
+  if get_attr(attrs, "viewBox") is Some(_) {
+    specified = specified | 128
+  }
+  if get_attr(attrs, "preserveAspectRatio") is Some(_) {
+    specified = specified | 256
+  }
+  if !content.is_empty() {
+    specified = specified | 512
+  }
+  ctx.patterns.add_definition(pattern, reference, specified)
 }
 
 ///|
@@ -2961,6 +3017,14 @@ fn parse_linear_gradient_with_stops(
   if id.length() == 0 {
     return
   }
+  let reference = match get_attr(attrs, "href") {
+    Some(v) => parse_url_ref(v)
+    None =>
+      match get_attr(attrs, "xlink:href") {
+        Some(v) => parse_url_ref(v)
+        None => None
+      }
+  }
   let x1 = parse_gradient_coord(get_attr(attrs, "x1"), 0.0)
   let y1 = parse_gradient_coord(get_attr(attrs, "y1"), 0.0)
   let x2 = parse_gradient_coord(get_attr(attrs, "x2"), 1.0)
@@ -2983,7 +3047,32 @@ fn parse_linear_gradient_with_stops(
     units,
     transform,
   }
-  ctx.gradients.add(id, Gradient::Linear(grad))
+  let mut specified = 0
+  if get_attr(attrs, "x1") is Some(_) {
+    specified = specified | 1
+  }
+  if get_attr(attrs, "y1") is Some(_) {
+    specified = specified | 2
+  }
+  if get_attr(attrs, "x2") is Some(_) {
+    specified = specified | 4
+  }
+  if get_attr(attrs, "y2") is Some(_) {
+    specified = specified | 8
+  }
+  if get_attr(attrs, "spreadMethod") is Some(_) {
+    specified = specified | 16
+  }
+  if get_attr(attrs, "gradientUnits") is Some(_) {
+    specified = specified | 32
+  }
+  if get_attr(attrs, "gradientTransform") is Some(_) {
+    specified = specified | 64
+  }
+  if !stops.is_empty() {
+    specified = specified | 128
+  }
+  ctx.gradients.add_definition(id, Gradient::Linear(grad), reference, specified)
 }
 
 ///|
@@ -3028,6 +3117,14 @@ fn parse_radial_gradient_with_stops(
   if id.length() == 0 {
     return
   }
+  let reference = match get_attr(attrs, "href") {
+    Some(v) => parse_url_ref(v)
+    None =>
+      match get_attr(attrs, "xlink:href") {
+        Some(v) => parse_url_ref(v)
+        None => None
+      }
+  }
   let cx = parse_gradient_coord(get_attr(attrs, "cx"), 0.5)
   let cy = parse_gradient_coord(get_attr(attrs, "cy"), 0.5)
   let r = parse_gradient_coord(get_attr(attrs, "r"), 0.5)
@@ -3059,7 +3156,35 @@ fn parse_radial_gradient_with_stops(
     units,
     transform,
   }
-  ctx.gradients.add(id, Gradient::Radial(grad))
+  let mut specified = 0
+  if get_attr(attrs, "cx") is Some(_) {
+    specified = specified | 1
+  }
+  if get_attr(attrs, "cy") is Some(_) {
+    specified = specified | 2
+  }
+  if get_attr(attrs, "r") is Some(_) {
+    specified = specified | 4
+  }
+  if get_attr(attrs, "fx") is Some(_) {
+    specified = specified | 8
+  }
+  if get_attr(attrs, "fy") is Some(_) {
+    specified = specified | 16
+  }
+  if get_attr(attrs, "spreadMethod") is Some(_) {
+    specified = specified | 32
+  }
+  if get_attr(attrs, "gradientUnits") is Some(_) {
+    specified = specified | 64
+  }
+  if get_attr(attrs, "gradientTransform") is Some(_) {
+    specified = specified | 128
+  }
+  if !stops.is_empty() {
+    specified = specified | 256
+  }
+  ctx.gradients.add_definition(id, Gradient::Radial(grad), reference, specified)
 }
 
 ///|

@@ -4,6 +4,19 @@ fn render_geometry_fixture(svg : String, width : Int, height : Int) -> Image {
 }
 
 ///|
+fn visible_geometry_pixels(image : Image) -> Int {
+  let mut count = 0
+  for y in 0..<image.height {
+    for x in 0..<image.width {
+      if !image.get_pixel(x, y).is_transparent() {
+        count = count + 1
+      }
+    }
+  }
+  count
+}
+
+///|
 test "rounded rect omitted radius mirrors the specified radius" {
   let prefix = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"8\">"
   let suffix = "</svg>"
@@ -162,6 +175,143 @@ test "rect and equivalent closed path share stroke outlines" {
     14, 12,
   )
   inspect(image_difference_count(rect, path), content="0")
+}
+
+///|
+test "skew functions and equivalent matrices render identically" {
+  let skew_x = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><rect x=\"8\" y=\"8\" width=\"16\" height=\"16\" transform=\"skewX(20)\"/></svg>",
+    64, 48,
+  )
+  let matrix_x = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><rect x=\"8\" y=\"8\" width=\"16\" height=\"16\" transform=\"matrix(1 0 0.36397023426620234 1 0 0)\"/></svg>",
+    64, 48,
+  )
+  let skew_y = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><rect x=\"8\" y=\"8\" width=\"16\" height=\"16\" transform=\"skewY(-20)\"/></svg>",
+    64, 48,
+  )
+  let matrix_y = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><rect x=\"8\" y=\"8\" width=\"16\" height=\"16\" transform=\"matrix(1 -0.36397023426620234 0 1 0 0)\"/></svg>",
+    64, 48,
+  )
+  inspect(image_difference_count(skew_x, matrix_x), content="0")
+  inspect(image_difference_count(skew_y, matrix_y), content="0")
+}
+
+///|
+test "positive and negative skewed rects match equivalent paths" {
+  for transform in ["skewX(20)", "skewX(-20)", "skewY(20)", "skewY(-20)"] {
+    let rect = render_geometry_fixture(
+      "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><rect x=\"16\" y=\"12\" width=\"16\" height=\"16\" transform=\"" +
+      transform +
+      "\"/></svg>",
+      64,
+      48,
+    )
+    let path = render_geometry_fixture(
+      "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><path d=\"M16 12 H32 V28 H16 Z\" transform=\"" +
+      transform +
+      "\"/></svg>",
+      64,
+      48,
+    )
+    inspect(image_difference_count(rect, path), content="0")
+  }
+}
+
+///|
+test "skewed rounded rects match equivalent arc paths" {
+  let attributes = " transform=\"skewX(18)\" fill=\"none\" stroke=\"black\" stroke-width=\"3\""
+  let rect = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><rect x=\"12\" y=\"8\" width=\"20\" height=\"20\" rx=\"4\" ry=\"5\"" +
+    attributes +
+    "/></svg>",
+    64,
+    48,
+  )
+  let path = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><path d=\"M16 8 H28 A4 5 0 0 1 32 13 V23 A4 5 0 0 1 28 28 H16 A4 5 0 0 1 12 23 V13 A4 5 0 0 1 16 8 Z\"" +
+    attributes +
+    "/></svg>",
+    64,
+    48,
+  )
+  inspect(image_difference_count(rect, path), content="0")
+}
+
+///|
+test "skewed circles and ellipses match equivalent arc paths" {
+  let attributes = " transform=\"skewY(16)\" fill=\"black\" stroke=\"red\" stroke-width=\"2\""
+  let circle = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><circle cx=\"24\" cy=\"18\" r=\"8\"" +
+    attributes +
+    "/></svg>",
+    64,
+    48,
+  )
+  let circle_path = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><path d=\"M32 18 A8 8 0 1 0 16 18 A8 8 0 1 0 32 18 Z\"" +
+    attributes +
+    "/></svg>",
+    64,
+    48,
+  )
+  let ellipse = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><ellipse cx=\"24\" cy=\"18\" rx=\"10\" ry=\"6\"" +
+    attributes +
+    "/></svg>",
+    64,
+    48,
+  )
+  let ellipse_path = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><path d=\"M34 18 A10 6 0 1 0 14 18 A10 6 0 1 0 34 18 Z\"" +
+    attributes +
+    "/></svg>",
+    64,
+    48,
+  )
+  inspect(image_difference_count(circle, circle_path), content="0")
+  inspect(image_difference_count(ellipse, ellipse_path), content="0")
+}
+
+///|
+test "non-uniformly scaled circles match equivalent paths" {
+  let attributes = " transform=\"scale(2 1)\" fill=\"black\""
+  let circle = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><circle cx=\"16\" cy=\"18\" r=\"8\"" +
+    attributes +
+    "/></svg>",
+    64,
+    48,
+  )
+  let path = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><path d=\"M24 18 A8 8 0 1 1 8 18 A8 8 0 1 1 24 18 Z\"" +
+    attributes +
+    "/></svg>",
+    64,
+    48,
+  )
+  inspect(image_difference_count(circle, path), content="0")
+}
+
+///|
+test "skewed primitives retain gradient fills" {
+  let linear = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><defs><linearGradient id=\"g\"><stop offset=\"0\" stop-color=\"red\"/><stop offset=\"1\" stop-color=\"blue\"/></linearGradient></defs><rect x=\"12\" y=\"8\" width=\"20\" height=\"20\" transform=\"skewX(18)\" fill=\"url(#g)\"/></svg>",
+    64, 48,
+  )
+  let linear_path = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><defs><linearGradient id=\"g\"><stop offset=\"0\" stop-color=\"red\"/><stop offset=\"1\" stop-color=\"blue\"/></linearGradient></defs><path d=\"M12 8 H32 V28 H12 Z\" transform=\"skewX(18)\" fill=\"url(#g)\"/></svg>",
+    64, 48,
+  )
+  let radial = render_geometry_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><defs><radialGradient id=\"g\"><stop offset=\"0\" stop-color=\"white\"/><stop offset=\"1\" stop-color=\"black\"/></radialGradient></defs><circle cx=\"24\" cy=\"18\" r=\"8\" transform=\"skewY(16)\" fill=\"url(#g)\"/></svg>",
+    64, 48,
+  )
+  inspect(visible_geometry_pixels(linear) > 0, content="true")
+  inspect(visible_geometry_pixels(radial) > 0, content="true")
+  inspect(image_difference_count(linear, linear_path), content="0")
 }
 
 ///|

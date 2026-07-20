@@ -602,6 +602,7 @@ priv struct RenderResources {
   patterns : PatternRegistry
   gradients : GradientRegistry
   markers : MarkerRegistry
+  active_patterns : Array[String]
 }
 
 ///|
@@ -613,6 +614,7 @@ fn RenderResources::empty() -> RenderResources {
     patterns: PatternRegistry::new(),
     gradients: GradientRegistry::new(),
     markers: MarkerRegistry::new(),
+    active_patterns: [],
   }
 }
 
@@ -626,6 +628,7 @@ pub fn SVGDocument::render(self : SVGDocument, ctx : RenderContext) -> Unit {
     patterns: self.patterns,
     gradients: self.gradients,
     markers: self.markers,
+    active_patterns: [],
   }
   match self.root.view_box {
     Some(vb) => {
@@ -1631,7 +1634,7 @@ fn resolve_paint_for_render(
       }
     CurrentColor => ResolvedPaint::SolidColor(node_color)
     PaintServerRef(id, fallback) =>
-      match resources.gradients.get(id) {
+      match resources.gradients.resolve(id) {
         Some(Gradient::Linear(grad)) =>
           if !grad.transform.is_invertible() {
             resolve_paint_fallback(fallback, node_color)
@@ -1649,7 +1652,7 @@ fn resolve_paint_for_render(
             ResolvedPaint::RadialGrad(grad)
           }
         None =>
-          match resources.patterns.get(id) {
+          match resources.patterns.resolve(id) {
             Some(pattern) =>
               if pattern_is_valid(pattern) {
                 ResolvedPaint::Pattern(pattern)
@@ -1660,6 +1663,25 @@ fn resolve_paint_for_render(
           }
       }
   }
+}
+
+///|
+fn node_uses_paint_server(
+  node : SVGNode,
+  node_color : Color,
+  resources : RenderResources,
+) -> Bool {
+  fn is_server(paint : ResolvedPaint) -> Bool {
+    match paint {
+      ResolvedPaint::LinearGrad(_)
+      | ResolvedPaint::RadialGrad(_)
+      | ResolvedPaint::Pattern(_) => true
+      _ => false
+    }
+  }
+
+  is_server(resolve_paint_for_render(node.fill, node_color, resources)) ||
+  is_server(resolve_paint_for_render(node.stroke.paint, node_color, resources))
 }
 
 ///|
@@ -1679,57 +1701,149 @@ fn render_paint_order(
 }
 
 ///|
-fn render_pattern_fill(
-  shape : Shape,
+priv struct PatternTile {
+  image : Image
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+}
+
+///|
+fn build_pattern_tile(
+  pattern : Pattern,
+  bbox : BoundingBox,
   transform : Transform,
   ctx : RenderContext,
-  pattern : Pattern,
-  opacity : Double,
-) -> Unit {
-  let bbox_local = get_shape_bounds(shape)
-  if bbox_local.is_empty() {
-    return
+  resources : RenderResources,
+) -> PatternTile? {
+  if string_array_contains(resources.active_patterns, pattern.id) {
+    return None
   }
-  let bbox_world = transform.apply_bbox(bbox_local)
-  let mut ix = floor_to_int(bbox_world.min_x)
-  let mut iy = floor_to_int(bbox_world.min_y)
-  let mut iw = ceil_to_int(bbox_world.max_x - bbox_world.min_x)
-  let mut ih = ceil_to_int(bbox_world.max_y - bbox_world.min_y)
-  if iw <= 0 || ih <= 0 {
-    return
+  let bbox_width = bbox.width()
+  let bbox_height = bbox.height()
+  let (tile_x, tile_y, tile_width, tile_height) = match pattern.pattern_units {
+    PatternUnits::UserSpaceOnUse =>
+      (pattern.x, pattern.y, pattern.width, pattern.height)
+    PatternUnits::ObjectBoundingBox =>
+      (
+        bbox.min_x + pattern.x * bbox_width,
+        bbox.min_y + pattern.y * bbox_height,
+        pattern.width * bbox_width,
+        pattern.height * bbox_height,
+      )
   }
-  if ix < 0 {
-    iw = iw + ix
-    ix = 0
+  if tile_width <= 0.0 || tile_height <= 0.0 {
+    return None
   }
-  if iy < 0 {
-    ih = ih + iy
-    iy = 0
+  let effective_transform = transform.multiply(pattern.transform)
+  let (scale_x, scale_y) = effective_transform.get_scale()
+  let mut pixel_width = ceil_to_int(tile_width * scale_x)
+  let mut pixel_height = ceil_to_int(tile_height * scale_y)
+  if pixel_width < 1 {
+    pixel_width = 1
   }
-  if ix + iw > ctx.width {
-    iw = ctx.width - ix
+  if pixel_height < 1 {
+    pixel_height = 1
   }
-  if iy + ih > ctx.height {
-    ih = ctx.height - iy
+  if ctx.width > 0 && pixel_width > ctx.width {
+    pixel_width = ctx.width
   }
-  if iw <= 0 || ih <= 0 {
-    return
+  if ctx.height > 0 && pixel_height > ctx.height {
+    pixel_height = ctx.height
   }
-  let inv = transform.inverse()
-  let pattern_inv = pattern.transform.inverse()
-  for y in iy..<(iy + ih) {
-    for x in ix..<(ix + iw) {
-      let wx = x.to_double() + 0.5
-      let wy = y.to_double() + 0.5
-      let (lx, ly) = inv.apply(wx, wy)
-      if hit_test_shape(lx, ly, shape) {
-        let (px, py) = pattern_inv.apply(lx, ly)
-        if pattern.get_color_at(px, py, bbox_local) is Some(color) {
-          ctx.setter.pixel(x, y, apply_opacity(color, opacity))
-        }
+  let image = Image::new(pixel_width, pixel_height)
+  let active_patterns = resources.active_patterns.copy()
+  active_patterns.push(pattern.id)
+  let nested_resources = { ..resources, active_patterns, }
+  let tile_ctx = {
+    setter: make_image_compositing_setter(image),
+    width: pixel_width,
+    height: pixel_height,
+    flatness: ctx.flatness,
+    clip: None,
+    text_to_paths: ctx.text_to_paths,
+    target_image: Some(image),
+  }
+  let pixel_scale = Transform::scale(
+    pixel_width.to_double() / tile_width,
+    pixel_height.to_double() / tile_height,
+  )
+  let content_transform = match pattern.view_box {
+    Some(view_box) =>
+      pixel_scale.multiply(
+        view_box.get_transform(
+          tile_width,
+          tile_height,
+          pattern.preserve_aspect_ratio,
+        ),
+      )
+    None => {
+      let tile_offset = Transform::translate(-tile_x, -tile_y)
+      match pattern.pattern_content_units {
+        PatternUnits::UserSpaceOnUse => pixel_scale.multiply(tile_offset)
+        PatternUnits::ObjectBoundingBox =>
+          pixel_scale.multiply(
+            tile_offset.multiply(
+              Transform::translate(bbox.min_x, bbox.min_y).multiply(
+                Transform::scale(bbox_width, bbox_height),
+              ),
+            ),
+          )
       }
     }
   }
+  for child in sort_by_z_index(pattern.content) {
+    render_node(
+      child,
+      content_transform,
+      tile_ctx,
+      nested_resources,
+      true,
+      Color::black(),
+    )
+  }
+  Some({ image, x: tile_x, y: tile_y, width: tile_width, height: tile_height })
+}
+
+///|
+fn make_pattern_setter(
+  pattern : Pattern,
+  bbox : BoundingBox,
+  transform : Transform,
+  ctx : RenderContext,
+  resources : RenderResources,
+  opacity : Double,
+) -> PixelSetter? {
+  let tile = match
+    build_pattern_tile(pattern, bbox, transform, ctx, resources) {
+    Some(value) => value
+    None => return None
+  }
+  let inverse = transform.inverse()
+  let pattern_inverse = pattern.transform.inverse()
+  Some({
+    set: (x, y, _color) => {
+      if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
+        return
+      }
+      let (local_x, local_y) = inverse.apply(
+        x.to_double() + 0.5,
+        y.to_double() + 0.5,
+      )
+      let (pattern_x, pattern_y) = pattern_inverse.apply(local_x, local_y)
+      let tile_u = (pattern_x - tile.x) / tile.width
+      let tile_v = (pattern_y - tile.y) / tile.height
+      let u = tile_u - tile_u.floor()
+      let v = tile_v - tile_v.floor()
+      let sample_x = (u * tile.image.width.to_double()).floor().to_int()
+      let sample_y = (v * tile.image.height.to_double()).floor().to_int()
+      let color = tile.image.get_pixel(sample_x, sample_y)
+      if color.a > 0 {
+        ctx.setter.pixel(x, y, apply_opacity(color, opacity))
+      }
+    },
+  })
 }
 
 ///|
@@ -2038,6 +2152,97 @@ fn render_image(
 }
 
 ///|
+fn transform_preserves_axes(transform : Transform) -> Bool {
+  let epsilon = 0.000000000001
+  transform.b.abs() <= epsilon && transform.c.abs() <= epsilon
+}
+
+///|
+fn transform_preserves_circles(transform : Transform) -> Bool {
+  if !transform_preserves_axes(transform) {
+    return false
+  }
+  let epsilon = 0.000000000001
+  let (sx, sy) = transform.get_scale()
+  (sx - sy).abs() <= epsilon
+}
+
+///|
+fn rect_path_commands(
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  rx : Double,
+  ry : Double,
+) -> Array[PathCommand] {
+  let clamped_rx = min(max(rx, 0.0), width / 2.0)
+  let clamped_ry = min(max(ry, 0.0), height / 2.0)
+  if clamped_rx <= 0.0 || clamped_ry <= 0.0 {
+    return [
+      MoveTo(x, y),
+      LineTo(x + width, y),
+      LineTo(x + width, y + height),
+      LineTo(x, y + height),
+      ClosePath,
+    ]
+  }
+  [
+    MoveTo(x + clamped_rx, y),
+    LineTo(x + width - clamped_rx, y),
+    ArcTo(clamped_rx, clamped_ry, 0.0, false, true, x + width, y + clamped_ry),
+    LineTo(x + width, y + height - clamped_ry),
+    ArcTo(
+      clamped_rx,
+      clamped_ry,
+      0.0,
+      false,
+      true,
+      x + width - clamped_rx,
+      y + height,
+    ),
+    LineTo(x + clamped_rx, y + height),
+    ArcTo(clamped_rx, clamped_ry, 0.0, false, true, x, y + height - clamped_ry),
+    LineTo(x, y + clamped_ry),
+    ArcTo(clamped_rx, clamped_ry, 0.0, false, true, x + clamped_rx, y),
+    ClosePath,
+  ]
+}
+
+///|
+fn points_path_commands(
+  points : Array[(Double, Double)],
+  close : Bool,
+) -> Array[PathCommand] {
+  if points.is_empty() {
+    return []
+  }
+  let commands : Array[PathCommand] = [MoveTo(points[0].0, points[0].1)]
+  for i in 1..<points.length() {
+    commands.push(LineTo(points[i].0, points[i].1))
+  }
+  if close {
+    commands.push(ClosePath)
+  }
+  commands
+}
+
+///|
+fn ellipse_path_commands(
+  cx : Double,
+  cy : Double,
+  rx : Double,
+  ry : Double,
+) -> Array[PathCommand] {
+  [
+    MoveTo(cx + rx, cy),
+    ArcTo(rx, ry, 0.0, true, true, cx - rx, cy),
+    ArcTo(rx, ry, 0.0, true, true, cx + rx, cy),
+    ClosePath,
+  ]
+}
+
+///|
 fn render_rect(
   x : Double,
   y : Double,
@@ -2052,6 +2257,18 @@ fn render_rect(
   node_color : Color,
 ) -> Unit {
   if width <= 0.0 || height <= 0.0 {
+    return
+  }
+  if !transform_preserves_axes(transform) ||
+    node_uses_paint_server(node, node_color, resources) {
+    render_path(
+      rect_path_commands(x, y, width, height, rx, ry),
+      node,
+      transform,
+      ctx,
+      node_color,
+      resources,
+    )
     return
   }
   // Transform corners
@@ -2094,41 +2311,7 @@ fn render_rect(
             raster_rect_fill(ix, iy, iw, ih, fill_color, ctx.setter)
           }
         }
-      ResolvedPaint::LinearGrad(grad) =>
-        if node.fill_opacity > 0.0 {
-          raster_rect_gradient(
-            ix,
-            iy,
-            iw,
-            ih,
-            grad,
-            node.fill_opacity * node.opacity,
-            ctx.setter,
-          )
-        }
-      ResolvedPaint::RadialGrad(grad) =>
-        if node.fill_opacity > 0.0 {
-          raster_rect_radial_gradient(
-            ix,
-            iy,
-            iw,
-            ih,
-            grad,
-            node.fill_opacity * node.opacity,
-            ctx.setter,
-          )
-        }
-      ResolvedPaint::Pattern(pattern) =>
-        if node.fill_opacity > 0.0 {
-          render_pattern_fill(
-            node.shape,
-            transform,
-            ctx,
-            pattern,
-            node.fill_opacity * node.opacity,
-          )
-        }
-      ResolvedPaint::None => ()
+      _ => ()
     }
   }
 
@@ -2200,6 +2383,18 @@ fn render_circle(
   if r <= 0.0 {
     return
   }
+  if !transform_preserves_circles(transform) ||
+    node_uses_paint_server(node, node_color, resources) {
+    render_path(
+      ellipse_path_commands(cx, cy, r, r),
+      node,
+      transform,
+      ctx,
+      node_color,
+      resources,
+    )
+    return
+  }
   let (tx, ty) = transform.apply(cx, cy)
   let (sx, sy) = transform.get_scale()
   let tr = (r * (sx + sy) / 2.0).to_int()
@@ -2225,27 +2420,6 @@ fn render_circle(
             tr,
             fill_color,
             ctx.setter,
-          )
-        }
-      ResolvedPaint::RadialGrad(grad) =>
-        if node.fill_opacity > 0.0 {
-          raster_circle_radial_gradient(
-            icx,
-            icy,
-            tr,
-            grad,
-            node.fill_opacity * node.opacity,
-            ctx.setter,
-          )
-        }
-      ResolvedPaint::Pattern(pattern) =>
-        if node.fill_opacity > 0.0 {
-          render_pattern_fill(
-            node.shape,
-            transform,
-            ctx,
-            pattern,
-            node.fill_opacity * node.opacity,
           )
         }
       _ => ()
@@ -2295,6 +2469,18 @@ fn render_ellipse(
   if rx <= 0.0 || ry <= 0.0 {
     return
   }
+  if !transform_preserves_axes(transform) ||
+    node_uses_paint_server(node, node_color, resources) {
+    render_path(
+      ellipse_path_commands(cx, cy, rx, ry),
+      node,
+      transform,
+      ctx,
+      node_color,
+      resources,
+    )
+    return
+  }
   let (tx, ty) = transform.apply(cx, cy)
   let (sx, sy) = transform.get_scale()
   let trx = (rx * sx).to_int()
@@ -2321,28 +2507,6 @@ fn render_ellipse(
             try_,
             fill_color,
             ctx.setter,
-          )
-        }
-      ResolvedPaint::RadialGrad(grad) =>
-        if node.fill_opacity > 0.0 {
-          raster_ellipse_radial_gradient(
-            icx,
-            icy,
-            trx,
-            try_,
-            grad,
-            node.fill_opacity * node.opacity,
-            ctx.setter,
-          )
-        }
-      ResolvedPaint::Pattern(pattern) =>
-        if node.fill_opacity > 0.0 {
-          render_pattern_fill(
-            node.shape,
-            transform,
-            ctx,
-            pattern,
-            node.fill_opacity * node.opacity,
           )
         }
       _ => ()
@@ -3884,6 +4048,17 @@ fn render_polyline(
   if points.length() < 2 {
     return
   }
+  if node_uses_paint_server(node, node_color, resources) {
+    render_path(
+      points_path_commands(points, false),
+      node,
+      transform,
+      ctx,
+      node_color,
+      resources,
+    )
+    return
+  }
   let transformed = points.map(fn(p) {
     let (x, y) = transform.apply(p.0, p.1)
     (quantize_geometry(x), quantize_geometry(y))
@@ -3903,16 +4078,6 @@ fn render_polyline(
             apply_opacity(color, node.fill_opacity * node.opacity),
             node.fill_rule,
             ctx.setter,
-          )
-        }
-      ResolvedPaint::Pattern(pattern) =>
-        if node.fill_opacity > 0.0 {
-          render_pattern_fill(
-            node.shape,
-            transform,
-            ctx,
-            pattern,
-            node.fill_opacity * node.opacity,
           )
         }
       _ => ()
@@ -3960,6 +4125,17 @@ fn render_polygon(
   if points.length() < 3 {
     return
   }
+  if node_uses_paint_server(node, node_color, resources) {
+    render_path(
+      points_path_commands(points, true),
+      node,
+      transform,
+      ctx,
+      node_color,
+      resources,
+    )
+    return
+  }
   let transformed = points.map(fn(p) {
     let (x, y) = transform.apply(p.0, p.1)
     (quantize_geometry(x), quantize_geometry(y))
@@ -3983,16 +4159,6 @@ fn render_polygon(
             fill_color,
             node.fill_rule,
             ctx.setter,
-          )
-        }
-      ResolvedPaint::Pattern(pattern) =>
-        if node.fill_opacity > 0.0 {
-          render_pattern_fill(
-            node.shape,
-            transform,
-            ctx,
-            pattern,
-            node.fill_opacity * node.opacity,
           )
         }
       _ => ()
@@ -4030,6 +4196,176 @@ fn render_polygon(
 }
 
 ///|
+fn gradient_sample_point(
+  local_x : Double,
+  local_y : Double,
+  bbox : BoundingBox,
+  units : GradientUnits,
+  gradient_transform : Transform,
+) -> (Double, Double) {
+  let (x, y) = match units {
+    ObjectBoundingBox => {
+      let width = bbox.width()
+      let height = bbox.height()
+      (
+        if width > 0.0 {
+          (local_x - bbox.min_x) / width
+        } else {
+          0.0
+        },
+        if height > 0.0 {
+          (local_y - bbox.min_y) / height
+        } else {
+          0.0
+        },
+      )
+    }
+    UserSpaceOnUse => (local_x, local_y)
+  }
+  gradient_transform.inverse().apply(x, y)
+}
+
+///|
+fn sample_linear_gradient(
+  gradient : LinearGradient,
+  local_x : Double,
+  local_y : Double,
+  bbox : BoundingBox,
+) -> Color {
+  let (x, y) = gradient_sample_point(
+    local_x,
+    local_y,
+    bbox,
+    gradient.units,
+    gradient.transform,
+  )
+  let dx = gradient.x2 - gradient.x1
+  let dy = gradient.y2 - gradient.y1
+  let length_squared = dx * dx + dy * dy
+  let t = if length_squared > 0.000000000001 {
+    ((x - gradient.x1) * dx + (y - gradient.y1) * dy) / length_squared
+  } else {
+    0.0
+  }
+  gradient.color_at(t)
+}
+
+///|
+fn sample_radial_gradient(
+  gradient : RadialGradient,
+  lut : Array[Color],
+  local_x : Double,
+  local_y : Double,
+  bbox : BoundingBox,
+) -> Color {
+  let (x, y) = gradient_sample_point(
+    local_x,
+    local_y,
+    bbox,
+    gradient.units,
+    gradient.transform,
+  )
+  let mut fx = gradient.fx
+  let mut fy = gradient.fy
+  let focus_dx = fx - gradient.cx
+  let focus_dy = fy - gradient.cy
+  let focus_distance = (focus_dx * focus_dx + focus_dy * focus_dy).sqrt()
+  if gradient.r > 0.0 && focus_distance >= gradient.r {
+    let scale = gradient.r * 0.999999 / focus_distance
+    fx = gradient.cx + focus_dx * scale
+    fy = gradient.cy + focus_dy * scale
+  }
+  let qx = x - fx
+  let qy = y - fy
+  let dx = gradient.cx - fx
+  let dy = gradient.cy - fy
+  let a = dx * dx + dy * dy - gradient.r * gradient.r
+  let b = -2.0 * (qx * dx + qy * dy)
+  let c = qx * qx + qy * qy
+  let t = if gradient.r <= 0.0 {
+    0.0
+  } else if a.abs() <= 0.000000000001 {
+    if b.abs() <= 0.000000000001 {
+      0.0
+    } else {
+      -c / b
+    }
+  } else {
+    let discriminant = b * b - 4.0 * a * c
+    if discriminant <= 0.0 {
+      0.0
+    } else {
+      let root = discriminant.sqrt()
+      max((-b + root) / (2.0 * a), (-b - root) / (2.0 * a))
+    }
+  }
+  let t = apply_spread_inline(t, gradient.spread_method)
+  lut_color_at(lut, t)
+}
+
+///|
+fn make_paint_server_setter(
+  paint : ResolvedPaint,
+  shape : Shape,
+  transform : Transform,
+  ctx : RenderContext,
+  resources : RenderResources,
+  opacity : Double,
+) -> PixelSetter? {
+  let bbox = get_shape_bounds(shape)
+  match paint {
+    ResolvedPaint::LinearGrad(gradient) => {
+      let inverse = transform.inverse()
+      Some({
+        set: (x, y, _color) => {
+          if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
+            return
+          }
+          let (local_x, local_y) = inverse.apply(
+            x.to_double() + 0.5,
+            y.to_double() + 0.5,
+          )
+          ctx.setter.pixel(
+            x,
+            y,
+            apply_opacity(
+              sample_linear_gradient(gradient, local_x, local_y, bbox),
+              opacity,
+            ),
+          )
+        },
+      })
+    }
+    ResolvedPaint::RadialGrad(gradient) => {
+      let inverse = transform.inverse()
+      let lut = gradient.build_lut(256)
+      Some({
+        set: (x, y, _color) => {
+          if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
+            return
+          }
+          let (local_x, local_y) = inverse.apply(
+            x.to_double() + 0.5,
+            y.to_double() + 0.5,
+          )
+          ctx.setter.pixel(
+            x,
+            y,
+            apply_opacity(
+              sample_radial_gradient(gradient, lut, local_x, local_y, bbox),
+              opacity,
+            ),
+          )
+        },
+      })
+    }
+    ResolvedPaint::Pattern(pattern) =>
+      make_pattern_setter(pattern, bbox, transform, ctx, resources, opacity)
+    _ => None
+  }
+}
+
+///|
 fn render_path(
   commands : Array[PathCommand],
   node : SVGNode,
@@ -4048,6 +4384,12 @@ fn render_path(
     })
     transformed_polylines.push(transformed)
   }
+  let fill_polylines : Array[Array[(Int, Int)]] = []
+  for polyline in transformed_polylines {
+    if polyline.length() >= 3 && polygon_area_int(polyline) != 0 {
+      fill_polylines.push(polyline)
+    }
+  }
   fn draw_fill() -> Unit {
     match resolve_paint_for_render(node.fill, node_color, resources) {
       ResolvedPaint::SolidColor(color) =>
@@ -4056,16 +4398,6 @@ fn render_path(
             color,
             node.fill_opacity * node.opacity,
           )
-          let fill_polylines : Array[Array[(Int, Int)]] = []
-          for polyline in transformed_polylines {
-            if polyline.length() >= 3 {
-              let area = polygon_area_int(polyline)
-              if area == 0 {
-                continue
-              }
-              fill_polylines.push(polyline)
-            }
-          }
           if fill_polylines.length() > 0 {
             raster_polygons_fill_rule(
               fill_polylines,
@@ -4075,15 +4407,88 @@ fn render_path(
             )
           }
         }
+      ResolvedPaint::LinearGrad(gradient) =>
+        if node.fill_opacity > 0.0 {
+          let bbox = get_shape_bounds(node.shape)
+          let inverse = transform.inverse()
+          let gradient_setter : PixelSetter = {
+            set: (x, y, _color) => {
+              if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
+                return
+              }
+              let (local_x, local_y) = inverse.apply(
+                x.to_double() + 0.5,
+                y.to_double() + 0.5,
+              )
+              ctx.setter.pixel(
+                x,
+                y,
+                apply_opacity(
+                  sample_linear_gradient(gradient, local_x, local_y, bbox),
+                  node.fill_opacity * node.opacity,
+                ),
+              )
+            },
+          }
+          raster_polygons_fill_rule(
+            fill_polylines,
+            Color::white(),
+            node.fill_rule,
+            gradient_setter,
+          )
+        }
+      ResolvedPaint::RadialGrad(gradient) =>
+        if node.fill_opacity > 0.0 {
+          let bbox = get_shape_bounds(node.shape)
+          let inverse = transform.inverse()
+          let lut = gradient.build_lut(256)
+          let gradient_setter : PixelSetter = {
+            set: (x, y, _color) => {
+              if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
+                return
+              }
+              let (local_x, local_y) = inverse.apply(
+                x.to_double() + 0.5,
+                y.to_double() + 0.5,
+              )
+              ctx.setter.pixel(
+                x,
+                y,
+                apply_opacity(
+                  sample_radial_gradient(gradient, lut, local_x, local_y, bbox),
+                  node.fill_opacity * node.opacity,
+                ),
+              )
+            },
+          }
+          raster_polygons_fill_rule(
+            fill_polylines,
+            Color::white(),
+            node.fill_rule,
+            gradient_setter,
+          )
+        }
       ResolvedPaint::Pattern(pattern) =>
         if node.fill_opacity > 0.0 {
-          render_pattern_fill(
-            node.shape,
-            transform,
-            ctx,
-            pattern,
-            node.fill_opacity * node.opacity,
-          )
+          let bbox = get_shape_bounds(node.shape)
+          match
+            make_pattern_setter(
+              pattern,
+              bbox,
+              transform,
+              ctx,
+              resources,
+              node.fill_opacity * node.opacity,
+            ) {
+            Some(pattern_setter) =>
+              raster_polygons_fill_rule(
+                fill_polylines,
+                Color::white(),
+                node.fill_rule,
+                pattern_setter,
+              )
+            None => ()
+          }
         }
       _ => ()
     }
@@ -4096,9 +4501,14 @@ fn render_path(
     } else {
       0
     }
-    for polyline in transformed_polylines {
-      match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
-        ResolvedPaint::SolidColor(color) =>
+    let stroke_paint = resolve_paint_for_render(
+      node.stroke.paint,
+      node_color,
+      resources,
+    )
+    match stroke_paint {
+      ResolvedPaint::SolidColor(color) =>
+        for polyline in transformed_polylines {
           if node.stroke_opacity > 0.0 && stroke_px > 0 {
             let stroke_color = apply_opacity(
               color,
@@ -4113,8 +4523,35 @@ fn render_path(
               is_closed_polyline(polyline),
             )
           }
-        _ => ()
-      }
+        }
+      ResolvedPaint::LinearGrad(_)
+      | ResolvedPaint::RadialGrad(_)
+      | ResolvedPaint::Pattern(_) =>
+        if node.stroke_opacity > 0.0 && stroke_px > 0 {
+          match
+            make_paint_server_setter(
+              stroke_paint,
+              node.shape,
+              transform,
+              ctx,
+              resources,
+              node.stroke_opacity * node.opacity,
+            ) {
+            Some(stroke_setter) =>
+              for polyline in transformed_polylines {
+                raster_normalized_stroke(
+                  polyline,
+                  node.stroke,
+                  stroke_px,
+                  Color::white(),
+                  stroke_setter,
+                  is_closed_polyline(polyline),
+                )
+              }
+            None => ()
+          }
+        }
+      _ => ()
     }
   }
 
@@ -4144,6 +4581,24 @@ fn render_text(
   let scaled_size = (font_size * sx).to_int()
   // Fill color for text
   let fill_paint = resolve_paint_for_render(node.fill, node_color, resources)
+  let paint_server_setter = match fill_paint {
+    ResolvedPaint::LinearGrad(_)
+    | ResolvedPaint::RadialGrad(_)
+    | ResolvedPaint::Pattern(_) =>
+      if node.fill_opacity > 0.0 {
+        make_paint_server_setter(
+          fill_paint,
+          node.shape,
+          transform,
+          ctx,
+          resources,
+          node.fill_opacity * node.opacity,
+        )
+      } else {
+        None
+      }
+    _ => None
+  }
   match ctx.text_to_paths {
     Some(to_paths) => {
       // Use font callback: render each character as path commands
@@ -4154,15 +4609,23 @@ fn render_text(
           } else {
             None
           }
+        ResolvedPaint::LinearGrad(_)
+        | ResolvedPaint::RadialGrad(_)
+        | ResolvedPaint::Pattern(_) =>
+          match paint_server_setter {
+            Some(_) => Some(Color::white())
+            None => None
+          }
         _ => None
       }
+      let setter = paint_server_setter.unwrap_or(ctx.setter)
       let mut cursor_x = tx
       for i in 0..<text.length() {
         let codepoint = text[i].unsafe_to_char().to_int()
         let (cmds, advance) = to_paths(codepoint, font_size * sx)
         // Translate commands to cursor position
         let translated = translate_path_commands(cmds, cursor_x, ty)
-        raster_path(translated, fill_color, None, ctx.flatness, ctx.setter)
+        raster_path(translated, fill_color, None, ctx.flatness, setter)
         cursor_x = cursor_x + advance
       }
     }
@@ -4184,15 +4647,22 @@ fn render_text(
               ctx.setter,
             )
           }
-        ResolvedPaint::Pattern(pattern) =>
+        ResolvedPaint::LinearGrad(_)
+        | ResolvedPaint::RadialGrad(_)
+        | ResolvedPaint::Pattern(_) =>
           if node.fill_opacity > 0.0 {
-            render_pattern_fill(
-              node.shape,
-              transform,
-              ctx,
-              pattern,
-              node.fill_opacity * node.opacity,
-            )
+            match paint_server_setter {
+              Some(setter) =>
+                raster_text(
+                  quantize_geometry(tx),
+                  quantize_geometry(ty),
+                  text,
+                  scaled_size,
+                  Color::white(),
+                  setter,
+                )
+              None => ()
+            }
           }
         _ => ()
       }
