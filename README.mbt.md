@@ -1,4 +1,4 @@
-# mizchi/svg
+# Milky2018/svg
 
 Standalone SVG scene graph, parser, and CPU rasterizer for MoonBit.
 It can render SVG markup or an external SVGNode tree into an Image or any custom
@@ -7,7 +7,7 @@ pixel target.
 ## Install
 
 ```sh
-moon add mizchi/svg
+moon add Milky2018/svg
 ```
 
 ## Quick Start (SVG string -> Image)

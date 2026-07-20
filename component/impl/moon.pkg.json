@@ -2,7 +2,7 @@
   "is-main": true,
   "import": [
     { "path": "svg-component/gen/cabi", "alias": "cabi" },
-    { "path": "mizchi/svg", "alias": "svg" }
+    { "path": "Milky2018/svg", "alias": "svg" }
   ],
   "link": {
     "wasm": {

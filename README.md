@@ -1,4 +1,4 @@
-# mizchi/svg
+# Milky2018/svg
 
 SVG パーサー/レンダラーの [MoonBit](https://www.moonbitlang.com/) 実装。外部依存なし。
 
