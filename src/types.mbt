@@ -1353,7 +1353,7 @@ pub(all) struct EventManager {
 ///|
 pub fn EventManager::new() -> EventManager {
   {
-    listeners: {},
+    listeners: Map([]),
     hovered_node: None,
     dragging_node: None,
     drag_start_x: 0.0,
@@ -3820,7 +3820,7 @@ pub(all) struct ClipPathRegistry {
 
 ///|
 pub fn ClipPathRegistry::new() -> ClipPathRegistry {
-  { clips: {} }
+  { clips: Map([]) }
 }
 
 ///|
@@ -3940,7 +3940,7 @@ pub(all) struct MaskRegistry {
 
 ///|
 pub fn MaskRegistry::new() -> MaskRegistry {
-  { masks: {} }
+  { masks: Map([]) }
 }
 
 ///|
@@ -4185,7 +4185,7 @@ pub(all) struct PatternRegistry {
 
 ///|
 pub fn PatternRegistry::new() -> PatternRegistry {
-  { patterns: {} }
+  { patterns: Map([]) }
 }
 
 ///|
@@ -4213,7 +4213,7 @@ pub(all) struct GradientRegistry {
 
 ///|
 pub fn GradientRegistry::new() -> GradientRegistry {
-  { gradients: {} }
+  { gradients: Map([]) }
 }
 
 ///|
@@ -4872,7 +4872,7 @@ pub(all) struct SymbolRegistry {
 
 ///|
 pub fn SymbolRegistry::new() -> SymbolRegistry {
-  { symbols: {} }
+  { symbols: Map([]) }
 }
 
 ///|
@@ -4893,7 +4893,7 @@ pub(all) struct DefsRegistry {
 
 ///|
 pub fn DefsRegistry::new() -> DefsRegistry {
-  { elements: {} }
+  { elements: Map([]) }
 }
 
 ///|
@@ -5162,7 +5162,7 @@ pub(all) struct MarkerRegistry {
 
 ///|
 pub fn MarkerRegistry::new() -> MarkerRegistry {
-  { markers: {} }
+  { markers: Map([]) }
 }
 
 ///|
