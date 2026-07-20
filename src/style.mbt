@@ -4,6 +4,7 @@ priv struct StyleDeclaration {
   value : String
   important : Bool
   inline_style : Bool
+  specificity : Int
   order : Int
 }
 
@@ -73,6 +74,7 @@ fn parse_inline_style_declarations(value : String) -> Array[StyleDeclaration] {
       value: declaration_value,
       important,
       inline_style: true,
+      specificity: 0,
       order: i,
     })
   }
@@ -88,6 +90,8 @@ fn declaration_is_better(
     candidate.important
   } else if candidate.inline_style != current.inline_style {
     candidate.inline_style
+  } else if candidate.specificity != current.specificity {
+    candidate.specificity > current.specificity
   } else {
     candidate.order >= current.order
   }
@@ -116,8 +120,9 @@ fn find_winning_declaration(
 ///|
 fn collect_style_declarations(
   attrs : Array[(String, String)],
+  stylesheet_declarations : Array[StyleDeclaration],
 ) -> Array[StyleDeclaration] {
-  let declarations : Array[StyleDeclaration] = []
+  let declarations = stylesheet_declarations.copy()
   let mut order = 0
   for attr in attrs {
     if attr.0 == "style" {
@@ -133,7 +138,8 @@ fn collect_style_declarations(
           value: trim_string(attr.1),
           important: false,
           inline_style: false,
-          order,
+          specificity: 0,
+          order: -1,
         })
         order += 1
       }
@@ -154,9 +160,26 @@ fn inline_style_value(value : String, name : String) -> String? {
 ///|
 fn style_property_is_declared(
   attrs : Array[(String, String)],
+  stylesheet_declarations : Array[StyleDeclaration],
   name : String,
 ) -> Bool {
-  find_winning_declaration(collect_style_declarations(attrs), name) is Some(_)
+  find_winning_declaration(
+    collect_style_declarations(attrs, stylesheet_declarations),
+    name,
+  ) is Some(_)
+}
+
+///|
+fn declarations_are_same(
+  left : StyleDeclaration,
+  right : StyleDeclaration,
+) -> Bool {
+  left.name == right.name &&
+  left.value == right.value &&
+  left.important == right.important &&
+  left.inline_style == right.inline_style &&
+  left.specificity == right.specificity &&
+  left.order == right.order
 }
 
 ///|
@@ -210,7 +233,7 @@ fn compute_custom_properties(
   for declaration in declarations {
     if is_custom_property(declaration.name) {
       match find_winning_declaration(declarations, declaration.name) {
-        Some(winner) if winner.order == declaration.order => {
+        Some(winner) if declarations_are_same(winner, declaration) => {
           let keyword = winner.value.to_lower()
           if keyword == "initial" {
             custom_property_remove(properties, winner.name)
@@ -392,6 +415,7 @@ fn resolve_style_choice(
 fn apply_resolved_noncomputed_attributes(
   node : SVGNode,
   attrs : Array[(String, String)],
+  declarations : Array[StyleDeclaration],
   properties : Array[(String, String)],
 ) -> Unit {
   for attr in attrs {
@@ -403,26 +427,16 @@ fn apply_resolved_noncomputed_attributes(
       }
     }
   }
-  for attr in attrs {
-    if attr.0 == "style" {
-      let declarations = parse_inline_style_declarations(attr.1)
-      for declaration in declarations {
-        if !is_custom_property(declaration.name) &&
-          !is_computed_style_property(declaration.name) {
-          match find_winning_declaration(declarations, declaration.name) {
-            Some(winner) if winner.order == declaration.order =>
-              match resolve_css_variables(
-                winner.value,
-                properties,
-                [],
-                0,
-              ) {
-                Some(value) => apply_attribute(node, winner.name, value)
-                None => ()
-              }
-            _ => ()
+  for declaration in declarations {
+    if !is_custom_property(declaration.name) &&
+      !is_computed_style_property(declaration.name) {
+      match find_winning_declaration(declarations, declaration.name) {
+        Some(winner) if declarations_are_same(winner, declaration) =>
+          match resolve_css_variables(winner.value, properties, [], 0) {
+            Some(value) => apply_attribute(node, winner.name, value)
+            None => ()
           }
-        }
+        _ => ()
       }
     }
   }
@@ -432,10 +446,11 @@ fn apply_resolved_noncomputed_attributes(
 fn resolve_computed_style(
   node : SVGNode,
   attrs : Array[(String, String)],
+  stylesheet_declarations : Array[StyleDeclaration],
   parent : InheritedStyle,
   apply_noncomputed : Bool,
 ) -> InheritedStyle {
-  let declarations = collect_style_declarations(attrs)
+  let declarations = collect_style_declarations(attrs, stylesheet_declarations)
   let custom_properties = compute_custom_properties(
     parent.custom_properties,
     declarations,
@@ -452,7 +467,12 @@ fn resolve_computed_style(
   node.marker_mid = parent.marker_mid
   node.marker_end = parent.marker_end
   if apply_noncomputed {
-    apply_resolved_noncomputed_attributes(node, attrs, custom_properties)
+    apply_resolved_noncomputed_attributes(
+      node,
+      attrs,
+      declarations,
+      custom_properties,
+    )
   }
   match resolve_style_choice(declarations, custom_properties, "fill", true) {
     StyleInitial => node.fill = SolidColor(Color::black())

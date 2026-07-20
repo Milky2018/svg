@@ -20,12 +20,14 @@ priv struct SVGParseContext {
   patterns : PatternRegistry
   gradients : GradientRegistry
   markers : MarkerRegistry
+  style_rules : Array[StyleRule]
+  element_stack : Array[StyleElement]
   style_stack : Array[InheritedStyle]
   viewport_stack : Array[(Double, Double)]
 }
 
 ///|
-fn SVGParseContext::new() -> SVGParseContext {
+fn SVGParseContext::new(style_rules : Array[StyleRule]) -> SVGParseContext {
   {
     symbols: SymbolRegistry::new(),
     defs: DefsRegistry::new(),
@@ -34,6 +36,8 @@ fn SVGParseContext::new() -> SVGParseContext {
     patterns: PatternRegistry::new(),
     gradients: GradientRegistry::new(),
     markers: MarkerRegistry::new(),
+    style_rules,
+    element_stack: [],
     style_stack: [],
     viewport_stack: [],
   }
@@ -80,6 +84,48 @@ fn SVGParseContext::current_style(self : SVGParseContext) -> InheritedStyle {
   } else {
     self.style_stack[self.style_stack.length() - 1]
   }
+}
+
+///|
+fn SVGParseContext::matching_declarations(
+  self : SVGParseContext,
+  tag : String,
+  attrs : Array[(String, String)],
+) -> Array[StyleDeclaration] {
+  matching_stylesheet_declarations(
+    self.style_rules,
+    tag,
+    attrs,
+    self.element_stack,
+  )
+}
+
+///|
+fn resolve_element_computed_style(
+  node : SVGNode,
+  tag : String,
+  attrs : Array[(String, String)],
+  ctx : SVGParseContext,
+  parent : InheritedStyle,
+  apply_noncomputed : Bool,
+) -> InheritedStyle {
+  resolve_computed_style(
+    node,
+    attrs,
+    ctx.matching_declarations(tag, attrs),
+    parent,
+    apply_noncomputed,
+  )
+}
+
+///|
+fn element_style_property_is_declared(
+  tag : String,
+  attrs : Array[(String, String)],
+  ctx : SVGParseContext,
+  name : String,
+) -> Bool {
+  style_property_is_declared(attrs, ctx.matching_declarations(tag, attrs), name)
 }
 
 ///|
@@ -242,7 +288,7 @@ pub fn parse_svg(svg_str : String) -> SVGNode? {
 /// Parse SVG markup string into SVGDocument with resources
 pub fn parse_svg_document(svg_str : String) -> SVGDocument? {
   let parser = SVGParser::new(svg_str)
-  let ctx = SVGParseContext::new()
+  let ctx = SVGParseContext::new(parse_embedded_stylesheets(svg_str))
   match parse_element(parser, ctx, "") {
     Some(root) =>
       Some({
@@ -306,13 +352,15 @@ fn parse_element(
       if !self_closing {
         let temp = SVGNode::new(Group)
         apply_attributes(temp, attrs)
-        let style = resolve_computed_style(
+        let style = resolve_element_computed_style(
           temp,
+          tag_name,
           attrs,
+          ctx,
           ctx.current_style(),
           true,
         )
-        parse_children(parser, temp, tag_name, ctx, style)
+        parse_children(parser, temp, tag_name, attrs, ctx, style)
       }
       Group |> SVGNode::new |> Some
     }
@@ -324,9 +372,11 @@ fn parse_element(
       }
       symbol_node.id = id
       apply_attributes(symbol_node, attrs)
-      let symbol_style = resolve_computed_style(
+      let symbol_style = resolve_element_computed_style(
         symbol_node,
+        tag_name,
         attrs,
+        ctx,
         ctx.current_style(),
         true,
       )
@@ -351,7 +401,7 @@ fn parse_element(
         None => PreserveAspectRatio::default()
       }
       if !self_closing {
-        parse_children(parser, symbol_node, tag_name, ctx, symbol_style)
+        parse_children(parser, symbol_node, tag_name, attrs, ctx, symbol_style)
       }
       let symbol = match view_box {
         Some(vb) =>
@@ -431,14 +481,22 @@ fn parse_element(
         None => Group |> SVGNode::new |> Some
       }
     }
+    "style" => {
+      if !self_closing {
+        skip_to_end_tag(parser, tag_name)
+      }
+      Group |> SVGNode::new |> Some
+    }
     _ => {
       // Create node based on tag
       let node = create_node_for_tag(tag_name)
       // Apply attributes
       apply_attributes(node, attrs)
-      let computed_style = resolve_computed_style(
+      let computed_style = resolve_element_computed_style(
         node,
+        tag_name,
         attrs,
+        ctx,
         ctx.current_style(),
         true,
       )
@@ -481,7 +539,8 @@ fn parse_element(
       // Parse children (for container elements)
       if !self_closing {
         match node.shape {
-          Group => parse_children(parser, node, tag_name, ctx, computed_style)
+          Group =>
+            parse_children(parser, node, tag_name, attrs, ctx, computed_style)
           _ =>
             // Skip to end tag for non-container elements
             skip_to_end_tag(parser, tag_name)
@@ -529,9 +588,11 @@ fn parse_children(
   parser : SVGParser,
   parent : SVGNode,
   parent_tag : String,
+  parent_attrs : Array[(String, String)],
   ctx : SVGParseContext,
   parent_style : InheritedStyle,
 ) -> Unit {
+  ctx.element_stack.push(style_element(parent_tag, parent_attrs))
   ctx.style_stack.push(parent_style)
   while !parser.is_end() {
     parser.skip_whitespace()
@@ -579,6 +640,7 @@ fn parse_children(
     }
   }
   let _ = ctx.style_stack.pop()
+  let _ = ctx.element_stack.pop()
 }
 
 ///|
@@ -1354,8 +1416,12 @@ fn parse_use(
             node,
             ctx.current_style().custom_properties,
           )
-          let _ = resolve_computed_style(node, attrs, base_style, false)
-          if style_property_is_declared(attrs, "paint-order") {
+          let _ = resolve_element_computed_style(
+            node, "use", attrs, ctx, base_style, false,
+          )
+          if element_style_property_is_declared(
+              "use", attrs, ctx, "paint-order",
+            ) {
             apply_paint_order_recursive(node, node.paint_order)
           }
           Some(node)
@@ -1393,8 +1459,12 @@ fn parse_use(
             node,
             ctx.current_style().custom_properties,
           )
-          let _ = resolve_computed_style(node, attrs, base_style, false)
-          if style_property_is_declared(attrs, "paint-order") {
+          let _ = resolve_element_computed_style(
+            node, "use", attrs, ctx, base_style, false,
+          )
+          if element_style_property_is_declared(
+              "use", attrs, ctx, "paint-order",
+            ) {
             apply_paint_order_recursive(node, node.paint_order)
           }
           Some(node)
@@ -1476,8 +1546,12 @@ fn parse_use(
                 node,
                 ctx.current_style().custom_properties,
               )
-              let _ = resolve_computed_style(node, attrs, base_style, false)
-              if style_property_is_declared(attrs, "paint-order") {
+              let _ = resolve_element_computed_style(
+                node, "use", attrs, ctx, base_style, false,
+              )
+              if element_style_property_is_declared(
+                  "use", attrs, ctx, "paint-order",
+                ) {
                 apply_paint_order_recursive(node, node.paint_order)
               }
               Some(node)
@@ -1794,7 +1868,14 @@ fn parse_image(
   }
   let node = SVGNode::new(Image(x~, y~, width~, height~, href=svg_data))
   apply_attributes(node, attrs)
-  let _ = resolve_computed_style(node, attrs, ctx.current_style(), true)
+  let _ = resolve_element_computed_style(
+    node,
+    "image",
+    attrs,
+    ctx,
+    ctx.current_style(),
+    true,
+  )
   match node.shape {
     Image(..) as img =>
       node.shape = Image(
@@ -1846,8 +1927,15 @@ fn parse_clip_path(
 ) -> Unit {
   let temp = SVGNode::new(Group)
   apply_attributes(temp, attrs)
-  let style = resolve_computed_style(temp, attrs, ctx.current_style(), true)
-  parse_children(parser, temp, tag_name, ctx, style)
+  let style = resolve_element_computed_style(
+    temp,
+    tag_name,
+    attrs,
+    ctx,
+    ctx.current_style(),
+    true,
+  )
+  parse_children(parser, temp, tag_name, attrs, ctx, style)
   let id = match get_attr(attrs, "id") {
     Some(v) => v
     None => ""
@@ -1912,8 +2000,15 @@ fn parse_mask(
 ) -> Unit {
   let temp = SVGNode::new(Group)
   apply_attributes(temp, attrs)
-  let style = resolve_computed_style(temp, attrs, ctx.current_style(), true)
-  parse_children(parser, temp, tag_name, ctx, style)
+  let style = resolve_element_computed_style(
+    temp,
+    tag_name,
+    attrs,
+    ctx,
+    ctx.current_style(),
+    true,
+  )
+  parse_children(parser, temp, tag_name, attrs, ctx, style)
   parse_mask_with_content(attrs, temp.children, ctx)
 }
 
@@ -2028,8 +2123,15 @@ fn parse_pattern(
   }
   let temp = SVGNode::new(Group)
   apply_attributes(temp, attrs)
-  let style = resolve_computed_style(temp, attrs, ctx.current_style(), true)
-  parse_children(parser, temp, tag_name, ctx, style)
+  let style = resolve_element_computed_style(
+    temp,
+    tag_name,
+    attrs,
+    ctx,
+    ctx.current_style(),
+    true,
+  )
+  parse_children(parser, temp, tag_name, attrs, ctx, style)
   parse_pattern_with_content(attrs, temp.children, ctx)
 }
 
@@ -2041,7 +2143,14 @@ fn parse_marker_from_attrs(
 ) -> Unit {
   let node = SVGNode::new(Group)
   apply_attributes(node, attrs)
-  let _ = resolve_computed_style(node, attrs, ctx.current_style(), true)
+  let _ = resolve_element_computed_style(
+    node,
+    "marker",
+    attrs,
+    ctx,
+    ctx.current_style(),
+    true,
+  )
   parse_marker_with_content(attrs, node, ctx)
 }
 
@@ -2055,8 +2164,15 @@ fn parse_marker(
 ) -> Unit {
   let temp = SVGNode::new(Group)
   apply_attributes(temp, attrs)
-  let style = resolve_computed_style(temp, attrs, ctx.current_style(), true)
-  parse_children(parser, temp, tag_name, ctx, style)
+  let style = resolve_element_computed_style(
+    temp,
+    tag_name,
+    attrs,
+    ctx,
+    ctx.current_style(),
+    true,
+  )
+  parse_children(parser, temp, tag_name, attrs, ctx, style)
   parse_marker_with_content(attrs, temp, ctx)
 }
 

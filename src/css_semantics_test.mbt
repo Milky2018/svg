@@ -124,3 +124,45 @@ test "hsl and hsla colors are parsed" {
     None => fail("expected hsla target")
   }
 }
+
+///|
+test "embedded styles apply regardless of document order" {
+  let svg = "<svg><rect id=\"target\" width=\"8\" height=\"8\"/><style><![CDATA[rect { fill: hsl(30, 100%, 50%); }]]></style></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => assert_solid_color(node.fill, 255, 128, 0, 255)
+    None => fail("expected target")
+  }
+}
+
+///|
+test "stylesheet cascade respects specificity importance and inline style" {
+  let svg = "<svg><style>* { fill: black; } rect { fill: red; } .hot { fill: green; } #target { fill: blue; } rect.hot { stroke: red !important; }</style><rect id=\"target\" class=\"hot\" width=\"8\" height=\"8\" fill=\"white\" style=\"fill: yellow; stroke: blue\"/></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => {
+      assert_solid_color(node.fill, 255, 255, 0, 255)
+      assert_solid_color(node.stroke.paint, 255, 0, 0, 255)
+    }
+    None => fail("expected target")
+  }
+}
+
+///|
+test "static selector lists child and descendant combinators match" {
+  let svg = "<svg><style>circle, g.outer > g rect.selected { fill: purple; stroke-width: var(--width); } g.outer { --width: 5; }</style><g class=\"outer\"><g><rect id=\"target\" class=\"selected\" width=\"8\" height=\"8\"/></g></g></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => {
+      assert_solid_color(node.fill, 128, 0, 128, 255)
+      assert_eq(node.stroke.width, 5.0)
+    }
+    None => fail("expected target")
+  }
+}
+
+///|
+test "stylesheet source order wins and commented styles are ignored" {
+  let svg = "<svg><!-- <style>#target { fill: blue !important; }</style> --><style>.same { fill: red; } .same { fill: green; }</style><rect id=\"target\" class=\"same\" width=\"8\" height=\"8\" fill=\"white\"/></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => assert_solid_color(node.fill, 0, 128, 0, 255)
+    None => fail("expected target")
+  }
+}
