@@ -778,6 +778,65 @@ fn intersect_clip(a : ClipRect, b : ClipRect) -> ClipRect? {
 }
 
 ///|
+fn apply_transformed_rect_clip(
+  ctx : RenderContext,
+  local_rect : BoundingBox,
+  transform : Transform,
+) -> RenderContext? {
+  if local_rect.is_empty() || !transform.is_invertible() {
+    return None
+  }
+  let world_bbox = transform.apply_bbox(local_rect)
+  let mut clip_x = floor_to_int(world_bbox.min_x)
+  let mut clip_y = floor_to_int(world_bbox.min_y)
+  let mut clip_w = ceil_to_int(world_bbox.max_x) - clip_x
+  let mut clip_h = ceil_to_int(world_bbox.max_y) - clip_y
+  if clip_x < 0 {
+    clip_w = clip_w + clip_x
+    clip_x = 0
+  }
+  if clip_y < 0 {
+    clip_h = clip_h + clip_y
+    clip_y = 0
+  }
+  if clip_x + clip_w > ctx.width {
+    clip_w = ctx.width - clip_x
+  }
+  if clip_y + clip_h > ctx.height {
+    clip_h = ctx.height - clip_y
+  }
+  if clip_w <= 0 || clip_h <= 0 {
+    return None
+  }
+  let bounds_clip = ClipRect::new(clip_x, clip_y, clip_w, clip_h)
+  let clip = match ctx.clip {
+    Some(existing) =>
+      match intersect_clip(existing, bounds_clip) {
+        Some(value) => value
+        None => return None
+      }
+    None => bounds_clip
+  }
+  let inverse = transform.inverse()
+  let inner = ctx.setter.with_clip(clip)
+  let setter : PixelSetter = {
+    set: fn(x, y, color) {
+      let (local_x, local_y) = inverse.apply(
+        x.to_double() + 0.5,
+        y.to_double() + 0.5,
+      )
+      if local_x >= local_rect.min_x &&
+        local_x < local_rect.max_x &&
+        local_y >= local_rect.min_y &&
+        local_y < local_rect.max_y {
+        inner.pixel(x, y, color)
+      }
+    },
+  }
+  Some({ ..ctx, setter, clip: Some(clip) })
+}
+
+///|
 fn render_node(
   node : SVGNode,
   parent_transform : Transform,
@@ -842,38 +901,9 @@ fn render_node(
     (node.clip_overflow, node.viewport_width, node.viewport_height) {
     (true, Some(vw), Some(vh)) => {
       let viewport_bbox = BoundingBox::from_rect(0.0, 0.0, vw, vh)
-      let world_bbox = base_transform.apply_bbox(viewport_bbox)
-      let mut clip_x = floor_to_int(world_bbox.min_x)
-      let mut clip_y = floor_to_int(world_bbox.min_y)
-      let mut clip_w = ceil_to_int(world_bbox.max_x - world_bbox.min_x)
-      let mut clip_h = ceil_to_int(world_bbox.max_y - world_bbox.min_y)
-      if clip_x < 0 {
-        clip_w = clip_w + clip_x
-        clip_x = 0
-      }
-      if clip_y < 0 {
-        clip_h = clip_h + clip_y
-        clip_y = 0
-      }
-      if clip_x + clip_w > ctx_for_node.width {
-        clip_w = ctx_for_node.width - clip_x
-      }
-      if clip_y + clip_h > ctx_for_node.height {
-        clip_h = ctx_for_node.height - clip_y
-      }
-      if clip_w <= 0 || clip_h <= 0 {
-        return
-      }
-      let viewport_clip = ClipRect::new(clip_x, clip_y, clip_w, clip_h)
-      let merged = match ctx_for_node.clip {
-        Some(existing) => intersect_clip(existing, viewport_clip)
-        None => Some(viewport_clip)
-      }
-      match merged {
-        Some(clip) => {
-          let setter = ctx_for_node.setter.with_clip(clip)
-          { ..ctx_for_node, setter, clip: Some(clip) }
-        }
+      match
+        apply_transformed_rect_clip(ctx_for_node, viewport_bbox, base_transform) {
+        Some(clipped) => clipped
         None => return
       }
     }
@@ -1309,19 +1339,13 @@ fn apply_mask_to_isolated_layer(
     setter: make_image_compositing_setter(mask_image),
     target_image: Some(mask_image),
   }
-  let mask_bounds = element_transform.apply_bbox(
-    mask.get_mask_bounds(bbox_local),
-  )
-  let clip = ClipRect::new(
-    floor_to_int(mask_bounds.min_x),
-    floor_to_int(mask_bounds.min_y),
-    ceil_to_int(mask_bounds.width()),
-    ceil_to_int(mask_bounds.height()),
-  )
-  let mask_ctx = {
-    ..base_mask_ctx,
-    setter: base_mask_ctx.setter.with_clip(clip),
-    clip: Some(clip),
+  let mask_bounds_local = mask.get_mask_bounds(bbox_local)
+  let mask_ctx = match
+    apply_transformed_rect_clip(
+      base_mask_ctx, mask_bounds_local, element_transform,
+    ) {
+    Some(clipped) => clipped
+    None => return Image::new(source.width, source.height)
   }
   let mask_parent = match mask.mask_content_units {
     MaskUnits::ObjectBoundingBox => {
@@ -1361,6 +1385,7 @@ fn apply_clip_path(
   let clip = ClipPath::{
     id: clip.id,
     shape: clip.shape,
+    content: clip.content,
     transform: combined,
     clip_rule: clip.clip_rule,
     units: clip.units,
@@ -1413,30 +1438,13 @@ fn render_masked_node(
   let mask_image = Image::new(width, height)
   let mask_ctx = make_image_context(mask_image, width, height, ctx)
   let mask_bounds_local = mask.get_mask_bounds(bbox_local)
-  let mask_bounds = element_transform.apply_bbox(mask_bounds_local)
-  let mut clip_min_x = floor_to_int(mask_bounds.min_x) - min_x
-  let mut clip_min_y = floor_to_int(mask_bounds.min_y) - min_y
-  let mut clip_max_x = ceil_to_int(mask_bounds.max_x) - min_x
-  let mut clip_max_y = ceil_to_int(mask_bounds.max_y) - min_y
-  if clip_min_x < 0 {
-    clip_min_x = 0
-  }
-  if clip_min_y < 0 {
-    clip_min_y = 0
-  }
-  if clip_max_x > width {
-    clip_max_x = width
-  }
-  if clip_max_y > height {
-    clip_max_y = height
-  }
-  let clip_w = clip_max_x - clip_min_x
-  let clip_h = clip_max_y - clip_min_y
-  let mask_ctx = if clip_w > 0 && clip_h > 0 {
-    let clip = ClipRect::new(clip_min_x, clip_min_y, clip_w, clip_h)
-    { ..mask_ctx, setter: mask_ctx.setter.with_clip(clip), clip: Some(clip) }
-  } else {
-    mask_ctx
+  let mask_region_transform = offset.multiply(element_transform)
+  let mask_ctx = match
+    apply_transformed_rect_clip(
+      mask_ctx, mask_bounds_local, mask_region_transform,
+    ) {
+    Some(clipped) => clipped
+    None => return
   }
   let mask_parent = match mask.mask_content_units {
     MaskUnits::ObjectBoundingBox => {

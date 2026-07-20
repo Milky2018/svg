@@ -1786,7 +1786,7 @@ fn parse_use(
           node.viewport_width = vw
           node.viewport_height = vh
           let translate = Transform::translate(use_elem.x, use_elem.y)
-          let base = translate.multiply(use_elem.transform)
+          let base = use_elem.transform.multiply(translate)
           node.transform = base.multiply(node.transform)
           node.id = get_attr(attrs, "id").unwrap_or("")
           apply_presentation_attributes(node, attrs)
@@ -1922,7 +1922,7 @@ fn parse_use(
               node.viewport_width = vw
               node.viewport_height = vh
               let translate = Transform::translate(use_elem.x, use_elem.y)
-              let base = translate.multiply(use_elem.transform)
+              let base = use_elem.transform.multiply(translate)
               node.transform = base.multiply(node.transform)
               node.id = get_attr(attrs, "id").unwrap_or("")
               apply_presentation_attributes(node, attrs)
@@ -2297,7 +2297,14 @@ fn parse_clip_path_from_attrs(
     Some(v) => parse_clip_path_units(v)
     None => ClipPathUnits::UserSpaceOnUse
   }
-  let clip = ClipPath::{ id, shape: Group, transform, clip_rule, units }
+  let clip = ClipPath::{
+    id,
+    shape: Group,
+    content: [],
+    transform,
+    clip_rule,
+    units,
+  }
   ctx.clips.add(clip)
 }
 
@@ -2338,32 +2345,25 @@ fn parse_clip_path(
     Some(v) => parse_clip_path_units(v)
     None => ClipPathUnits::UserSpaceOnUse
   }
-  let mut shape : Shape? = None
-  let mut child_transform = Transform::identity()
+  let mut shape : Shape = Group
   for child in temp.children {
     match child.shape {
       Group => ()
       _ => {
-        shape = Some(child.shape)
-        child_transform = child.transform
+        shape = child.shape
         break
       }
     }
   }
-  match shape {
-    Some(s) => {
-      let combined = transform.multiply(child_transform)
-      let clip = ClipPath::{
-        id,
-        shape: s,
-        transform: combined,
-        clip_rule,
-        units,
-      }
-      ctx.clips.add(clip)
-    }
-    None => ()
+  let clip = ClipPath::{
+    id,
+    shape,
+    content: temp.children,
+    transform,
+    clip_rule,
+    units,
   }
+  ctx.clips.add(clip)
 }
 
 ///|

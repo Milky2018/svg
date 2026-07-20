@@ -3802,6 +3802,7 @@ pub fn AnimatedSprite::set_looping(
 pub(all) struct ClipPath {
   id : String
   shape : Shape // The clipping shape
+  content : Array[SVGNode] // Complete clipping subtree, when parsed from SVG
   transform : Transform
   clip_rule : FillRule // nonzero or evenodd
   units : ClipPathUnits
@@ -3819,6 +3820,7 @@ pub fn ClipPath::new(id : String, shape : Shape) -> ClipPath {
   {
     id,
     shape,
+    content: [],
     transform: Transform::identity(),
     clip_rule: NonZero,
     units: UserSpaceOnUse,
@@ -3831,17 +3833,114 @@ pub fn ClipPath::with_transform(
   shape : Shape,
   transform : Transform,
 ) -> ClipPath {
-  { id, shape, transform, clip_rule: NonZero, units: UserSpaceOnUse }
+  {
+    id,
+    shape,
+    content: [],
+    transform,
+    clip_rule: NonZero,
+    units: UserSpaceOnUse,
+  }
 }
 
 ///|
 /// Check if a point is inside the clip path
 pub fn ClipPath::contains(self : ClipPath, x : Double, y : Double) -> Bool {
+  if !self.transform.is_invertible() {
+    return false
+  }
   // Apply inverse transform to get point in clip space
   let inv = self.transform.inverse()
   let (cx, cy) = inv.apply(x, y)
-  // Use hit test
-  hit_test_shape(cx, cy, self.shape)
+  if self.content.length() == 0 {
+    return clip_shape_contains(cx, cy, self.shape, self.clip_rule)
+  }
+  for child in self.content {
+    if clip_node_contains(child, cx, cy, Transform::identity()) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn clip_node_contains(
+  node : SVGNode,
+  x : Double,
+  y : Double,
+  parent_transform : Transform,
+) -> Bool {
+  let transform = parent_transform.multiply(node.transform)
+  if !transform.is_invertible() {
+    return false
+  }
+  let (local_x, local_y) = transform.inverse().apply(x, y)
+  if clip_shape_contains(local_x, local_y, node.shape, node.fill_rule) {
+    return true
+  }
+  for child in node.children {
+    if clip_node_contains(child, x, y, transform) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn clip_shape_contains(
+  x : Double,
+  y : Double,
+  shape : Shape,
+  rule : FillRule,
+) -> Bool {
+  match shape {
+    Rect(x=rx, y=ry, width~, height~, rx=radius_x, ry=radius_y) =>
+      point_in_rounded_rect(x, y, rx, ry, width, height, radius_x, radius_y)
+    Circle(cx~, cy~, r~) => hit_test_circle(x, y, cx, cy, r)
+    Ellipse(cx~, cy~, rx~, ry~) => hit_test_ellipse(x, y, cx, cy, rx, ry)
+    Polygon(points~) | Polyline(points~) =>
+      clip_polylines_contain([points], x, y, rule)
+    Path(commands~) =>
+      clip_polylines_contain(path_to_polylines(commands, 0.25), x, y, rule)
+    Text(x=tx, y=ty, text~, font_size~) => {
+      let width = font_size * 0.6 * text.length().to_double()
+      hit_test_rect(x, y, tx, ty - font_size, width, font_size)
+    }
+    Line(..) | Image(..) | Group => false
+  }
+}
+
+///|
+fn clip_polylines_contain(
+  polylines : Array[Array[(Double, Double)]],
+  x : Double,
+  y : Double,
+  rule : FillRule,
+) -> Bool {
+  let mut crossings = 0
+  let mut winding = 0
+  for points in polylines {
+    let length = points.length()
+    if length < 3 {
+      continue
+    }
+    for i in 0..<length {
+      let j = (i + 1) % length
+      let (x1, y1) = points[i]
+      let (x2, y2) = points[j]
+      if (y1 <= y && y < y2) || (y2 <= y && y < y1) {
+        let crossing_x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+        if crossing_x > x {
+          crossings = crossings + 1
+          winding = winding + (if y1 < y2 { 1 } else { -1 })
+        }
+      }
+    }
+  }
+  match rule {
+    EvenOdd => crossings % 2 == 1
+    NonZero => winding != 0
+  }
 }
 
 ///|
@@ -5392,7 +5491,7 @@ pub fn UseElement::instantiate(
       node.viewport_height = vh
       // Apply use element transform
       let translate = Transform::translate(self.x, self.y)
-      let base = translate.multiply(self.transform)
+      let base = self.transform.multiply(translate)
       node.transform = base.multiply(node.transform)
       Some(node)
     }

@@ -281,6 +281,7 @@ pub fn Camera::zoom_by(Self, Double) -> Unit
 pub(all) struct ClipPath {
   id : String
   shape : Shape
+  content : Array[SVGNode]
   transform : Transform
   clip_rule : FillRule
   units : ClipPathUnits
