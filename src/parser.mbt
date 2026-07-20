@@ -2249,11 +2249,7 @@ fn parse_image(
   if width <= 0.0 && height > 0.0 {
     width = height
   }
-  let svg_data = match decode_data_svg(href) {
-    Some(data) => data
-    None => ""
-  }
-  let node = SVGNode::new(Image(x~, y~, width~, height~, href=svg_data))
+  let node = SVGNode::new(Image(x~, y~, width~, height~, href~))
   apply_attributes(node, attrs)
   let _ = resolve_element_computed_style(
     node,
@@ -2270,7 +2266,7 @@ fn parse_image(
         y=img.y,
         width=img.width,
         height=img.height,
-        href=svg_data,
+        href~,
       )
     _ => ()
   }

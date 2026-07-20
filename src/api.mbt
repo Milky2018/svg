@@ -20,6 +20,26 @@ pub fn render_svg_document_to_image(
 }
 
 ///|
+/// Render an SVGDocument using a host callback for external image references.
+pub fn render_svg_document_to_image_with_resolver(
+  doc : SVGDocument,
+  width : Int,
+  height : Int,
+  image_resolver : (String) -> Image?,
+) -> Image {
+  let image = Image::new(width, height)
+  let setter = make_image_compositing_setter(image)
+  let ctx = {
+    ..RenderContext::new(setter, width, height).with_image_resolver(
+      image_resolver,
+    ),
+    target_image: Some(image),
+  }
+  doc.render(ctx)
+  image
+}
+
+///|
 /// Render a Scene into an Image.
 pub fn render_svg_scene_to_image(
   scene : Scene,
@@ -30,6 +50,26 @@ pub fn render_svg_scene_to_image(
   let setter = make_image_compositing_setter(image)
   let ctx = {
     ..RenderContext::new(setter, width, height),
+    target_image: Some(image),
+  }
+  scene.render(ctx)
+  image
+}
+
+///|
+/// Render a Scene using a host callback for external image references.
+pub fn render_svg_scene_to_image_with_resolver(
+  scene : Scene,
+  width : Int,
+  height : Int,
+  image_resolver : (String) -> Image?,
+) -> Image {
+  let image = Image::new(width, height)
+  let setter = make_image_compositing_setter(image)
+  let ctx = {
+    ..RenderContext::new(setter, width, height).with_image_resolver(
+      image_resolver,
+    ),
     target_image: Some(image),
   }
   scene.render(ctx)
@@ -48,6 +88,18 @@ pub fn render_svg_node_to_image(
 }
 
 ///|
+/// Render a raw SVGNode using a host callback for external image references.
+pub fn render_svg_node_to_image_with_resolver(
+  node : SVGNode,
+  width : Int,
+  height : Int,
+  image_resolver : (String) -> Image?,
+) -> Image {
+  let scene = Scene::new(node)
+  render_svg_scene_to_image_with_resolver(scene, width, height, image_resolver)
+}
+
+///|
 /// Parse and render an SVG markup string into an Image.
 pub fn render_svg_to_image(
   svg_str : String,
@@ -56,6 +108,21 @@ pub fn render_svg_to_image(
 ) -> Image? {
   parse_svg_document(svg_str).map(fn(doc) {
     render_svg_document_to_image(doc, width, height)
+  })
+}
+
+///|
+/// Parse and render SVG markup using a host callback for image references.
+pub fn render_svg_to_image_with_resolver(
+  svg_str : String,
+  width : Int,
+  height : Int,
+  image_resolver : (String) -> Image?,
+) -> Image? {
+  parse_svg_document(svg_str).map(fn(doc) {
+    render_svg_document_to_image_with_resolver(
+      doc, width, height, image_resolver,
+    )
   })
 }
 

@@ -343,12 +343,11 @@ pub fn Scene::render_dirty(self : Scene, ctx : RenderContext) -> BoundingBox {
     (dirty_region.max_x - dirty_region.min_x).to_int(),
     (dirty_region.max_y - dirty_region.min_y).to_int(),
   )
-  let clipped_ctx = RenderContext::with_clip(
-    ctx.setter,
-    ctx.width,
-    ctx.height,
-    clip,
-  )
+  let clipped_ctx = {
+    ..ctx,
+    setter: ctx.setter.with_clip(clip),
+    clip: Some(clip),
+  }
   let resources = RenderResources::empty()
   let base_transform = match self.root.view_box {
     Some(vb) =>
@@ -591,6 +590,8 @@ pub(all) struct RenderContext {
   clip : ClipRect? // Optional clipping rectangle for culling
   /// Font callback: (codepoint, font_size) -> (path_commands, advance_width)
   text_to_paths : ((Int, Double) -> (Array[PathCommand], Double))?
+  /// Host callback for resolving image references into decoded RGBA pixels.
+  image_resolver : ((String) -> Image?)?
   target_image : Image?
 }
 
@@ -952,6 +953,7 @@ fn render_node(
         ctx_for_node,
         node.preserve_aspect_ratio,
         node.preserve_aspect_ratio_is_set,
+        node.opacity,
       )
     Group => ()
   }
@@ -1404,12 +1406,12 @@ fn render_masked_node(
     return
   }
   let image = Image::new(width, height)
-  let image_ctx = make_image_context(image, width, height, ctx.flatness)
+  let image_ctx = make_image_context(image, width, height, ctx)
   let offset = Transform::translate(-min_x.to_double(), -min_y.to_double())
   let image_parent = offset.multiply(parent_transform)
   render_node(node, image_parent, image_ctx, resources, false, parent_color)
   let mask_image = Image::new(width, height)
-  let mask_ctx = make_image_context(mask_image, width, height, ctx.flatness)
+  let mask_ctx = make_image_context(mask_image, width, height, ctx)
   let mask_bounds_local = mask.get_mask_bounds(bbox_local)
   let mask_bounds = element_transform.apply_bbox(mask_bounds_local)
   let mut clip_min_x = floor_to_int(mask_bounds.min_x) - min_x
@@ -1461,16 +1463,17 @@ fn make_image_context(
   image : Image,
   width : Int,
   height : Int,
-  flatness : Double,
+  parent : RenderContext,
 ) -> RenderContext {
   let setter = make_image_compositing_setter(image)
   {
     setter,
     width,
     height,
-    flatness,
+    flatness: parent.flatness,
     clip: None,
-    text_to_paths: None,
+    text_to_paths: parent.text_to_paths,
+    image_resolver: parent.image_resolver,
     target_image: Some(image),
   }
 }
@@ -1763,6 +1766,7 @@ fn build_pattern_tile(
     flatness: ctx.flatness,
     clip: None,
     text_to_paths: ctx.text_to_paths,
+    image_resolver: ctx.image_resolver,
     target_image: Some(image),
   }
   let pixel_scale = Transform::scale(
@@ -2101,6 +2105,7 @@ fn render_image(
   ctx : RenderContext,
   preserve_aspect_ratio : PreserveAspectRatio,
   preserve_aspect_ratio_is_set : Bool,
+  opacity : Double,
 ) -> Unit {
   if width <= 0.0 || height <= 0.0 {
     return
@@ -2108,20 +2113,62 @@ fn render_image(
   if href.length() == 0 {
     return
   }
-  let (x0, y0) = transform.apply(x, y)
-  let (x1, y1) = transform.apply(x + width, y + height)
-  let min_x = min(x0, x1)
-  let min_y = min(y0, y1)
-  let max_x = max(x0, x1)
-  let max_y = max(y0, y1)
-  let ix = quantize_geometry(min_x)
-  let iy = quantize_geometry(min_y)
-  let iw = ceil_to_int(max_x - min_x)
-  let ih = ceil_to_int(max_y - min_y)
-  if iw <= 0 || ih <= 0 {
+  let embedded_svg = match decode_data_svg(href) {
+    Some(svg) => Some(svg)
+    None => {
+      let trimmed = trim_string(href)
+      if string_starts_with(trimmed, "<svg") {
+        Some(trimmed)
+      } else {
+        None
+      }
+    }
+  }
+  match embedded_svg {
+    Some(svg) =>
+      render_embedded_svg_image(
+        svg, x, y, width, height, transform, ctx, preserve_aspect_ratio, preserve_aspect_ratio_is_set,
+        opacity,
+      )
+    None =>
+      match ctx.image_resolver {
+        Some(resolve) =>
+          match resolve(href) {
+            Some(image) =>
+              render_raster_image(
+                image, x, y, width, height, transform, ctx, preserve_aspect_ratio,
+                opacity,
+              )
+            None => ()
+          }
+        None => ()
+      }
+  }
+}
+
+///|
+fn render_embedded_svg_image(
+  svg : String,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  transform : Transform,
+  ctx : RenderContext,
+  preserve_aspect_ratio : PreserveAspectRatio,
+  preserve_aspect_ratio_is_set : Bool,
+  opacity : Double,
+) -> Unit {
+  let image_width = ceil_to_int(width)
+  let image_height = ceil_to_int(height)
+  if image_width <= 0 || image_height <= 0 {
     return
   }
-  let processed = replace_viewport_units(href, iw.to_double(), ih.to_double())
+  let processed = replace_viewport_units(
+    svg,
+    image_width.to_double(),
+    image_height.to_double(),
+  )
   match parse_svg_document(processed) {
     Some(doc) => {
       if preserve_aspect_ratio_is_set {
@@ -2138,16 +2185,105 @@ fn render_image(
           })
         }
       }
-      let image = Image::new(iw, ih)
+      let image = Image::new(image_width, image_height)
       let setter = make_image_compositing_setter(image)
       let image_ctx = {
-        ..RenderContext::new(setter, iw, ih),
+        ..RenderContext::new(setter, image_width, image_height),
+        image_resolver: ctx.image_resolver,
         target_image: Some(image),
       }
       doc.render(image_ctx)
-      blit_image_to_context(image, ctx, ix, iy)
+      render_raster_image(
+        image,
+        x,
+        y,
+        width,
+        height,
+        transform,
+        ctx,
+        PreserveAspectRatio::{ align: None, meet_or_slice: Meet },
+        opacity,
+      )
     }
     None => ()
+  }
+}
+
+///|
+fn render_raster_image(
+  image : Image,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  transform : Transform,
+  ctx : RenderContext,
+  preserve_aspect_ratio : PreserveAspectRatio,
+  opacity : Double,
+) -> Unit {
+  if image.width <= 0 || image.height <= 0 || !transform.is_invertible() {
+    return
+  }
+  let source_to_viewport = ViewBox::{
+    min_x: 0.0,
+    min_y: 0.0,
+    width: image.width.to_double(),
+    height: image.height.to_double(),
+  }.get_transform(width, height, preserve_aspect_ratio)
+  let source_to_local = Transform::translate(x, y).multiply(source_to_viewport)
+  let source_to_device = transform.multiply(source_to_local)
+  if !source_to_device.is_invertible() {
+    return
+  }
+  let device_bounds = transform.apply_bbox(
+    BoundingBox::from_rect(x, y, width, height),
+  )
+  let mut min_x = floor_to_int(device_bounds.min_x)
+  let mut min_y = floor_to_int(device_bounds.min_y)
+  let mut max_x = ceil_to_int(device_bounds.max_x)
+  let mut max_y = ceil_to_int(device_bounds.max_y)
+  if min_x < 0 {
+    min_x = 0
+  }
+  if min_y < 0 {
+    min_y = 0
+  }
+  if max_x > ctx.width {
+    max_x = ctx.width
+  }
+  if max_y > ctx.height {
+    max_y = ctx.height
+  }
+  let device_to_local = transform.inverse()
+  let device_to_source = source_to_device.inverse()
+  let setter = match ctx.clip {
+    Some(clip) => ctx.setter.with_clip(clip)
+    None => ctx.setter
+  }
+  for py in min_y..<max_y {
+    for px in min_x..<max_x {
+      let device_x = px.to_double() + 0.5
+      let device_y = py.to_double() + 0.5
+      let (local_x, local_y) = device_to_local.apply(device_x, device_y)
+      if local_x >= x &&
+        local_x < x + width &&
+        local_y >= y &&
+        local_y < y + height {
+        let (source_x, source_y) = device_to_source.apply(device_x, device_y)
+        if source_x >= 0.0 &&
+          source_x < image.width.to_double() &&
+          source_y >= 0.0 &&
+          source_y < image.height.to_double() {
+          let color = image.get_pixel(
+            floor_to_int(source_x),
+            floor_to_int(source_y),
+          )
+          if color.a > 0 {
+            setter.pixel(px, py, apply_opacity(color, opacity))
+          }
+        }
+      }
+    }
   }
 }
 
@@ -4795,8 +4931,22 @@ pub fn RenderContext::new(
     flatness: 0.5,
     clip: None,
     text_to_paths: None,
+    image_resolver: None,
     target_image: None,
   }
+}
+
+///|
+/// Return this render context with a host image resolver.
+///
+/// The resolver receives the authored `href` and returns decoded RGBA pixels.
+/// Filesystem access, network access, codec selection, and caching remain the
+/// responsibility of the host application.
+pub fn RenderContext::with_image_resolver(
+  self : RenderContext,
+  image_resolver : (String) -> Image?,
+) -> RenderContext {
+  { ..self, image_resolver: Some(image_resolver) }
 }
 
 ///|
@@ -4814,6 +4964,7 @@ pub fn RenderContext::with_clip(
     flatness: 0.5,
     clip: Some(clip),
     text_to_paths: None,
+    image_resolver: None,
     target_image: None,
   }
 }
@@ -4833,6 +4984,7 @@ pub fn RenderContext::with_font(
     flatness: 0.5,
     clip: None,
     text_to_paths: Some(text_to_paths),
+    image_resolver: None,
     target_image: None,
   }
 }
@@ -4851,6 +5003,7 @@ pub fn RenderContext::for_camera(
     flatness: 0.5,
     clip: Some(clip),
     text_to_paths: None,
+    image_resolver: None,
     target_image: None,
   }
 }

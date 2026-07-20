@@ -146,11 +146,19 @@ pub fn render_path_commands_to_image(Array[PathCommand], Int, Int, Color, transf
 
 pub fn render_svg_document_to_image(SVGDocument, Int, Int) -> Image
 
+pub fn render_svg_document_to_image_with_resolver(SVGDocument, Int, Int, (String) -> Image?) -> Image
+
 pub fn render_svg_node_to_image(SVGNode, Int, Int) -> Image
+
+pub fn render_svg_node_to_image_with_resolver(SVGNode, Int, Int, (String) -> Image?) -> Image
 
 pub fn render_svg_scene_to_image(Scene, Int, Int) -> Image
 
+pub fn render_svg_scene_to_image_with_resolver(Scene, Int, Int, (String) -> Image?) -> Image
+
 pub fn render_svg_to_image(String, Int, Int) -> Image?
+
+pub fn render_svg_to_image_with_resolver(String, Int, Int, (String) -> Image?) -> Image?
 
 pub fn saturate_matrix(Double) -> FixedArray[Double]
 
@@ -820,12 +828,14 @@ pub(all) struct RenderContext {
   flatness : Double
   clip : ClipRect?
   text_to_paths : ((Int, Double) -> (Array[PathCommand], Double))?
+  image_resolver : ((String) -> Image?)?
   target_image : Image?
 }
 pub fn RenderContext::for_camera(PixelSetter, Camera) -> Self
 pub fn RenderContext::new(PixelSetter, Int, Int) -> Self
 pub fn RenderContext::with_clip(PixelSetter, Int, Int, ClipRect) -> Self
 pub fn RenderContext::with_font(PixelSetter, Int, Int, (Int, Double) -> (Array[PathCommand], Double)) -> Self
+pub fn RenderContext::with_image_resolver(Self, (String) -> Image?) -> Self
 
 pub(all) struct SVGDocument {
   root : SVGNode

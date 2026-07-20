@@ -52,6 +52,7 @@ graph TD
   ISS_021["ISS-021: Preserve affine primitive geometry during rasterization"]
   ISS_022["ISS-022: Preserve stroke outlines under general affine transforms"]
   ISS_023["ISS-023: Complete gradient and pattern paint-server semantics"]
+  ISS_024["ISS-024: Add host-provided raster image resolution"]
   ISS_002 --> ISS_001
   ISS_003 --> ISS_001
   ISS_004 --> ISS_001
