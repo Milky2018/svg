@@ -583,7 +583,14 @@ fn parse_attributes(parser : SVGParser) -> Array[(String, String)] {
 ///|
 fn apply_attributes(node : SVGNode, attrs : Array[(String, String)]) -> Unit {
   for attr in attrs {
-    apply_presentation_attribute(node, attr.0, attr.1)
+    if attr.0 != "style" {
+      apply_presentation_attribute(node, attr.0, attr.1)
+    }
+  }
+  for attr in attrs {
+    if attr.0 == "style" {
+      apply_style_attributes(node, attr.1)
+    }
   }
 }
 
@@ -944,30 +951,37 @@ fn apply_presentation_attributes(
       name == "height" ||
       name == "href" ||
       name == "xlink:href" ||
-      name == "transform" {
+      name == "transform" ||
+      name == "style" {
       continue
     }
-    if name == "style" {
+    apply_presentation_attribute(node, name, attr.1)
+  }
+  for attr in attrs {
+    if attr.0 == "style" {
       apply_style_attributes_filtered(node, attr.1)
-    } else {
-      apply_presentation_attribute(node, name, attr.1)
     }
   }
 }
 
 ///|
 fn extract_paint_order(attrs : Array[(String, String)]) -> PaintOrder? {
-  if get_attr(attrs, "paint-order") is Some(v) {
-    return v |> parse_paint_order |> Some
-  }
   if get_attr(attrs, "style") is Some(style) {
+    let mut style_order : PaintOrder? = None
     let pairs = parse_style_pairs(style)
     for pair in pairs {
       let name = pair.0.to_lower()
       if name == "paint-order" {
-        return pair.1 |> parse_paint_order |> Some
+        style_order = pair.1 |> parse_paint_order |> Some
       }
     }
+    match style_order {
+      Some(order) => return Some(order)
+      None => ()
+    }
+  }
+  if get_attr(attrs, "paint-order") is Some(v) {
+    return v |> parse_paint_order |> Some
   }
   None
 }
@@ -1185,43 +1199,48 @@ fn parse_use(
     Some(v) => v
     None => return None
   }
-  let x = match get_attr(attrs, "x") {
+  let mut x = match get_attr(attrs, "x") {
     Some(v) => parse_length(v)
     None => 0.0
   }
-  let y = match get_attr(attrs, "y") {
+  let mut y = match get_attr(attrs, "y") {
     Some(v) => parse_length(v)
     None => 0.0
   }
-  let width = match get_attr(attrs, "width") {
+  let mut width = match get_attr(attrs, "width") {
     Some(v) => v |> parse_length |> Some
     None => None
   }
-  let height = match get_attr(attrs, "height") {
+  let mut height = match get_attr(attrs, "height") {
     Some(v) => v |> parse_length |> Some
     None => None
   }
-  let (width, height) = match get_attr(attrs, "style") {
-    Some(style) => {
-      let mut w = width
-      let mut h = height
-      let pairs = parse_style_pairs(style)
-      for pair in pairs {
-        let name = pair.0.to_lower()
-        if name == "width" {
-          w = pair.1 |> parse_length |> Some
-        } else if name == "height" {
-          h = pair.1 |> parse_length |> Some
-        }
+  let mut transform = match get_attr(attrs, "transform") {
+    Some(v) => parse_transform(v)
+    None => Transform::identity()
+  }
+  if get_attr(attrs, "style") is Some(style) {
+    let pairs = parse_style_pairs(style)
+    for pair in pairs {
+      let name = pair.0.to_lower()
+      if name == "x" {
+        x = parse_length(pair.1)
+      } else if name == "y" {
+        y = parse_length(pair.1)
+      } else if name == "width" {
+        width = pair.1 |> parse_length |> Some
+      } else if name == "height" {
+        height = pair.1 |> parse_length |> Some
+      } else if name == "transform" {
+        transform = parse_transform(pair.1)
       }
-      (w, h)
     }
-    None => (width, height)
   }
-  let use_elem = { ..UseElement::new(href, x, y), width, height }
-  let use_elem = match get_attr(attrs, "transform") {
-    Some(v) => { ..use_elem, transform: parse_transform(v) }
-    None => use_elem
+  let use_elem = {
+    ..UseElement::new(href, x, y),
+    width,
+    height,
+    transform,
   }
   let viewport_fallback = ctx.current_viewport()
   let (base_href, frag) = split_href_fragment(use_elem.href)
