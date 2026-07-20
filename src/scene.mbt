@@ -1543,8 +1543,8 @@ fn render_image(
   let min_y = min(y0, y1)
   let max_x = max(x0, x1)
   let max_y = max(y0, y1)
-  let ix = floor_to_int(min_x)
-  let iy = floor_to_int(min_y)
+  let ix = quantize_geometry(min_x)
+  let iy = quantize_geometry(min_y)
   let iw = ceil_to_int(max_x - min_x)
   let ih = ceil_to_int(max_y - min_y)
   if iw <= 0 || ih <= 0 {
@@ -1603,8 +1603,8 @@ fn render_rect(
   let min_y = min(y0, y1)
   let max_x = max(x0, x1)
   let max_y = max(y0, y1)
-  let ix = floor_to_int(min_x)
-  let iy = floor_to_int(min_y)
+  let ix = quantize_geometry(min_x)
+  let iy = quantize_geometry(min_y)
   let iw = ceil_to_int(max_x - min_x)
   let ih = ceil_to_int(max_y - min_y)
   if iw <= 0 || ih <= 0 {
@@ -1741,8 +1741,8 @@ fn render_circle(
   if tr <= 0 {
     return
   }
-  let icx = tx.to_int()
-  let icy = ty.to_int()
+  let icx = quantize_geometry(tx)
+  let icy = quantize_geometry(ty)
   fn draw_fill() -> Unit {
     match resolve_paint_for_render(node.fill, node_color, resources) {
       ResolvedPaint::SolidColor(color) =>
@@ -1817,8 +1817,8 @@ fn render_ellipse(
   if trx <= 0 || try_ <= 0 {
     return
   }
-  let icx = tx.to_int()
-  let icy = ty.to_int()
+  let icx = quantize_geometry(tx)
+  let icy = quantize_geometry(ty)
   fn draw_fill() -> Unit {
     match resolve_paint_for_render(node.fill, node_color, resources) {
       ResolvedPaint::SolidColor(color) =>
@@ -1886,6 +1886,10 @@ fn render_line(
 ) -> Unit {
   let (tx1, ty1) = transform.apply(x1, y1)
   let (tx2, ty2) = transform.apply(x2, y2)
+  let ix1 = quantize_geometry(tx1)
+  let iy1 = quantize_geometry(ty1)
+  let ix2 = quantize_geometry(tx2)
+  let iy2 = quantize_geometry(ty2)
   fn draw_stroke() -> Unit {
     match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
       ResolvedPaint::SolidColor(color) =>
@@ -1899,10 +1903,10 @@ fn render_line(
           match node.stroke.dasharray {
             Some(dasharray) =>
               raster_line_dashed(
-                tx1.to_int(),
-                ty1.to_int(),
-                tx2.to_int(),
-                ty2.to_int(),
+                ix1,
+                iy1,
+                ix2,
+                iy2,
                 stroke_color,
                 dasharray,
                 node.stroke.dashoffset,
@@ -1911,28 +1915,28 @@ fn render_line(
             None =>
               if node.stroke.width <= 1.0 {
                 raster_line(
-                  tx1.to_int(),
-                  ty1.to_int(),
-                  tx2.to_int(),
-                  ty2.to_int(),
+                  ix1,
+                  iy1,
+                  ix2,
+                  iy2,
                   stroke_color,
                   ctx.setter,
                 )
               } else {
                 raster_thick_line(
-                  tx1.to_int(),
-                  ty1.to_int(),
-                  tx2.to_int(),
-                  ty2.to_int(),
+                  ix1,
+                  iy1,
+                  ix2,
+                  iy2,
                   stroke_px,
                   stroke_color,
                   ctx.setter,
                 )
                 draw_line_caps(
-                  tx1.to_int(),
-                  ty1.to_int(),
-                  tx2.to_int(),
-                  ty2.to_int(),
+                  ix1,
+                  iy1,
+                  ix2,
+                  iy2,
                   stroke_px,
                   node.stroke.linecap,
                   stroke_color,
@@ -3584,7 +3588,7 @@ fn render_polyline(
   }
   let transformed = points.map(fn(p) {
     let (x, y) = transform.apply(p.0, p.1)
-    (x.to_int(), y.to_int())
+    (quantize_geometry(x), quantize_geometry(y))
   })
   let (sx, sy) = transform.get_scale()
   let stroke_px = if node.stroke.width > 0.0 {
@@ -3670,7 +3674,7 @@ fn render_polygon(
   }
   let transformed = points.map(fn(p) {
     let (x, y) = transform.apply(p.0, p.1)
-    (x.to_int(), y.to_int())
+    (quantize_geometry(x), quantize_geometry(y))
   })
   let (sx, sy) = transform.get_scale()
   let stroke_px = if node.stroke.width > 0.0 {
@@ -3778,7 +3782,7 @@ fn render_path(
   for polyline in polylines {
     let transformed = polyline.map(fn(p) {
       let (x, y) = transform.apply(p.0, p.1)
-      (x.to_int(), y.to_int())
+      (quantize_geometry(x), quantize_geometry(y))
     })
     transformed_polylines.push(transformed)
   }
@@ -3930,8 +3934,8 @@ fn render_text(
               node.fill_opacity * node.opacity,
             )
             raster_text(
-              tx.to_int(),
-              ty.to_int(),
+              quantize_geometry(tx),
+              quantize_geometry(ty),
               text,
               scaled_size,
               fill_color,

@@ -92,7 +92,7 @@ pub fn render_path_commands_to_image(
   for polyline in polylines {
     let transformed = polyline.map(fn(p) {
       let (x, y) = tf.apply(p.0, p.1)
-      (x.to_int(), y.to_int())
+      (quantize_geometry(x), quantize_geometry(y))
     })
     if transformed.length() >= 3 {
       transformed_polylines.push(transformed)

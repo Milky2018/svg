@@ -303,6 +303,12 @@ fn ceil_to_int_raster(value : Double) -> Int {
 }
 
 ///|
+/// Quantize a floating-point geometry coordinate to the nearest pixel grid point.
+fn quantize_geometry(value : Double) -> Int {
+  value.round().to_int()
+}
+
+///|
 pub fn raster_rounded_rect_fill(
   x : Int,
   y : Int,
