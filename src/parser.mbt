@@ -42,16 +42,34 @@ fn SVGParseContext::new() -> SVGParseContext {
 ///|
 priv struct InheritedStyle {
   fill : Paint
+  fill_rule : FillRule
+  fill_opacity : Double
   stroke : StrokeStyle
-  color : Color?
+  stroke_opacity : Double
+  color : Color
+  paint_order : PaintOrder
+  opacity : Double
+  marker_start : String?
+  marker_mid : String?
+  marker_end : String?
+  custom_properties : Array[(String, String)]
 }
 
 ///|
 fn InheritedStyle::default() -> InheritedStyle {
   {
     fill: SolidColor(Color::black()),
+    fill_rule: NonZero,
+    fill_opacity: 1.0,
     stroke: StrokeStyle::default(),
-    color: None,
+    stroke_opacity: 1.0,
+    color: Color::black(),
+    paint_order: PaintOrder::default(),
+    opacity: 1.0,
+    marker_start: None,
+    marker_mid: None,
+    marker_end: None,
+    custom_properties: [],
   }
 }
 
@@ -65,23 +83,23 @@ fn SVGParseContext::current_style(self : SVGParseContext) -> InheritedStyle {
 }
 
 ///|
-fn inherited_style_from_node(node : SVGNode) -> InheritedStyle {
-  { fill: node.fill, stroke: node.stroke, color: node.color }
-}
-
-///|
-fn apply_inherited_style(node : SVGNode, inherited : InheritedStyle) -> Unit {
-  if !node.fill_is_set {
-    node.fill = inherited.fill
-  }
-  if !node.stroke_paint_is_set {
-    node.stroke = { ..node.stroke, paint: inherited.stroke.paint }
-  }
-  if !node.stroke_width_is_set {
-    node.stroke = { ..node.stroke, width: inherited.stroke.width }
-  }
-  if !node.color_is_set {
-    node.color = inherited.color
+fn inherited_style_from_node(
+  node : SVGNode,
+  custom_properties : Array[(String, String)],
+) -> InheritedStyle {
+  {
+    fill: node.fill,
+    fill_rule: node.fill_rule,
+    fill_opacity: node.fill_opacity,
+    stroke: node.stroke,
+    stroke_opacity: node.stroke_opacity,
+    color: node.color.unwrap_or(Color::black()),
+    paint_order: node.paint_order,
+    opacity: node.opacity,
+    marker_start: node.marker_start,
+    marker_mid: node.marker_mid,
+    marker_end: node.marker_end,
+    custom_properties,
   }
 }
 
@@ -287,7 +305,14 @@ fn parse_element(
     "defs" => {
       if !self_closing {
         let temp = SVGNode::new(Group)
-        parse_children(parser, temp, tag_name, ctx)
+        apply_attributes(temp, attrs)
+        let style = resolve_computed_style(
+          temp,
+          attrs,
+          ctx.current_style(),
+          true,
+        )
+        parse_children(parser, temp, tag_name, ctx, style)
       }
       Group |> SVGNode::new |> Some
     }
@@ -298,6 +323,13 @@ fn parse_element(
         None => ""
       }
       symbol_node.id = id
+      apply_attributes(symbol_node, attrs)
+      let symbol_style = resolve_computed_style(
+        symbol_node,
+        attrs,
+        ctx.current_style(),
+        true,
+      )
       let view_box = match get_attr(attrs, "viewBox") {
         Some(v) => parse_view_box(v)
         None => None
@@ -319,7 +351,7 @@ fn parse_element(
         None => PreserveAspectRatio::default()
       }
       if !self_closing {
-        parse_children(parser, symbol_node, tag_name, ctx)
+        parse_children(parser, symbol_node, tag_name, ctx, symbol_style)
       }
       let symbol = match view_box {
         Some(vb) =>
@@ -359,7 +391,7 @@ fn parse_element(
       Group |> SVGNode::new |> Some
     }
     "image" => {
-      let node = parse_image(attrs)
+      let node = parse_image(attrs, ctx)
       if !self_closing {
         skip_to_end_tag(parser, tag_name)
       }
@@ -404,6 +436,12 @@ fn parse_element(
       let node = create_node_for_tag(tag_name)
       // Apply attributes
       apply_attributes(node, attrs)
+      let computed_style = resolve_computed_style(
+        node,
+        attrs,
+        ctx.current_style(),
+        true,
+      )
       if tag_name == "svg" {
         if parent_tag != "" {
           if get_attr(attrs, "width") is Some(v) {
@@ -443,7 +481,7 @@ fn parse_element(
       // Parse children (for container elements)
       if !self_closing {
         match node.shape {
-          Group => parse_children(parser, node, tag_name, ctx)
+          Group => parse_children(parser, node, tag_name, ctx, computed_style)
           _ =>
             // Skip to end tag for non-container elements
             skip_to_end_tag(parser, tag_name)
@@ -492,10 +530,9 @@ fn parse_children(
   parent : SVGNode,
   parent_tag : String,
   ctx : SVGParseContext,
+  parent_style : InheritedStyle,
 ) -> Unit {
-  let parent_style = ctx.current_style()
-  apply_inherited_style(parent, parent_style)
-  ctx.style_stack.push(inherited_style_from_node(parent))
+  ctx.style_stack.push(parent_style)
   while !parser.is_end() {
     parser.skip_whitespace()
     if parser.peek() != '<' {
@@ -532,7 +569,6 @@ fn parse_children(
     match parse_element(parser, ctx, parent_tag) {
       Some(child) => {
         let child_node = child
-        apply_inherited_style(child_node, ctx.current_style())
         apply_inherited_markers(child_node, parent)
         parent.children.push(child_node)
         if child_node.id.length() > 0 {
@@ -910,22 +946,29 @@ fn parse_marker_ref(value : String) -> String? {
 
 ///|
 fn apply_style_attributes(node : SVGNode, value : String) -> Unit {
-  let pairs = parse_style_pairs(value)
-  for pair in pairs {
-    let name = pair.0.to_lower()
-    if name == "style" {
+  let declarations = parse_inline_style_declarations(value)
+  for declaration in declarations {
+    let name = declaration.name
+    let winner = find_winning_declaration(declarations, name)
+    if name == "style" || is_custom_property(name) {
       continue
     }
-    apply_attribute(node, name, pair.1)
+    match winner {
+      Some(winner) if winner.order == declaration.order =>
+        apply_attribute(node, name, declaration.value)
+      _ => ()
+    }
   }
 }
 
 ///|
 fn apply_style_attributes_filtered(node : SVGNode, value : String) -> Unit {
-  let pairs = parse_style_pairs(value)
-  for pair in pairs {
-    let name = pair.0.to_lower()
+  let declarations = parse_inline_style_declarations(value)
+  for declaration in declarations {
+    let name = declaration.name
+    let winner = find_winning_declaration(declarations, name)
     if name == "style" ||
+      is_custom_property(name) ||
       name == "transform" ||
       name == "x" ||
       name == "y" ||
@@ -933,7 +976,11 @@ fn apply_style_attributes_filtered(node : SVGNode, value : String) -> Unit {
       name == "height" {
       continue
     }
-    apply_attribute(node, name, pair.1)
+    match winner {
+      Some(winner) if winner.order == declaration.order =>
+        apply_attribute(node, name, declaration.value)
+      _ => ()
+    }
   }
 }
 
@@ -962,28 +1009,6 @@ fn apply_presentation_attributes(
       apply_style_attributes_filtered(node, attr.1)
     }
   }
-}
-
-///|
-fn extract_paint_order(attrs : Array[(String, String)]) -> PaintOrder? {
-  if get_attr(attrs, "style") is Some(style) {
-    let mut style_order : PaintOrder? = None
-    let pairs = parse_style_pairs(style)
-    for pair in pairs {
-      let name = pair.0.to_lower()
-      if name == "paint-order" {
-        style_order = pair.1 |> parse_paint_order |> Some
-      }
-    }
-    match style_order {
-      Some(order) => return Some(order)
-      None => ()
-    }
-  }
-  if get_attr(attrs, "paint-order") is Some(v) {
-    return v |> parse_paint_order |> Some
-  }
-  None
 }
 
 ///|
@@ -1220,20 +1245,20 @@ fn parse_use(
     None => Transform::identity()
   }
   if get_attr(attrs, "style") is Some(style) {
-    let pairs = parse_style_pairs(style)
-    for pair in pairs {
-      let name = pair.0.to_lower()
-      if name == "x" {
-        x = parse_length(pair.1)
-      } else if name == "y" {
-        y = parse_length(pair.1)
-      } else if name == "width" {
-        width = pair.1 |> parse_length |> Some
-      } else if name == "height" {
-        height = pair.1 |> parse_length |> Some
-      } else if name == "transform" {
-        transform = parse_transform(pair.1)
-      }
+    if inline_style_value(style, "x") is Some(value) {
+      x = parse_length(value)
+    }
+    if inline_style_value(style, "y") is Some(value) {
+      y = parse_length(value)
+    }
+    if inline_style_value(style, "width") is Some(value) {
+      width = value |> parse_length |> Some
+    }
+    if inline_style_value(style, "height") is Some(value) {
+      height = value |> parse_length |> Some
+    }
+    if inline_style_value(style, "transform") is Some(value) {
+      transform = parse_transform(value)
     }
   }
   let use_elem = {
@@ -1325,8 +1350,13 @@ fn parse_use(
           node.transform = base.multiply(node.transform)
           node.id = get_attr(attrs, "id").unwrap_or("")
           apply_presentation_attributes(node, attrs)
-          if extract_paint_order(attrs) is Some(order) {
-            apply_paint_order_recursive(node, order)
+          let base_style = inherited_style_from_node(
+            node,
+            ctx.current_style().custom_properties,
+          )
+          let _ = resolve_computed_style(node, attrs, base_style, false)
+          if style_property_is_declared(attrs, "paint-order") {
+            apply_paint_order_recursive(node, node.paint_order)
           }
           Some(node)
         }
@@ -1359,8 +1389,13 @@ fn parse_use(
           }
           node.id = get_attr(attrs, "id").unwrap_or("")
           apply_presentation_attributes(node, attrs)
-          if extract_paint_order(attrs) is Some(order) {
-            apply_paint_order_recursive(node, order)
+          let base_style = inherited_style_from_node(
+            node,
+            ctx.current_style().custom_properties,
+          )
+          let _ = resolve_computed_style(node, attrs, base_style, false)
+          if style_property_is_declared(attrs, "paint-order") {
+            apply_paint_order_recursive(node, node.paint_order)
           }
           Some(node)
         }
@@ -1437,8 +1472,13 @@ fn parse_use(
               node.transform = base.multiply(node.transform)
               node.id = get_attr(attrs, "id").unwrap_or("")
               apply_presentation_attributes(node, attrs)
-              if extract_paint_order(attrs) is Some(order) {
-                apply_paint_order_recursive(node, order)
+              let base_style = inherited_style_from_node(
+                node,
+                ctx.current_style().custom_properties,
+              )
+              let _ = resolve_computed_style(node, attrs, base_style, false)
+              if style_property_is_declared(attrs, "paint-order") {
+                apply_paint_order_recursive(node, node.paint_order)
               }
               Some(node)
             }
@@ -1714,7 +1754,10 @@ fn find_node_by_id(node : SVGNode, id : String) -> SVGNode? {
 }
 
 ///|
-fn parse_image(attrs : Array[(String, String)]) -> SVGNode? {
+fn parse_image(
+  attrs : Array[(String, String)],
+  ctx : SVGParseContext,
+) -> SVGNode? {
   let href = match get_attr(attrs, "href") {
     Some(v) => Some(v)
     None => get_attr(attrs, "xlink:href")
@@ -1751,6 +1794,7 @@ fn parse_image(attrs : Array[(String, String)]) -> SVGNode? {
   }
   let node = SVGNode::new(Image(x~, y~, width~, height~, href=svg_data))
   apply_attributes(node, attrs)
+  let _ = resolve_computed_style(node, attrs, ctx.current_style(), true)
   match node.shape {
     Image(..) as img =>
       node.shape = Image(
@@ -1801,7 +1845,9 @@ fn parse_clip_path(
   tag_name : String,
 ) -> Unit {
   let temp = SVGNode::new(Group)
-  parse_children(parser, temp, tag_name, ctx)
+  apply_attributes(temp, attrs)
+  let style = resolve_computed_style(temp, attrs, ctx.current_style(), true)
+  parse_children(parser, temp, tag_name, ctx, style)
   let id = match get_attr(attrs, "id") {
     Some(v) => v
     None => ""
@@ -1865,7 +1911,9 @@ fn parse_mask(
   tag_name : String,
 ) -> Unit {
   let temp = SVGNode::new(Group)
-  parse_children(parser, temp, tag_name, ctx)
+  apply_attributes(temp, attrs)
+  let style = resolve_computed_style(temp, attrs, ctx.current_style(), true)
+  parse_children(parser, temp, tag_name, ctx, style)
   parse_mask_with_content(attrs, temp.children, ctx)
 }
 
@@ -1979,7 +2027,9 @@ fn parse_pattern(
     return
   }
   let temp = SVGNode::new(Group)
-  parse_children(parser, temp, tag_name, ctx)
+  apply_attributes(temp, attrs)
+  let style = resolve_computed_style(temp, attrs, ctx.current_style(), true)
+  parse_children(parser, temp, tag_name, ctx, style)
   parse_pattern_with_content(attrs, temp.children, ctx)
 }
 
@@ -1991,7 +2041,7 @@ fn parse_marker_from_attrs(
 ) -> Unit {
   let node = SVGNode::new(Group)
   apply_attributes(node, attrs)
-  apply_inherited_style(node, ctx.current_style())
+  let _ = resolve_computed_style(node, attrs, ctx.current_style(), true)
   parse_marker_with_content(attrs, node, ctx)
 }
 
@@ -2005,8 +2055,8 @@ fn parse_marker(
 ) -> Unit {
   let temp = SVGNode::new(Group)
   apply_attributes(temp, attrs)
-  apply_inherited_style(temp, ctx.current_style())
-  parse_children(parser, temp, tag_name, ctx)
+  let style = resolve_computed_style(temp, attrs, ctx.current_style(), true)
+  parse_children(parser, temp, tag_name, ctx, style)
   parse_marker_with_content(attrs, temp, ctx)
 }
 
@@ -2675,13 +2725,14 @@ fn parse_number(s : String) -> Double {
 ///|
 fn parse_paint(value : String) -> Paint {
   let value = trim_string(value)
+  let lower = value.to_lower()
   if value.length() == 0 {
     return None
   }
-  if value == "none" {
+  if lower == "none" {
     return None
   }
-  if value == "currentColor" {
+  if lower == "currentcolor" {
     return CurrentColor
   }
   // Paint server with optional fallback: url(#id) <fallback>
@@ -2713,10 +2764,11 @@ fn parse_paint(value : String) -> Paint {
 ///|
 fn parse_paint_fallback(value : String) -> PaintFallback {
   let value = trim_string(value)
-  if value.length() == 0 || value == "none" {
+  let lower = value.to_lower()
+  if value.length() == 0 || lower == "none" {
     return PaintFallback::NoPaint
   }
-  if value == "currentColor" {
+  if lower == "currentcolor" {
     return PaintFallback::CurrentColor
   }
   PaintFallback::SolidColor(parse_color(value))
@@ -2758,7 +2810,7 @@ fn parse_paint_order(value : String) -> PaintOrder {
 
 ///|
 fn parse_color(value : String) -> Color {
-  let value = trim_string(value)
+  let value = trim_string(value).to_lower()
   if value.length() == 0 {
     return Color::black()
   }
@@ -2777,6 +2829,7 @@ fn parse_color(value : String) -> Color {
     "purple" => return Color::rgb(128, 0, 128)
     "pink" => return Color::rgb(255, 192, 203)
     "brown" => return Color::rgb(165, 42, 42)
+    "transparent" => return Color::transparent()
     _ => ()
   }
   // Hex color
@@ -2786,6 +2839,9 @@ fn parse_color(value : String) -> Color {
   // rgb(r, g, b)
   if string_starts_with(value, "rgb") {
     return parse_rgb_color(value)
+  }
+  if string_starts_with(value, "hsl") {
+    return parse_hsl_color(value)
   }
   Color::black()
 }
@@ -2809,18 +2865,28 @@ fn parse_hex_color(value : String) -> Color {
     Int::unsafe_to_char(s[i].to_int())
   }
 
-  if value.length() == 4 {
+  if value.length() == 4 || value.length() == 5 {
     // #RGB
     let r = hex_digit(char_at(value, 1))
     let g = hex_digit(char_at(value, 2))
     let b = hex_digit(char_at(value, 3))
-    Color::rgb(r * 17, g * 17, b * 17)
-  } else if value.length() == 7 {
+    let a = if value.length() == 5 {
+      hex_digit(char_at(value, 4)) * 17
+    } else {
+      255
+    }
+    Color::rgba(r * 17, g * 17, b * 17, a)
+  } else if value.length() == 7 || value.length() == 9 {
     // #RRGGBB
     let r = hex_digit(char_at(value, 1)) * 16 + hex_digit(char_at(value, 2))
     let g = hex_digit(char_at(value, 3)) * 16 + hex_digit(char_at(value, 4))
     let b = hex_digit(char_at(value, 5)) * 16 + hex_digit(char_at(value, 6))
-    Color::rgb(r, g, b)
+    let a = if value.length() == 9 {
+      hex_digit(char_at(value, 7)) * 16 + hex_digit(char_at(value, 8))
+    } else {
+      255
+    }
+    Color::rgba(r, g, b, a)
   } else {
     Color::black()
   }
@@ -2828,8 +2894,29 @@ fn parse_hex_color(value : String) -> Color {
 
 ///|
 fn parse_rgb_color(value : String) -> Color {
-  // rgb(r, g, b) or rgba(r, g, b, a)
-  // Find numbers between parentheses
+  let args = parse_color_function_args(value)
+  if args.length() < 3 {
+    return Color::black()
+  }
+  fn channel(arg : String) -> Int {
+    let v = trim_string(arg)
+    if string_ends_with(v, "%") {
+      let number = parse_number(build_substring(v, 0, v.length() - 1))
+      clamp_int((number * 2.55).round().to_int(), 0, 255)
+    } else {
+      clamp_int(parse_number(v).round().to_int(), 0, 255)
+    }
+  }
+  let alpha = if args.length() >= 4 {
+    parse_color_alpha(args[3])
+  } else {
+    255
+  }
+  Color::rgba(channel(args[0]), channel(args[1]), channel(args[2]), alpha)
+}
+
+///|
+fn parse_color_function_args(value : String) -> Array[String] {
   let mut start = 0
   while start < value.length() &&
         Int::unsafe_to_char(value[start].to_int()) != '(' {
@@ -2841,10 +2928,9 @@ fn parse_rgb_color(value : String) -> Color {
     end = end + 1
   }
   if start >= end {
-    return Color::black()
+    return []
   }
-  // Parse comma-separated numbers
-  let nums : Array[Int] = []
+  let args : Array[String] = []
   let mut num_start = start
   for i = start; i <= end; i = i + 1 {
     let c = if i < value.length() {
@@ -2854,17 +2940,77 @@ fn parse_rgb_color(value : String) -> Color {
     }
     if c == ',' || c == ')' {
       if num_start < i {
-        let num_str = build_substring(value, num_start, i)
-        nums.push(parse_number(num_str).to_int())
+        args.push(trim_string(build_substring(value, num_start, i)))
       }
       num_start = i + 1
     }
   }
-  if nums.length() >= 3 {
-    Color::rgb(nums[0], nums[1], nums[2])
+  args
+}
+
+///|
+fn parse_color_alpha(value : String) -> Int {
+  let value = trim_string(value)
+  let alpha = if string_ends_with(value, "%") {
+    parse_number(build_substring(value, 0, value.length() - 1)) / 100.0
   } else {
-    Color::black()
+    parse_number(value)
   }
+  clamp_int((alpha * 255.0).round().to_int(), 0, 255)
+}
+
+///|
+fn parse_hsl_color(value : String) -> Color {
+  let args = parse_color_function_args(value)
+  if args.length() < 3 {
+    return Color::black()
+  }
+  let raw_hue = parse_number(args[0])
+  let hue = raw_hue - (raw_hue / 360.0).floor() * 360.0
+  fn percentage(arg : String) -> Double {
+    let value = trim_string(arg)
+    let number = if string_ends_with(value, "%") {
+      parse_number(build_substring(value, 0, value.length() - 1)) / 100.0
+    } else {
+      parse_number(value)
+    }
+    if number < 0.0 {
+      0.0
+    } else if number > 1.0 {
+      1.0
+    } else {
+      number
+    }
+  }
+  let saturation = percentage(args[1])
+  let lightness = percentage(args[2])
+  let chroma = (1.0 - (2.0 * lightness - 1.0).abs()) * saturation
+  let hue_segment = hue / 60.0
+  let segment_mod = hue_segment - (hue_segment / 2.0).floor() * 2.0
+  let x = chroma * (1.0 - (segment_mod - 1.0).abs())
+  let (r1, g1, b1) = if hue_segment < 1.0 {
+    (chroma, x, 0.0)
+  } else if hue_segment < 2.0 {
+    (x, chroma, 0.0)
+  } else if hue_segment < 3.0 {
+    (0.0, chroma, x)
+  } else if hue_segment < 4.0 {
+    (0.0, x, chroma)
+  } else if hue_segment < 5.0 {
+    (x, 0.0, chroma)
+  } else {
+    (chroma, 0.0, x)
+  }
+  let m = lightness - chroma / 2.0
+  let r = clamp_int(((r1 + m) * 255.0).round().to_int(), 0, 255)
+  let g = clamp_int(((g1 + m) * 255.0).round().to_int(), 0, 255)
+  let b = clamp_int(((b1 + m) * 255.0).round().to_int(), 0, 255)
+  let a = if args.length() >= 4 {
+    parse_color_alpha(args[3])
+  } else {
+    255
+  }
+  Color::rgba(r, g, b, a)
 }
 
 ///|
