@@ -2908,7 +2908,7 @@ pub fn parse_transform(value : String) -> Transform {
     let name_start = i
     while i < value.length() {
       let c = Int::unsafe_to_char(value[i].to_int())
-      if c >= 'a' && c <= 'z' {
+      if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
         i = i + 1
       } else {
         break
