@@ -3,6 +3,38 @@
 /// Convenience functions for rendering to Image and bridging external trees.
 
 ///|
+/// Parse and render SVG markup with structured diagnostics.
+pub fn render_svg(
+  svg_str : String,
+  width : Int,
+  height : Int,
+  options : RenderOptions,
+) -> RenderResult {
+  let image = Image::new(width, height)
+  let diagnostics : Array[RenderDiagnostic] = []
+  match parse_svg_document(svg_str) {
+    Some(doc) => {
+      let setter = make_image_compositing_setter(image)
+      let ctx = {
+        ..RenderContext::new(setter, width, height),
+        image_resolver: options.image_resolver,
+        target_image: Some(image),
+        diagnostics,
+      }
+      doc.render(ctx)
+    }
+    None =>
+      diagnostics.push({
+        kind: ParseFailed,
+        stage: Document,
+        resource: "",
+        node_id: "",
+      })
+  }
+  { image, diagnostics }
+}
+
+///|
 /// Render an SVGDocument into an Image.
 pub fn render_svg_document_to_image(
   doc : SVGDocument,

@@ -593,6 +593,7 @@ pub(all) struct RenderContext {
   /// Host callback for resolving image references into decoded RGBA pixels.
   image_resolver : ((String) -> Image?)?
   target_image : Image?
+  diagnostics : Array[RenderDiagnostic]
 }
 
 ///|
@@ -2411,6 +2412,7 @@ fn make_image_context(
     text_to_paths: parent.text_to_paths,
     image_resolver: parent.image_resolver,
     target_image: Some(image),
+    diagnostics: parent.diagnostics,
   }
 }
 
@@ -2672,6 +2674,12 @@ fn build_pattern_tile(
   resources : RenderResources,
 ) -> PatternTile? {
   if string_array_contains(resources.active_patterns, pattern.id) {
+    ctx.diagnostics.push({
+      kind: ResourceCycle,
+      stage: Paint,
+      resource: pattern.id,
+      node_id: "",
+    })
     return None
   }
   let bbox_width = bbox.width()
@@ -2699,6 +2707,20 @@ fn build_pattern_tile(
   }
   if pixel_height < 1 {
     pixel_height = 1
+  }
+  pixel_width = min_int(pixel_width, 4096)
+  pixel_height = min_int(pixel_height, 4096)
+  let texel_count = pixel_width.to_double() * pixel_height.to_double()
+  if texel_count > 16000000.0 {
+    let reduction = (16000000.0 / texel_count).sqrt()
+    pixel_width = max_int(
+      1,
+      (pixel_width.to_double() * reduction).floor().to_int(),
+    )
+    pixel_height = max_int(
+      1,
+      (pixel_height.to_double() * reduction).floor().to_int(),
+    )
   }
   if ctx.width > 0 && pixel_width > ctx.width {
     pixel_width = ctx.width
@@ -2748,6 +2770,7 @@ fn build_pattern_tile(
     text_to_paths: ctx.text_to_paths,
     image_resolver: ctx.image_resolver,
     target_image: Some(image),
+    diagnostics: ctx.diagnostics,
   }
   let pixel_scale = Transform::scale(
     pixel_width.to_double() / tile_width,
@@ -2806,6 +2829,7 @@ fn make_pattern_setter(
   ctx : RenderContext,
   resources : RenderResources,
   opacity : Double,
+  sampling : ImageSampling,
 ) -> PixelSetter? {
   let tile = match
     build_pattern_tile(pattern, bbox, transform, ctx, resources) {
@@ -2832,7 +2856,7 @@ fn make_pattern_setter(
         tile.image,
         u * tile.image.width.to_double(),
         v * tile.image.height.to_double(),
-        Bilinear,
+        sampling,
         true,
       )
       if color.a > 0 {
@@ -3136,9 +3160,21 @@ fn render_image(
                 image, x, y, width, height, transform, ctx, preserve_aspect_ratio,
                 sampling, opacity,
               )
-            None => ()
+            None =>
+              ctx.diagnostics.push({
+                kind: ResourceUnresolved,
+                stage: Image,
+                resource: href,
+                node_id: "",
+              })
           }
-        None => ()
+        None =>
+          ctx.diagnostics.push({
+            kind: ResourceUnresolved,
+            stage: Image,
+            resource: href,
+            node_id: "",
+          })
       }
   }
 }
@@ -3189,6 +3225,7 @@ fn render_embedded_svg_image(
         ..RenderContext::new(setter, image_width, image_height),
         image_resolver: ctx.image_resolver,
         target_image: Some(image),
+        diagnostics: ctx.diagnostics,
       }
       doc.render(image_ctx)
       render_raster_image(
@@ -3204,7 +3241,13 @@ fn render_embedded_svg_image(
         opacity,
       )
     }
-    None => ()
+    None =>
+      ctx.diagnostics.push({
+        kind: ParseFailed,
+        stage: Image,
+        resource: "embedded-svg",
+        node_id: "",
+      })
   }
 }
 
@@ -6060,6 +6103,7 @@ fn make_paint_server_setter(
   ctx : RenderContext,
   resources : RenderResources,
   opacity : Double,
+  sampling : ImageSampling,
 ) -> PixelSetter? {
   let bbox = get_shape_bounds(shape)
   match paint {
@@ -6114,7 +6158,9 @@ fn make_paint_server_setter(
       })
     }
     ResolvedPaint::Pattern(pattern) =>
-      make_pattern_setter(pattern, bbox, transform, ctx, resources, opacity)
+      make_pattern_setter(
+        pattern, bbox, transform, ctx, resources, opacity, sampling,
+      )
     _ => None
   }
 }
@@ -6241,6 +6287,7 @@ fn render_path(
               ctx,
               resources,
               node.fill_opacity * node.opacity,
+              node.image_sampling,
             ) {
             Some(pattern_setter) =>
               raster_contours_coverage(
@@ -6298,6 +6345,7 @@ fn render_path(
               ctx,
               resources,
               node.stroke_opacity * node.opacity,
+              node.image_sampling,
             ) {
             Some(stroke_setter) =>
               for index, polyline in polylines {
@@ -6359,6 +6407,7 @@ fn render_text(
           ctx,
           resources,
           node.fill_opacity * node.opacity,
+          node.image_sampling,
         )
       } else {
         None
@@ -6565,6 +6614,7 @@ pub fn RenderContext::new(
     text_to_paths: None,
     image_resolver: None,
     target_image: None,
+    diagnostics: [],
   }
 }
 
@@ -6598,6 +6648,7 @@ pub fn RenderContext::with_clip(
     text_to_paths: None,
     image_resolver: None,
     target_image: None,
+    diagnostics: [],
   }
 }
 
@@ -6618,6 +6669,7 @@ pub fn RenderContext::with_font(
     text_to_paths: Some(text_to_paths),
     image_resolver: None,
     target_image: None,
+    diagnostics: [],
   }
 }
 
@@ -6637,5 +6689,6 @@ pub fn RenderContext::for_camera(
     text_to_paths: None,
     image_resolver: None,
     target_image: None,
+    diagnostics: [],
   }
 }

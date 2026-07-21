@@ -144,6 +144,8 @@ pub fn rect(String, Double, Double, Double, Double) -> SVGNode
 
 pub fn render_path_commands_to_image(Array[PathCommand], Int, Int, Color, transform? : Array[Double]) -> Image
 
+pub fn render_svg(String, Int, Int, RenderOptions) -> RenderResult
+
 pub fn render_svg_document_to_image(SVGDocument, Int, Int) -> Image
 
 pub fn render_svg_document_to_image_with_resolver(SVGDocument, Int, Int, (String) -> Image?) -> Image
@@ -881,12 +883,44 @@ pub(all) struct RenderContext {
   text_to_paths : ((Int, Double) -> (Array[PathCommand], Double))?
   image_resolver : ((String) -> Image?)?
   target_image : Image?
+  diagnostics : Array[RenderDiagnostic]
 }
 pub fn RenderContext::for_camera(PixelSetter, Camera) -> Self
 pub fn RenderContext::new(PixelSetter, Int, Int) -> Self
 pub fn RenderContext::with_clip(PixelSetter, Int, Int, ClipRect) -> Self
 pub fn RenderContext::with_font(PixelSetter, Int, Int, (Int, Double) -> (Array[PathCommand], Double)) -> Self
 pub fn RenderContext::with_image_resolver(Self, (String) -> Image?) -> Self
+
+pub(all) struct RenderDiagnostic {
+  kind : RenderDiagnosticKind
+  stage : RenderStage
+  resource : String
+  node_id : String
+}
+
+pub(all) enum RenderDiagnosticKind {
+  ParseFailed
+  ResourceUnresolved
+  ResourceCycle
+  ResourceLimitExceeded
+} derive(Eq, @debug.Debug)
+
+pub(all) struct RenderOptions {
+  image_resolver : ((String) -> Image?)?
+}
+pub fn RenderOptions::default() -> Self
+
+pub(all) struct RenderResult {
+  image : Image
+  diagnostics : Array[RenderDiagnostic]
+}
+
+pub(all) enum RenderStage {
+  Document
+  Paint
+  Image
+  Effects
+} derive(Eq, @debug.Debug)
 
 pub(all) struct SVGDocument {
   root : SVGNode
