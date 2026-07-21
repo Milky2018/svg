@@ -384,6 +384,16 @@ fn resolve_computed_style(
     StyleInherited => ()
     StyleSpecified(value) => node.stroke_opacity = parse_number(value)
   }
+  match
+    resolve_style_choice(declarations, custom_properties, StyleVectorEffect) {
+    StyleInitial => node.stroke = { ..node.stroke, non_scaling: false }
+    StyleInherited => ()
+    StyleSpecified(value) =>
+      node.stroke = {
+        ..node.stroke,
+        non_scaling: trim_string(value).to_lower() == "non-scaling-stroke",
+      }
+  }
   match resolve_style_choice(declarations, custom_properties, StylePaintOrder) {
     StyleInitial => node.paint_order = PaintOrder::default()
     StyleInherited => ()

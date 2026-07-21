@@ -774,6 +774,35 @@ pub fn path_to_polylines(
 }
 
 ///|
+fn path_subpath_closed_flags(commands : Array[PathCommand]) -> Array[Bool] {
+  let result : Array[Bool] = []
+  let mut has_current = false
+  let mut closed = false
+  for command in commands {
+    match command {
+      MoveTo(_, _) | MoveToRel(_, _) => {
+        if has_current {
+          result.push(closed)
+        }
+        has_current = true
+        closed = false
+      }
+      ClosePath => {
+        if !has_current {
+          has_current = true
+        }
+        closed = true
+      }
+      _ => if !has_current { has_current = true }
+    }
+  }
+  if has_current {
+    result.push(closed)
+  }
+  result
+}
+
+///|
 /// Flatten cubic Bezier curve using adaptive subdivision
 fn flatten_cubic(
   x0 : Double,

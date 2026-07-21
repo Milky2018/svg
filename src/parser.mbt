@@ -1313,6 +1313,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
         miterlimit: node.stroke.miterlimit,
         dasharray: node.stroke.dasharray,
         dashoffset: node.stroke.dashoffset,
+        non_scaling: node.stroke.non_scaling,
       }
       node.stroke_paint_is_set = true
     }
@@ -1326,6 +1327,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
         miterlimit: node.stroke.miterlimit,
         dasharray: node.stroke.dasharray,
         dashoffset: node.stroke.dashoffset,
+        non_scaling: node.stroke.non_scaling,
       }
     }
     "opacity" => node.opacity = parse_number(value)
@@ -1346,6 +1348,11 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
       node.stroke = { ..node.stroke, dasharray: parse_dasharray(value) }
     "stroke-dashoffset" =>
       node.stroke = { ..node.stroke, dashoffset: parse_number(value) }
+    "vector-effect" =>
+      node.stroke = {
+        ..node.stroke,
+        non_scaling: trim_string(value).to_lower() == "non-scaling-stroke",
+      }
     "marker-start" => {
       node.marker_start = parse_marker_ref(value)
       node.marker_start_is_set = true

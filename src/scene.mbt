@@ -4102,6 +4102,11 @@ fn push_distinct_local_point(
 }
 
 ///|
+fn points_are_close(left : (Double, Double), right : (Double, Double)) -> Bool {
+  (left.0 - right.0).abs() <= 0.000001 && (left.1 - right.1).abs() <= 0.000001
+}
+
+///|
 fn dash_local_polyline_pieces(
   points : Array[(Double, Double)],
   dasharray : Array[Double],
@@ -4188,6 +4193,27 @@ fn dash_local_polyline_pieces(
     pieces.push(current)
   }
   pieces
+}
+
+///|
+fn merge_closed_dash_seam(
+  pieces : Array[Array[(Double, Double)]],
+  seam : (Double, Double),
+) -> Unit {
+  if pieces.length() <= 1 {
+    return
+  }
+  let first_piece = pieces[0]
+  let last_piece = pieces[pieces.length() - 1]
+  if points_are_close(first_piece[0], seam) &&
+    points_are_close(last_piece[last_piece.length() - 1], seam) {
+    let merged = last_piece.copy()
+    for index in 1..<first_piece.length() {
+      push_distinct_local_point(merged, first_piece[index])
+    }
+    pieces[0] = merged
+    let _ = pieces.pop()
+  }
 }
 
 ///|
@@ -4304,11 +4330,12 @@ fn append_affine_stroke_piece(
   transform : Transform,
   closed : Bool,
 ) -> Unit {
-  if points.length() < 2 || stroke.width <= 0.0 {
+  if points.length() == 0 || stroke.width <= 0.0 {
     return
   }
   let half = stroke.width / 2.0
   let segment_count = if closed { points.length() } else { points.length() - 1 }
+  let mut has_segment = false
   for index in 0..<segment_count {
     let next_index = if index + 1 == points.length() { 0 } else { index + 1 }
     let start = points[index]
@@ -4319,6 +4346,7 @@ fn append_affine_stroke_piece(
     if length <= 0.000001 {
       continue
     }
+    has_segment = true
     let ux = dx / length
     let uy = dy / length
     let start_extension = if !closed && index == 0 && stroke.linecap == Square {
@@ -4349,6 +4377,26 @@ fn append_affine_stroke_piece(
       ],
       transform,
     )
+  }
+  if !has_segment {
+    if !closed {
+      match stroke.linecap {
+        Butt => ()
+        Round => push_affine_stroke_disk(outlines, points[0], half, transform)
+        Square =>
+          push_transformed_stroke_polygon(
+            outlines,
+            [
+              (points[0].0 - half, points[0].1 - half),
+              (points[0].0 + half, points[0].1 - half),
+              (points[0].0 + half, points[0].1 + half),
+              (points[0].0 - half, points[0].1 + half),
+            ],
+            transform,
+          )
+      }
+    }
+    return
   }
   if closed {
     for index in 0..<points.length() {
@@ -4409,7 +4457,23 @@ fn raster_affine_stroke(
   canvas_height : Int,
   closed : Bool,
 ) -> Unit {
-  if source_points.length() < 2 || stroke.width <= 0.0 {
+  if source_points.length() == 0 || stroke.width <= 0.0 {
+    return
+  }
+  if stroke.non_scaling {
+    let device_points = source_points.map(fn(point) {
+      transform.apply(point.0, point.1)
+    })
+    raster_affine_stroke(
+      device_points,
+      { ..stroke, non_scaling: false },
+      Transform::identity(),
+      color,
+      setter,
+      canvas_width,
+      canvas_height,
+      closed,
+    )
     return
   }
   let points = source_points.copy()
@@ -4431,13 +4495,24 @@ fn raster_affine_stroke(
       } else {
         points
       }
-      for
-        piece in dash_local_polyline_pieces(
-          dash_points,
-          dasharray,
-          stroke.dashoffset,
-        ) {
-        append_affine_stroke_piece(outlines, piece, stroke, transform, false)
+      let pieces = dash_local_polyline_pieces(
+        dash_points,
+        dasharray,
+        stroke.dashoffset,
+      )
+      if closed {
+        merge_closed_dash_seam(pieces, points[0])
+      }
+      for piece in pieces {
+        let piece_closed = piece.length() > 2 &&
+          points_are_close(piece[0], piece[piece.length() - 1])
+        let piece_points = piece.copy()
+        if piece_closed {
+          let _ = piece_points.pop()
+        }
+        append_affine_stroke_piece(
+          outlines, piece_points, stroke, transform, piece_closed,
+        )
       }
     }
     None =>
@@ -5867,6 +5942,7 @@ fn render_path(
   resources : RenderResources,
 ) -> Unit {
   let polylines = path_to_polylines(commands, device_path_flatness(transform))
+  let closed_subpaths = path_subpath_closed_flags(commands)
   let transformed_polylines : Array[Array[(Double, Double)]] = []
   for polyline in polylines {
     let transformed = polyline.map(fn(p) { transform.apply(p.0, p.1) })
@@ -6006,17 +6082,14 @@ fn render_path(
     )
     match stroke_paint {
       ResolvedPaint::SolidColor(color) =>
-        for polyline in polylines {
+        for index, polyline in polylines {
           if node.stroke_opacity > 0.0 && node.stroke.width > 0.0 {
             let stroke_color = apply_opacity(
               color,
               node.stroke_opacity * node.opacity,
             )
-            let closed = polyline.length() > 1 &&
-              (polyline[0].0 - polyline[polyline.length() - 1].0).abs() <=
-              0.000001 &&
-              (polyline[0].1 - polyline[polyline.length() - 1].1).abs() <=
-              0.000001
+            let closed = index < closed_subpaths.length() &&
+              closed_subpaths[index]
             raster_affine_stroke(
               polyline,
               node.stroke,
@@ -6043,12 +6116,9 @@ fn render_path(
               node.stroke_opacity * node.opacity,
             ) {
             Some(stroke_setter) =>
-              for polyline in polylines {
-                let closed = polyline.length() > 1 &&
-                  (polyline[0].0 - polyline[polyline.length() - 1].0).abs() <=
-                  0.000001 &&
-                  (polyline[0].1 - polyline[polyline.length() - 1].1).abs() <=
-                  0.000001
+              for index, polyline in polylines {
+                let closed = index < closed_subpaths.length() &&
+                  closed_subpaths[index]
                 raster_affine_stroke(
                   polyline,
                   node.stroke,

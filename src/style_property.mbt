@@ -11,6 +11,7 @@ priv enum ComputedStyleProperty {
   StyleStrokeDasharray
   StyleStrokeDashoffset
   StyleStrokeOpacity
+  StyleVectorEffect
   StyleColor
   StylePaintOrder
   StyleOpacity
@@ -36,6 +37,7 @@ fn computed_style_property(name : String) -> ComputedStyleProperty? {
     "stroke-dasharray" => Some(StyleStrokeDasharray)
     "stroke-dashoffset" => Some(StyleStrokeDashoffset)
     "stroke-opacity" => Some(StyleStrokeOpacity)
+    "vector-effect" => Some(StyleVectorEffect)
     "color" => Some(StyleColor)
     "paint-order" => Some(StylePaintOrder)
     "opacity" => Some(StyleOpacity)
@@ -63,6 +65,7 @@ fn ComputedStyleProperty::name(self : ComputedStyleProperty) -> String {
     StyleStrokeDasharray => "stroke-dasharray"
     StyleStrokeDashoffset => "stroke-dashoffset"
     StyleStrokeOpacity => "stroke-opacity"
+    StyleVectorEffect => "vector-effect"
     StyleColor => "color"
     StylePaintOrder => "paint-order"
     StyleOpacity => "opacity"
@@ -78,7 +81,7 @@ fn ComputedStyleProperty::name(self : ComputedStyleProperty) -> String {
 ///|
 fn ComputedStyleProperty::is_inherited(self : ComputedStyleProperty) -> Bool {
   match self {
-    StyleOpacity => false
+    StyleOpacity | StyleVectorEffect => false
     _ => true
   }
 }

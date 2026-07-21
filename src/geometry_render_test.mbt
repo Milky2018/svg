@@ -221,6 +221,57 @@ test "rect and equivalent closed path share stroke outlines" {
 }
 
 ///|
+test "zero-length line and path share cap rendering" {
+  for cap in ["round", "square", "butt"] {
+    let line = render_geometry_fixture(
+      "<svg width=\"16\" height=\"16\"><line x1=\"8\" y1=\"8\" x2=\"8\" y2=\"8\" stroke=\"black\" stroke-width=\"4\" stroke-linecap=\"" +
+      cap +
+      "\"/></svg>",
+      16,
+      16,
+    )
+    let path = render_geometry_fixture(
+      "<svg width=\"16\" height=\"16\"><path d=\"M8 8 L8 8\" fill=\"none\" stroke=\"black\" stroke-width=\"4\" stroke-linecap=\"" +
+      cap +
+      "\"/></svg>",
+      16,
+      16,
+    )
+    inspect(image_difference_count(line, path), content="0")
+    inspect(
+      visible_geometry_pixels(line) > 0,
+      content=if cap == "butt" { "false" } else { "true" },
+    )
+  }
+}
+
+///|
+test "closed dash without a gap does not add seam caps" {
+  let plain = render_geometry_fixture(
+    "<svg width=\"20\" height=\"20\"><path d=\"M4 4 H16 V16 H4 Z\" fill=\"none\" stroke=\"black\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"bevel\"/></svg>",
+    20, 20,
+  )
+  let dashed = render_geometry_fixture(
+    "<svg width=\"20\" height=\"20\"><path d=\"M4 4 H16 V16 H4 Z\" fill=\"none\" stroke=\"black\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"bevel\" stroke-dasharray=\"1000 1\"/></svg>",
+    20, 20,
+  )
+  inspect(image_difference_count(plain, dashed), content="0")
+}
+
+///|
+test "non-scaling stroke constructs its outline in device space" {
+  let transformed = render_geometry_fixture(
+    "<svg width=\"40\" height=\"24\"><path d=\"M3 8 L15 8\" transform=\"scale(2 1)\" fill=\"none\" stroke=\"black\" stroke-width=\"4\" stroke-dasharray=\"4 3\" vector-effect=\"non-scaling-stroke\"/></svg>",
+    40, 24,
+  )
+  let device = render_geometry_fixture(
+    "<svg width=\"40\" height=\"24\"><path d=\"M6 8 L30 8\" fill=\"none\" stroke=\"black\" stroke-width=\"4\" stroke-dasharray=\"4 3\"/></svg>",
+    40, 24,
+  )
+  inspect(image_difference_count(transformed, device), content="0")
+}
+
+///|
 test "skew functions and equivalent matrices render identically" {
   let skew_x = render_geometry_fixture(
     "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><rect x=\"8\" y=\"8\" width=\"16\" height=\"16\" transform=\"skewX(20)\"/></svg>",

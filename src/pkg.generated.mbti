@@ -1032,6 +1032,7 @@ pub(all) struct StrokeStyle {
   miterlimit : Double
   dasharray : Array[Double]?
   dashoffset : Double
+  non_scaling : Bool
 }
 pub fn StrokeStyle::default() -> Self
 

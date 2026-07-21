@@ -57,6 +57,23 @@ test "painting properties inherit their computed values" {
 }
 
 ///|
+test "vector-effect is computed but not inherited by default" {
+  let svg = "<svg><g vector-effect=\"non-scaling-stroke\"><path id=\"default\"/><path id=\"inherited\" vector-effect=\"inherit\"/><path id=\"inline\" style=\"vector-effect: non-scaling-stroke\"/></g></svg>"
+  match css_test_node(svg, "default") {
+    Some(node) => assert_false(node.stroke.non_scaling)
+    None => fail("expected default target")
+  }
+  match css_test_node(svg, "inherited") {
+    Some(node) => assert_true(node.stroke.non_scaling)
+    None => fail("expected inherited target")
+  }
+  match css_test_node(svg, "inline") {
+    Some(node) => assert_true(node.stroke.non_scaling)
+    None => fail("expected inline target")
+  }
+}
+
+///|
 test "css wide keywords use inherited and initial values" {
   let svg = "<svg><g fill=\"red\" stroke=\"blue\" opacity=\"0.2\"><rect id=\"inherited\" width=\"8\" height=\"8\" fill=\"inherit\" stroke=\"unset\" opacity=\"unset\"/><rect id=\"initial\" width=\"8\" height=\"8\" fill=\"initial\" stroke=\"initial\"/></g></svg>"
   match css_test_node(svg, "inherited") {
