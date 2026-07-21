@@ -1,6 +1,6 @@
 name = "Milky2018/svg"
 
-version = "0.3.0"
+version = "0.3.1"
 
 description = "Standalone SVG scene graph and renderer"
 
