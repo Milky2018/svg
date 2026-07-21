@@ -11,10 +11,17 @@ No ready issues.
 | ID | Status | Priority | Type | Assignee | Blocked by | Blocks | Title |
 | --- | --- | ---: | --- | --- | --- | --- | --- |
 | [ISS-001](ISS-001.md) | in_progress | 1 | epic | codex | ISS-003, ISS-005, ISS-007, ISS-009 | none | Complete static SVG CSS computed semantics |
+| [ISS-028](ISS-028.md) | in_progress | 1 | epic | codex | ISS-030, ISS-031, ISS-032, ISS-033, ISS-034, ISS-035 | none | Replace the integer SVG renderer |
+| [ISS-030](ISS-030.md) | in_progress | 1 | task | codex | none | ISS-028, ISS-031 | Introduce premultiplied rendering surfaces |
 | [ISS-003](ISS-003.md) | open | 1 | bug | unassigned | ISS-012 | ISS-001, ISS-007 | Complete CSS-wide and inherited property behavior |
 | [ISS-011](ISS-011.md) | blocked | 1 | task | unassigned | none | ISS-005 | Upstream complete CSS Color 3 parsing |
 | [ISS-012](ISS-012.md) | blocked | 1 | task | unassigned | none | ISS-003 | Upstream expose custom-property resolution for extension values |
 | [ISS-013](ISS-013.md) | blocked | 1 | bug | unassigned | none | ISS-009 | Upstream compute font-size from inherited custom properties |
+| [ISS-031](ISS-031.md) | open | 1 | task | unassigned | ISS-030 | ISS-028, ISS-032 | Rasterize continuous geometry into coverage |
+| [ISS-032](ISS-032.md) | open | 1 | task | unassigned | ISS-031 | ISS-028, ISS-033 | Rebuild strokes dashes and markers |
+| [ISS-033](ISS-033.md) | open | 1 | task | unassigned | ISS-032 | ISS-028, ISS-034 | Rebuild paint servers and raster images |
+| [ISS-034](ISS-034.md) | open | 1 | task | unassigned | ISS-033 | ISS-028, ISS-035 | Migrate clipping masks filters and blending |
+| [ISS-035](ISS-035.md) | open | 1 | task | unassigned | ISS-034 | ISS-028 | Cut over the rendering facade and remove the old rasterizer |
 | [ISS-005](ISS-005.md) | open | 2 | feature | unassigned | ISS-011 | ISS-001, ISS-007 | Adapt mizchi/css color values to SVG paint |
 | [ISS-007](ISS-007.md) | open | 2 | task | unassigned | ISS-003, ISS-005, ISS-009 | ISS-001 | Verify and document static CSS support |
 | [ISS-009](ISS-009.md) | blocked | 2 | feature | codex | ISS-013 | ISS-001, ISS-007 | Parse text elements with computed font size |
@@ -54,6 +61,14 @@ graph TD
   ISS_025["ISS-025: Repair viewport, use, clip, and mask transforms"]
   ISS_026["ISS-026: Resolve external SVG resource documents"]
   ISS_027["ISS-027: Align advanced Filter Effects numerical semantics"]
+  ISS_028["ISS-028: Replace the integer SVG renderer"]
+  ISS_029["ISS-029: Capture renderer baselines and contracts"]
+  ISS_030["ISS-030: Introduce premultiplied rendering surfaces"]
+  ISS_031["ISS-031: Rasterize continuous geometry into coverage"]
+  ISS_032["ISS-032: Rebuild strokes dashes and markers"]
+  ISS_033["ISS-033: Rebuild paint servers and raster images"]
+  ISS_034["ISS-034: Migrate clipping masks filters and blending"]
+  ISS_035["ISS-035: Cut over the rendering facade and remove the old rasterizer"]
   ISS_002 --> ISS_001
   ISS_003 --> ISS_001
   ISS_004 --> ISS_001
@@ -82,6 +97,19 @@ graph TD
   ISS_014 --> ISS_015
   ISS_017 --> ISS_018
   ISS_018 --> ISS_019
+  ISS_029 --> ISS_028
+  ISS_030 --> ISS_028
+  ISS_031 --> ISS_028
+  ISS_032 --> ISS_028
+  ISS_033 --> ISS_028
+  ISS_034 --> ISS_028
+  ISS_035 --> ISS_028
+  ISS_029 --> ISS_030
+  ISS_030 --> ISS_031
+  ISS_031 --> ISS_032
+  ISS_032 --> ISS_033
+  ISS_033 --> ISS_034
+  ISS_034 --> ISS_035
 ```
 
 ## Warnings
