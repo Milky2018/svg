@@ -1,8 +1,7 @@
 # Milky2018/svg
 
-Standalone SVG scene graph, parser, and CPU rasterizer for MoonBit.
-It can render SVG markup or an external SVGNode tree into an Image or any custom
-pixel target.
+Standalone SVG scene graph, parser, and deterministic CPU renderer for MoonBit.
+It renders SVG markup or an external SVGNode tree into an Image.
 
 ## Install
 
@@ -38,22 +37,32 @@ let scene = Scene::new(node)
 let image = render_svg_scene_to_image(scene, 16, 16)
 ```
 
-## Custom Rendering Target
+## Structured Rendering
 
-You can render into any target by providing a PixelSetter and RenderContext.
+Use `render_svg` when the host needs typed diagnostics and an image resolver:
 
 ```mbt nocheck
-let image = Image::new(64, 64)
-let setter : PixelSetter = { set: fn(x, y, c) { image.set_pixel(x, y, c) } }
-let ctx = RenderContext::new(setter, 64, 64)
-let doc = SVGDocument::new(rect("r", 0.0, 0.0, 10.0, 10.0))
-doc.render(ctx)
+let result = render_svg(
+  svg,
+  64,
+  64,
+  RenderOptions::with_image_resolver(fn(href) {
+    host_decode_image(href)
+  }),
+)
+let image = result.image
+let diagnostics = result.diagnostics
 ```
+
+The renderer owns its pixel target and returns an `Image`. The former
+`PixelSetter`, `RenderContext`, context-driven scene methods, and public
+`raster_*` functions were low-level implementation APIs and are no longer
+public. Use `render_path_commands_to_image` for direct path rendering.
 
 ## Main API
 
 - Parsing: `parse_svg`, `parse_svg_document`
 - Scene graph: `SVGNode`, `Scene`, `SVGDocument`
-- Rendering: `RenderContext`, `PixelSetter`, `render_svg_*_to_image`
+- Rendering: `render_svg`, `RenderResult`, `RenderOptions`, `render_svg_*_to_image`
 - Geometry: `PathCommand`, `Transform`, `ViewBox`, `BoundingBox`
-- Raster: `raster_*` (low-level drawing primitives)
+- Direct paths: `render_path_commands_to_image`

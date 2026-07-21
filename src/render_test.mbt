@@ -334,6 +334,25 @@ test "tiny path translations are quantized symmetrically" {
 }
 
 ///|
+test "path facade preserves fractional coverage" {
+  let image = render_path_commands_to_image(
+    [
+      MoveTo(0.5, 0.0),
+      LineTo(1.5, 0.0),
+      LineTo(1.5, 1.0),
+      LineTo(0.5, 1.0),
+      ClosePath,
+    ],
+    3,
+    1,
+    Color::black(),
+  )
+  inspect(image.get_pixel(0, 0).a, content="128")
+  inspect(image.get_pixel(1, 0).a, content="128")
+  inspect(image.get_pixel(2, 0).a, content="0")
+}
+
+///|
 fn render_scene_path_at(x : Double) -> Image {
   let node = path("probe", "M 0 0 L 8 0 L 8 8 L 0 8 Z")
   node.fill = SolidColor(Color::black())

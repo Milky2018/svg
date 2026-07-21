@@ -329,61 +329,6 @@ fn compute_dirty_region(
 }
 
 ///|
-/// Render only nodes that intersect with the dirty region
-pub fn Scene::render_dirty(self : Scene, ctx : RenderContext) -> BoundingBox {
-  let dirty_region = self.get_dirty_region()
-  if dirty_region.is_empty() {
-    // Nothing dirty
-    return dirty_region
-  }
-  // Create a clipped render context
-  let clip = ClipRect::new(
-    dirty_region.min_x.to_int(),
-    dirty_region.min_y.to_int(),
-    (dirty_region.max_x - dirty_region.min_x).to_int(),
-    (dirty_region.max_y - dirty_region.min_y).to_int(),
-  )
-  let clipped_ctx = {
-    ..ctx,
-    setter: ctx.setter.with_clip(clip),
-    clip: Some(clip),
-  }
-  let resources = RenderResources::empty()
-  let base_transform = match self.root.view_box {
-    Some(vb) =>
-      vb.get_transform(
-        ctx.width.to_double(),
-        ctx.height.to_double(),
-        self.root.preserve_aspect_ratio,
-      )
-    None => Transform::identity()
-  }
-  // Render nodes, update bounds, and clear dirty flags
-  render_and_update_dirty(self.root, base_transform, clipped_ctx, resources)
-  self.clear_dirty()
-  dirty_region
-}
-
-///|
-fn render_and_update_dirty(
-  node : SVGNode,
-  parent_transform : Transform,
-  ctx : RenderContext,
-  resources : RenderResources,
-) -> Unit {
-  let transform = parent_transform.multiply(node.transform)
-  // Update previous bounds and clear dirty
-  let current_bbox = get_shape_bounds(node.shape)
-  if !current_bbox.is_empty() {
-    node.prev_bounds = Some(transform.apply_bbox(current_bbox))
-  }
-  node.node_dirty = false
-  // Render the node (existing render_node logic will handle clipping)
-  render_node(node, parent_transform, ctx, resources, true, Color::black())
-  // Note: render_node already recurses into children
-}
-
-///|
 /// Mark a node and its ancestors as dirty
 pub fn Scene::mark_node_dirty(self : Scene, id : String) -> Bool {
   match self.find_node(id) {
@@ -582,8 +527,8 @@ fn get_shape_bounds(shape : Shape) -> BoundingBox {
 
 ///|
 /// Render context for drawing
-pub(all) struct RenderContext {
-  setter : PixelSetter
+priv struct RenderState {
+  setter : ColorSink
   width : Int
   height : Int
   flatness : Double // For path flattening
@@ -627,7 +572,7 @@ fn RenderResources::empty() -> RenderResources {
 
 ///|
 /// Render a parsed SVG document with registered resources
-pub fn SVGDocument::render(self : SVGDocument, ctx : RenderContext) -> Unit {
+fn SVGDocument::render(self : SVGDocument, ctx : RenderState) -> Unit {
   let resources = {
     clips: self.clips,
     masks: self.masks,
@@ -669,7 +614,7 @@ pub fn SVGDocument::render(self : SVGDocument, ctx : RenderContext) -> Unit {
 
 ///|
 /// Render the scene to a pixel setter
-pub fn Scene::render(self : Scene, ctx : RenderContext) -> Unit {
+fn Scene::render(self : Scene, ctx : RenderState) -> Unit {
   let resources = RenderResources::empty()
   let base_transform = match self.root.view_box {
     Some(vb) =>
@@ -685,68 +630,8 @@ pub fn Scene::render(self : Scene, ctx : RenderContext) -> Unit {
 }
 
 ///|
-/// Render the scene with a camera transform
-pub fn Scene::render_with_camera(
-  self : Scene,
-  ctx : RenderContext,
-  camera : Camera,
-) -> Unit {
-  let camera_transform = camera.get_transform()
-  let resources = RenderResources::empty()
-  render_node(self.root, camera_transform, ctx, resources, true, Color::black())
-  self.clear_dirty()
-}
-
-///|
-/// Render the scene with viewBox coordinate mapping
-pub fn Scene::render_with_viewbox(
-  self : Scene,
-  ctx : RenderContext,
-  viewbox : ViewBox,
-  preserve_aspect_ratio : PreserveAspectRatio,
-) -> Unit {
-  let viewbox_transform = viewbox.get_transform(
-    ctx.width.to_double(),
-    ctx.height.to_double(),
-    preserve_aspect_ratio,
-  )
-  let resources = RenderResources::empty()
-  render_node(
-    self.root,
-    viewbox_transform,
-    ctx,
-    resources,
-    true,
-    Color::black(),
-  )
-  self.clear_dirty()
-}
-
-///|
-/// Render the scene with both viewBox and camera
-pub fn Scene::render_with_viewbox_and_camera(
-  self : Scene,
-  ctx : RenderContext,
-  viewbox : ViewBox,
-  preserve_aspect_ratio : PreserveAspectRatio,
-  camera : Camera,
-) -> Unit {
-  let viewbox_transform = viewbox.get_transform(
-    ctx.width.to_double(),
-    ctx.height.to_double(),
-    preserve_aspect_ratio,
-  )
-  let camera_transform = camera.get_transform()
-  // Apply viewBox first, then camera
-  let combined = viewbox_transform.multiply(camera_transform)
-  let resources = RenderResources::empty()
-  render_node(self.root, combined, ctx, resources, true, Color::black())
-  self.clear_dirty()
-}
-
-///|
 /// Check if a bounding box is visible within the render context
-fn is_visible(bbox : BoundingBox, ctx : RenderContext) -> Bool {
+fn is_visible(bbox : BoundingBox, ctx : RenderState) -> Bool {
   match ctx.clip {
     Some(clip) => bbox.intersects(clip.to_bbox())
     None => {
@@ -787,10 +672,10 @@ fn intersect_clip(a : ClipRect, b : ClipRect) -> ClipRect? {
 
 ///|
 fn apply_transformed_rect_clip(
-  ctx : RenderContext,
+  ctx : RenderState,
   local_rect : BoundingBox,
   transform : Transform,
-) -> RenderContext? {
+) -> RenderState? {
   if local_rect.is_empty() || !transform.is_invertible() {
     return None
   }
@@ -827,7 +712,7 @@ fn apply_transformed_rect_clip(
   }
   let inverse = transform.inverse()
   let inner = ctx.setter.with_clip(clip)
-  let setter : PixelSetter = {
+  let setter : ColorSink = {
     set: fn(x, y, color) {
       let (local_x, local_y) = inverse.apply(
         x.to_double() + 0.5,
@@ -848,7 +733,7 @@ fn apply_transformed_rect_clip(
 fn render_node(
   node : SVGNode,
   parent_transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   allow_mask : Bool,
   parent_color : Color,
@@ -1008,7 +893,7 @@ fn render_node(
 fn render_isolated_node(
   node : SVGNode,
   parent_transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   parent_color : Color,
 ) -> Unit {
@@ -1027,7 +912,7 @@ fn render_isolated_node(
     end_y - origin_y,
     SRGB,
   )
-  let layer_setter : PixelSetter = {
+  let layer_setter : ColorSink = {
     set: fn(x, y, color) {
       layer.composite_device(x, y, PremulColor16::from_color(color))
     },
@@ -1115,7 +1000,7 @@ fn expand_effect_bounds(bounds : BoundingBox, amount : Double) -> BoundingBox {
 fn isolated_node_region(
   node : SVGNode,
   parent_transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
 ) -> BoundingBox {
   let mut bounds = compute_bounds(node, parent_transform)
@@ -1168,7 +1053,7 @@ fn apply_mask_to_isolated_surface(
   source : RenderSurface,
   node : SVGNode,
   parent_transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   mask : Mask,
   parent_color : Color,
@@ -1189,7 +1074,7 @@ fn apply_mask_to_isolated_surface(
     source.height,
     SRGB,
   )
-  let mask_setter : PixelSetter = {
+  let mask_setter : ColorSink = {
     set: fn(x, y, color) {
       mask_surface.composite_device(x, y, PremulColor16::from_color(color))
     },
@@ -1266,7 +1151,7 @@ fn apply_mask_to_isolated_surface(
 ///|
 fn composite_surface_to_context(
   surface : RenderSurface,
-  ctx : RenderContext,
+  ctx : RenderState,
   mode : BlendMode,
 ) -> Unit {
   for local_y in 0..<surface.height {
@@ -2527,12 +2412,12 @@ fn evaluate_filter_graph(
 
 ///|
 fn apply_clip_path(
-  ctx : RenderContext,
+  ctx : RenderState,
   clip : ClipPath,
   element_transform : Transform,
   bbox_local : BoundingBox,
   resources : RenderResources,
-) -> RenderContext {
+) -> RenderState {
   let mask = build_clip_path_coverage(
     clip,
     element_transform,
@@ -2543,11 +2428,11 @@ fn apply_clip_path(
     0,
   )
   if mask.width == 0 || mask.height == 0 {
-    let setter : PixelSetter = { set: fn(_, _, _) { () } }
+    let setter : ColorSink = { set: fn(_, _, _) { () } }
     return { ..ctx, setter, }
   }
   let inner = ctx.setter
-  let setter : PixelSetter = {
+  let setter : ColorSink = {
     set: fn(x, y, color) {
       let coverage = mask.get_device(x, y)
       if coverage > 0 {
@@ -2735,7 +2620,7 @@ fn build_clip_path_coverage(
 fn render_masked_node(
   node : SVGNode,
   parent_transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   mask : Mask,
   parent_color : Color,
@@ -2799,8 +2684,8 @@ fn make_image_context(
   image : Image,
   width : Int,
   height : Int,
-  parent : RenderContext,
-) -> RenderContext {
+  parent : RenderState,
+) -> RenderState {
   let setter = make_image_compositing_setter(image)
   {
     setter,
@@ -2817,7 +2702,7 @@ fn make_image_context(
 }
 
 ///|
-fn make_image_compositing_setter(image : Image) -> PixelSetter {
+fn make_image_compositing_setter(image : Image) -> ColorSink {
   {
     set: fn(x, y, source) {
       let backdrop = image.get_pixel(x, y)
@@ -2829,7 +2714,7 @@ fn make_image_compositing_setter(image : Image) -> PixelSetter {
 ///|
 fn blit_image_to_context(
   image : Image,
-  ctx : RenderContext,
+  ctx : RenderState,
   offset_x : Int,
   offset_y : Int,
 ) -> Unit {
@@ -2969,40 +2854,6 @@ fn resolve_paint_for_render(
 }
 
 ///|
-fn node_uses_paint_server(
-  node : SVGNode,
-  node_color : Color,
-  resources : RenderResources,
-) -> Bool {
-  fn is_server(paint : ResolvedPaint) -> Bool {
-    match paint {
-      ResolvedPaint::LinearGrad(_)
-      | ResolvedPaint::RadialGrad(_)
-      | ResolvedPaint::Pattern(_) => true
-      _ => false
-    }
-  }
-
-  is_server(resolve_paint_for_render(node.fill, node_color, resources)) ||
-  is_server(resolve_paint_for_render(node.stroke.paint, node_color, resources))
-}
-
-///|
-fn node_has_rendered_stroke(
-  node : SVGNode,
-  node_color : Color,
-  resources : RenderResources,
-) -> Bool {
-  if node.stroke.width <= 0.0 || node.stroke_opacity <= 0.0 {
-    return false
-  }
-  match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
-    ResolvedPaint::None => false
-    _ => true
-  }
-}
-
-///|
 fn render_paint_order(
   order : PaintOrder,
   draw_fill : () -> Unit,
@@ -3032,7 +2883,7 @@ fn build_pattern_tile(
   pattern : Pattern,
   bbox : BoundingBox,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
 ) -> PatternTile? {
   if string_array_contains(resources.active_patterns, pattern.id) {
@@ -3189,11 +3040,11 @@ fn make_pattern_setter(
   pattern : Pattern,
   bbox : BoundingBox,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   opacity : Double,
   sampling : ImageSampling,
-) -> PixelSetter? {
+) -> ColorSink? {
   let tile = match
     build_pattern_tile(pattern, bbox, transform, ctx, resources) {
     Some(value) => value
@@ -3485,7 +3336,7 @@ fn render_image(
   height : Double,
   href : String,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   preserve_aspect_ratio : PreserveAspectRatio,
   preserve_aspect_ratio_is_set : Bool,
   sampling : ImageSampling,
@@ -3550,7 +3401,7 @@ fn render_embedded_svg_image(
   width : Double,
   height : Double,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   preserve_aspect_ratio : PreserveAspectRatio,
   preserve_aspect_ratio_is_set : Bool,
   sampling : ImageSampling,
@@ -3585,7 +3436,7 @@ fn render_embedded_svg_image(
       let image = Image::new(image_width, image_height)
       let setter = make_image_compositing_setter(image)
       let image_ctx = {
-        ..RenderContext::new(setter, image_width, image_height),
+        ..RenderState::new(setter, image_width, image_height),
         image_resolver: ctx.image_resolver,
         target_image: Some(image),
         diagnostics: ctx.diagnostics,
@@ -3622,7 +3473,7 @@ fn render_raster_image(
   width : Double,
   height : Double,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   preserve_aspect_ratio : PreserveAspectRatio,
   sampling : ImageSampling,
   opacity : Double,
@@ -3829,22 +3680,6 @@ fn sample_raster_color(
 }
 
 ///|
-fn transform_preserves_axes(transform : Transform) -> Bool {
-  let epsilon = 0.000000000001
-  transform.b.abs() <= epsilon && transform.c.abs() <= epsilon
-}
-
-///|
-fn transform_preserves_circles(transform : Transform) -> Bool {
-  if !transform_preserves_axes(transform) {
-    return false
-  }
-  let epsilon = 0.000000000001
-  let (sx, sy) = transform.get_scale()
-  (sx - sy).abs() <= epsilon
-}
-
-///|
 fn rect_path_commands(
   x : Double,
   y : Double,
@@ -3938,133 +3773,21 @@ fn render_rect(
   ry : Double,
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   node_color : Color,
 ) -> Unit {
   if width <= 0.0 || height <= 0.0 {
     return
   }
-  if ctx.width > 0 && ctx.height > 0 {
-    render_path(
-      rect_path_commands(x, y, width, height, rx, ry),
-      node,
-      transform,
-      ctx,
-      node_color,
-      resources,
-    )
-    return
-  }
-  if node_has_rendered_stroke(node, node_color, resources) ||
-    !transform_preserves_axes(transform) ||
-    node_uses_paint_server(node, node_color, resources) {
-    render_path(
-      rect_path_commands(x, y, width, height, rx, ry),
-      node,
-      transform,
-      ctx,
-      node_color,
-      resources,
-    )
-    return
-  }
-  // Transform corners
-  let (x0, y0) = transform.apply(x, y)
-  let (x1, y1) = transform.apply(x + width, y + height)
-  let min_x = min(x0, x1)
-  let min_y = min(y0, y1)
-  let max_x = max(x0, x1)
-  let max_y = max(y0, y1)
-  let ix = quantize_geometry(min_x)
-  let iy = quantize_geometry(min_y)
-  let iw = ceil_to_int(max_x - min_x)
-  let ih = ceil_to_int(max_y - min_y)
-  if iw <= 0 || ih <= 0 {
-    return
-  }
-  let (sx, sy) = transform.get_scale()
-  let irx = (rx * sx).to_int()
-  let iry = (ry * sy).to_int()
-  fn draw_fill() -> Unit {
-    match resolve_paint_for_render(node.fill, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
-        if node.fill_opacity > 0.0 {
-          let fill_color = apply_opacity(
-            color,
-            node.fill_opacity * node.opacity,
-          )
-          if irx > 0 || iry > 0 {
-            raster_rounded_rect_fill(
-              ix,
-              iy,
-              iw,
-              ih,
-              irx,
-              iry,
-              fill_color,
-              ctx.setter,
-            )
-          } else {
-            raster_rect_fill(ix, iy, iw, ih, fill_color, ctx.setter)
-          }
-        }
-      _ => ()
-    }
-  }
-
-  fn draw_stroke() -> Unit {
-    match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
-        if node.stroke_opacity > 0.0 && node.stroke.width > 0.0 {
-          let stroke_color = apply_opacity(
-            color,
-            node.stroke_opacity * node.opacity,
-          )
-          let stroke_width = node.stroke.width * (sx + sy) / 2.0
-          let stroke_px = if stroke_width > 0.0 {
-            ceil_to_int(stroke_width)
-          } else {
-            0
-          }
-          if stroke_px > 0 {
-            if irx > 0 || iry > 0 {
-              raster_rounded_rect_stroke_thick(
-                ix,
-                iy,
-                iw,
-                ih,
-                irx,
-                iry,
-                stroke_px,
-                stroke_color,
-                ctx.setter,
-              )
-            } else {
-              let rect_points = [
-                transform.apply(x, y),
-                transform.apply(x + width, y),
-                transform.apply(x + width, y + height),
-                transform.apply(x, y + height),
-              ].map(fn(point) {
-                (quantize_geometry(point.0), quantize_geometry(point.1))
-              })
-              raster_normalized_stroke(
-                rect_points,
-                node.stroke,
-                stroke_px,
-                stroke_color,
-                ctx.setter,
-                true,
-              )
-            }
-          }
-        }
-      _ => ()
-    }
-  }
-
-  render_paint_order(node.paint_order, draw_fill, draw_stroke, () => ())
+  render_path(
+    rect_path_commands(x, y, width, height, rx, ry),
+    node,
+    transform,
+    ctx,
+    node_color,
+    resources,
+  )
 }
 
 ///|
@@ -4074,94 +3797,21 @@ fn render_circle(
   r : Double,
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   node_color : Color,
 ) -> Unit {
   if r <= 0.0 {
     return
   }
-  if ctx.width > 0 && ctx.height > 0 {
-    render_path(
-      ellipse_path_commands(cx, cy, r, r),
-      node,
-      transform,
-      ctx,
-      node_color,
-      resources,
-    )
-    return
-  }
-  if !transform_preserves_circles(transform) ||
-    node_has_rendered_stroke(node, node_color, resources) ||
-    node_uses_paint_server(node, node_color, resources) {
-    render_path(
-      ellipse_path_commands(cx, cy, r, r),
-      node,
-      transform,
-      ctx,
-      node_color,
-      resources,
-    )
-    return
-  }
-  let (tx, ty) = transform.apply(cx, cy)
-  let (sx, sy) = transform.get_scale()
-  let tr = (r * (sx + sy) / 2.0).to_int()
-  if tr <= 0 {
-    return
-  }
-  let icx = quantize_geometry(tx)
-  let icy = quantize_geometry(ty)
-  fn draw_fill() -> Unit {
-    match resolve_paint_for_render(node.fill, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
-        if node.fill_opacity > 0.0 {
-          let fill_color = apply_opacity(
-            color,
-            node.fill_opacity * node.opacity,
-          )
-          raster_rounded_rect_fill(
-            icx - tr,
-            icy - tr,
-            tr * 2,
-            tr * 2,
-            tr,
-            tr,
-            fill_color,
-            ctx.setter,
-          )
-        }
-      _ => ()
-    }
-  }
-
-  fn draw_stroke() -> Unit {
-    match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
-        if node.stroke_opacity > 0.0 && node.stroke.width > 0.0 {
-          let stroke_color = apply_opacity(
-            color,
-            node.stroke_opacity * node.opacity,
-          )
-          let stroke_px = ceil_to_int(node.stroke.width * (sx + sy) / 2.0)
-          raster_rounded_rect_stroke_thick(
-            icx - tr,
-            icy - tr,
-            tr * 2,
-            tr * 2,
-            tr,
-            tr,
-            stroke_px,
-            stroke_color,
-            ctx.setter,
-          )
-        }
-      _ => ()
-    }
-  }
-
-  render_paint_order(node.paint_order, draw_fill, draw_stroke, () => ())
+  render_path(
+    ellipse_path_commands(cx, cy, r, r),
+    node,
+    transform,
+    ctx,
+    node_color,
+    resources,
+  )
 }
 
 ///|
@@ -4172,95 +3822,21 @@ fn render_ellipse(
   ry : Double,
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   node_color : Color,
 ) -> Unit {
   if rx <= 0.0 || ry <= 0.0 {
     return
   }
-  if ctx.width > 0 && ctx.height > 0 {
-    render_path(
-      ellipse_path_commands(cx, cy, rx, ry),
-      node,
-      transform,
-      ctx,
-      node_color,
-      resources,
-    )
-    return
-  }
-  if node_has_rendered_stroke(node, node_color, resources) ||
-    !transform_preserves_axes(transform) ||
-    node_uses_paint_server(node, node_color, resources) {
-    render_path(
-      ellipse_path_commands(cx, cy, rx, ry),
-      node,
-      transform,
-      ctx,
-      node_color,
-      resources,
-    )
-    return
-  }
-  let (tx, ty) = transform.apply(cx, cy)
-  let (sx, sy) = transform.get_scale()
-  let trx = (rx * sx).to_int()
-  let try_ = (ry * sy).to_int()
-  if trx <= 0 || try_ <= 0 {
-    return
-  }
-  let icx = quantize_geometry(tx)
-  let icy = quantize_geometry(ty)
-  fn draw_fill() -> Unit {
-    match resolve_paint_for_render(node.fill, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
-        if node.fill_opacity > 0.0 {
-          let fill_color = apply_opacity(
-            color,
-            node.fill_opacity * node.opacity,
-          )
-          raster_rounded_rect_fill(
-            icx - trx,
-            icy - try_,
-            trx * 2,
-            try_ * 2,
-            trx,
-            try_,
-            fill_color,
-            ctx.setter,
-          )
-        }
-      _ => ()
-    }
-  }
-
-  fn draw_stroke() -> Unit {
-    match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
-        if node.stroke_opacity > 0.0 && node.stroke.width > 0.0 {
-          let stroke_color = apply_opacity(
-            color,
-            node.stroke_opacity * node.opacity,
-          )
-          let stroke_px = ceil_to_int(node.stroke.width * (sx + sy) / 2.0)
-          raster_rounded_rect_stroke_thick(
-            icx - trx,
-            icy - try_,
-            trx * 2,
-            try_ * 2,
-            trx,
-            try_,
-            stroke_px,
-            stroke_color,
-            ctx.setter,
-          )
-        }
-      _ => ()
-    }
-  }
-
-  render_paint_order(node.paint_order, draw_fill, draw_stroke, () => ())
+  render_path(
+    ellipse_path_commands(cx, cy, rx, ry),
+    node,
+    transform,
+    ctx,
+    node_color,
+    resources,
+  )
 }
 
 ///|
@@ -4271,7 +3847,7 @@ fn render_line(
   y2 : Double,
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   node_color : Color,
 ) -> Unit {
@@ -4355,7 +3931,7 @@ fn render_marker_instance(
   angle : Double,
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   node_color : Color,
 ) -> Unit {
@@ -4455,7 +4031,7 @@ fn render_markers_for_linear_shape(
   closed : Bool,
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   node_color : Color,
 ) -> Unit {
@@ -4489,191 +4065,6 @@ fn normalize_dash_pattern(dasharray : Array[Double]) -> Array[Double] {
     }
   }
   normalized
-}
-
-///|
-fn push_distinct_point(points : Array[(Int, Int)], point : (Int, Int)) -> Unit {
-  if points.length() == 0 || points[points.length() - 1] != point {
-    points.push(point)
-  }
-}
-
-///|
-fn dash_polyline_pieces(
-  points : Array[(Int, Int)],
-  dasharray : Array[Double],
-  dashoffset : Double,
-) -> Array[Array[(Int, Int)]] {
-  let pieces : Array[Array[(Int, Int)]] = []
-  if points.length() < 2 {
-    return pieces
-  }
-  let pattern = normalize_dash_pattern(dasharray)
-  if pattern.length() == 0 {
-    pieces.push(points)
-    return pieces
-  }
-  let total = pattern.fold(init=0.0, (sum, value) => sum + value)
-  if total <= 0.0 {
-    return pieces
-  }
-  let epsilon = 0.000001
-  let mut position = -dashoffset
-  while position < 0.0 {
-    position += total
-  }
-  while position >= total {
-    position -= total
-  }
-  let mut pattern_index = 0
-  while position >= pattern[pattern_index] && pattern[pattern_index] > epsilon {
-    position -= pattern[pattern_index]
-    pattern_index = (pattern_index + 1) % pattern.length()
-  }
-  let mut remaining = pattern[pattern_index] - position
-  let mut drawing = pattern_index % 2 == 0
-  let mut zero_guard = 0
-  while remaining <= epsilon && zero_guard < pattern.length() {
-    pattern_index = (pattern_index + 1) % pattern.length()
-    remaining = pattern[pattern_index]
-    drawing = pattern_index % 2 == 0
-    zero_guard += 1
-  }
-  let mut current : Array[(Int, Int)] = []
-  for segment_index in 0..<(points.length() - 1) {
-    let start = points[segment_index]
-    let finish = points[segment_index + 1]
-    let dx = (finish.0 - start.0).to_double()
-    let dy = (finish.1 - start.1).to_double()
-    let length = (dx * dx + dy * dy).sqrt()
-    if length <= epsilon {
-      continue
-    }
-    let mut traveled = 0.0
-    while traveled < length - epsilon {
-      let available = length - traveled
-      let step = if remaining < available { remaining } else { available }
-      let start_ratio = traveled / length
-      let end_ratio = (traveled + step) / length
-      let piece_start = (
-        quantize_geometry(start.0.to_double() + dx * start_ratio),
-        quantize_geometry(start.1.to_double() + dy * start_ratio),
-      )
-      let piece_end = (
-        quantize_geometry(start.0.to_double() + dx * end_ratio),
-        quantize_geometry(start.1.to_double() + dy * end_ratio),
-      )
-      if drawing {
-        push_distinct_point(current, piece_start)
-        push_distinct_point(current, piece_end)
-      }
-      traveled += step
-      remaining -= step
-      if remaining <= epsilon {
-        if drawing && current.length() >= 2 {
-          pieces.push(current)
-          current = []
-        }
-        pattern_index = (pattern_index + 1) % pattern.length()
-        remaining = pattern[pattern_index]
-        drawing = pattern_index % 2 == 0
-        zero_guard = 0
-        while remaining <= epsilon && zero_guard < pattern.length() {
-          pattern_index = (pattern_index + 1) % pattern.length()
-          remaining = pattern[pattern_index]
-          drawing = pattern_index % 2 == 0
-          zero_guard += 1
-        }
-      }
-    }
-  }
-  if drawing && current.length() >= 2 {
-    pieces.push(current)
-  }
-  pieces
-}
-
-///|
-fn raster_stroke_piece(
-  points : Array[(Int, Int)],
-  stroke_px : Int,
-  linecap : LineCap,
-  linejoin : LineJoin,
-  miterlimit : Double,
-  color : Color,
-  setter : PixelSetter,
-  closed : Bool,
-) -> Unit {
-  if points.length() < 2 || stroke_px <= 0 {
-    return
-  }
-  if stroke_px <= 1 {
-    if closed {
-      raster_polygon_stroke(points, color, setter)
-    } else {
-      raster_polyline(points, color, setter)
-    }
-    return
-  }
-  let segment_count = if closed { points.length() } else { points.length() - 1 }
-  for index in 0..<segment_count {
-    let next = if index + 1 == points.length() { 0 } else { index + 1 }
-    let start = points[index]
-    let finish = points[next]
-    if start != finish {
-      raster_thick_line(
-        start.0,
-        start.1,
-        finish.0,
-        finish.1,
-        stroke_px,
-        color,
-        setter,
-      )
-    }
-  }
-  draw_polyline_joins_caps(
-    points, stroke_px, linecap, linejoin, miterlimit, color, setter, closed,
-  )
-}
-
-///|
-fn raster_normalized_stroke(
-  points : Array[(Int, Int)],
-  stroke : StrokeStyle,
-  stroke_px : Int,
-  color : Color,
-  setter : PixelSetter,
-  closed : Bool,
-) -> Unit {
-  match stroke.dasharray {
-    Some(dasharray) => {
-      let pieces = dash_polyline_pieces(points, dasharray, stroke.dashoffset)
-      for piece in pieces {
-        raster_stroke_piece(
-          piece,
-          stroke_px,
-          stroke.linecap,
-          stroke.linejoin,
-          stroke.miterlimit,
-          color,
-          setter,
-          false,
-        )
-      }
-    }
-    None =>
-      raster_stroke_piece(
-        points,
-        stroke_px,
-        stroke.linecap,
-        stroke.linejoin,
-        stroke.miterlimit,
-        color,
-        setter,
-        closed,
-      )
-  }
 }
 
 ///|
@@ -5048,7 +4439,7 @@ fn raster_affine_stroke(
   stroke : StrokeStyle,
   transform : Transform,
   color : Color,
-  setter : PixelSetter,
+  setter : ColorSink,
   canvas_width : Int,
   canvas_height : Int,
   closed : Bool,
@@ -5731,7 +5122,7 @@ fn render_markers_for_path_commands(
   commands : Array[PathCommand],
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   node_color : Color,
 ) -> Unit {
@@ -5926,341 +5317,27 @@ fn render_markers_for_path_commands(
 }
 
 ///|
-fn is_closed_polyline(points : Array[(Int, Int)]) -> Bool {
-  if points.length() < 2 {
-    false
-  } else {
-    let last = points.length() - 1
-    let (x0, y0) = points[0]
-    let (x1, y1) = points[last]
-    x0 == x1 && y0 == y1
-  }
-}
-
-///|
-fn draw_polyline_joins_caps(
-  points : Array[(Int, Int)],
-  stroke_px : Int,
-  linecap : LineCap,
-  linejoin : LineJoin,
-  miterlimit : Double,
-  color : Color,
-  setter : PixelSetter,
-  closed : Bool,
-) -> Unit {
-  if stroke_px <= 1 || points.length() < 2 {
-    return
-  }
-  if closed {
-    let mut count = points.length()
-    if is_closed_polyline(points) {
-      count = count - 1
-    }
-    if count < 2 {
-      return
-    }
-    for i in 0..<count {
-      let prev = if i == 0 { points[count - 1] } else { points[i - 1] }
-      let cur = points[i]
-      let next = if i + 1 == count { points[0] } else { points[i + 1] }
-      draw_line_join(
-        prev, cur, next, stroke_px, linejoin, miterlimit, color, setter,
-      )
-    }
-  } else {
-    for i = 1; i < points.length() - 1; i = i + 1 {
-      draw_line_join(
-        points[i - 1],
-        points[i],
-        points[i + 1],
-        stroke_px,
-        linejoin,
-        miterlimit,
-        color,
-        setter,
-      )
-    }
-    draw_line_cap_start(points[0], points[1], stroke_px, linecap, color, setter)
-    let last = points.length() - 1
-    draw_line_cap_end(
-      points[last - 1],
-      points[last],
-      stroke_px,
-      linecap,
-      color,
-      setter,
-    )
-  }
-}
-
-///|
-fn draw_line_cap_start(
-  p0 : (Int, Int),
-  p1 : (Int, Int),
-  width : Int,
-  linecap : LineCap,
-  color : Color,
-  setter : PixelSetter,
-) -> Unit {
-  draw_line_cap(p0, p1, width, linecap, color, setter, true)
-}
-
-///|
-fn draw_line_cap_end(
-  p0 : (Int, Int),
-  p1 : (Int, Int),
-  width : Int,
-  linecap : LineCap,
-  color : Color,
-  setter : PixelSetter,
-) -> Unit {
-  draw_line_cap(p0, p1, width, linecap, color, setter, false)
-}
-
-///|
-fn draw_line_cap(
-  p0 : (Int, Int),
-  p1 : (Int, Int),
-  width : Int,
-  linecap : LineCap,
-  color : Color,
-  setter : PixelSetter,
-  is_start : Bool,
-) -> Unit {
-  if width <= 1 {
-    return
-  }
-  match linecap {
-    Butt => ()
-    Round => {
-      let (x, y) = if is_start { p0 } else { p1 }
-      raster_circle_fill(x, y, width / 2, color, setter)
-    }
-    Square => {
-      let (x0, y0) = p0
-      let (x1, y1) = p1
-      let dx = (x1 - x0).to_double()
-      let dy = (y1 - y0).to_double()
-      let len = (dx * dx + dy * dy).sqrt()
-      if len < 0.001 {
-        raster_circle_fill(x0, y0, width / 2, color, setter)
-        return
-      }
-      let ux = dx / len
-      let uy = dy / len
-      let half_w = width / 2
-      let ex = (ux * half_w.to_double()).to_int()
-      let ey = (uy * half_w.to_double()).to_int()
-      if is_start {
-        raster_thick_line(x0 - ex, y0 - ey, x0, y0, width, color, setter)
-      } else {
-        raster_thick_line(x1, y1, x1 + ex, y1 + ey, width, color, setter)
-      }
-    }
-  }
-}
-
-///|
-fn draw_line_join(
-  p0 : (Int, Int),
-  p1 : (Int, Int),
-  p2 : (Int, Int),
-  width : Int,
-  linejoin : LineJoin,
-  miterlimit : Double,
-  color : Color,
-  setter : PixelSetter,
-) -> Unit {
-  if width <= 1 {
-    return
-  }
-  let (x0, y0) = p0
-  let (x1, y1) = p1
-  let (x2, y2) = p2
-  let dx0 = (x1 - x0).to_double()
-  let dy0 = (y1 - y0).to_double()
-  let dx1 = (x2 - x1).to_double()
-  let dy1 = (y2 - y1).to_double()
-  let len0 = (dx0 * dx0 + dy0 * dy0).sqrt()
-  let len1 = (dx1 * dx1 + dy1 * dy1).sqrt()
-  if len0 < 0.001 || len1 < 0.001 {
-    return
-  }
-  let ux0 = dx0 / len0
-  let uy0 = dy0 / len0
-  let ux1 = dx1 / len1
-  let uy1 = dy1 / len1
-  let cross = ux0 * uy1 - uy0 * ux1
-  if cross.abs() < 0.0001 {
-    return
-  }
-  let side = if cross > 0.0 { -1.0 } else { 1.0 }
-  match linejoin {
-    Round => raster_circle_fill(x1, y1, width / 2, color, setter)
-    Bevel =>
-      draw_bevel_join(x1, y1, ux0, uy0, ux1, uy1, side, width, color, setter)
-    Miter =>
-      draw_miter_join(
-        x1, y1, ux0, uy0, ux1, uy1, side, width, miterlimit, color, setter,
-      )
-  }
-}
-
-///|
-fn draw_bevel_join(
-  x1 : Int,
-  y1 : Int,
-  ux0 : Double,
-  uy0 : Double,
-  ux1 : Double,
-  uy1 : Double,
-  side : Double,
-  width : Int,
-  color : Color,
-  setter : PixelSetter,
-) -> Unit {
-  let half = width.to_double() / 2.0
-  let ox0 = x1.to_double() + side * -uy0 * half
-  let oy0 = y1.to_double() + side * ux0 * half
-  let ox1 = x1.to_double() + side * -uy1 * half
-  let oy1 = y1.to_double() + side * ux1 * half
-  let points : Array[(Int, Int)] = [
-    (ox0.to_int(), oy0.to_int()),
-    (ox1.to_int(), oy1.to_int()),
-    (x1, y1),
-  ]
-  raster_polygon_fill(points, color, setter)
-}
-
-///|
-fn draw_miter_join(
-  x1 : Int,
-  y1 : Int,
-  ux0 : Double,
-  uy0 : Double,
-  ux1 : Double,
-  uy1 : Double,
-  side : Double,
-  width : Int,
-  miterlimit : Double,
-  color : Color,
-  setter : PixelSetter,
-) -> Unit {
-  let half = width.to_double() / 2.0
-  let ox0 = x1.to_double() + side * -uy0 * half
-  let oy0 = y1.to_double() + side * ux0 * half
-  let ox1 = x1.to_double() + side * -uy1 * half
-  let oy1 = y1.to_double() + side * ux1 * half
-  // Intersection of offset lines
-  let denom = ux0 * uy1 - uy0 * ux1
-  if denom.abs() < 0.0001 {
-    draw_bevel_join(x1, y1, ux0, uy0, ux1, uy1, side, width, color, setter)
-    return
-  }
-  let px = ox0
-  let py = oy0
-  let qx = ox1
-  let qy = oy1
-  let t = ((qx - px) * uy1 - (qy - py) * ux1) / denom
-  let ix = px + t * ux0
-  let iy = py + t * uy0
-  let dx = ix - x1.to_double()
-  let dy = iy - y1.to_double()
-  let miter_len = (dx * dx + dy * dy).sqrt() / half
-  if miter_len > miterlimit {
-    draw_bevel_join(x1, y1, ux0, uy0, ux1, uy1, side, width, color, setter)
-    return
-  }
-  let points : Array[(Int, Int)] = [
-    (ox0.to_int(), oy0.to_int()),
-    (ix.to_int(), iy.to_int()),
-    (ox1.to_int(), oy1.to_int()),
-  ]
-  raster_polygon_fill(points, color, setter)
-}
 
 ///|
 fn render_polyline(
   points : Array[(Double, Double)],
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   node_color : Color,
 ) -> Unit {
   if points.length() < 2 {
     return
   }
-  if ctx.width > 0 && ctx.height > 0 {
-    render_path(
-      points_path_commands(points, false),
-      node,
-      transform,
-      ctx,
-      node_color,
-      resources,
-    )
-    return
-  }
-  if node_uses_paint_server(node, node_color, resources) {
-    render_path(
-      points_path_commands(points, false),
-      node,
-      transform,
-      ctx,
-      node_color,
-      resources,
-    )
-    return
-  }
-  let transformed = points.map(fn(p) {
-    let (x, y) = transform.apply(p.0, p.1)
-    (quantize_geometry(x), quantize_geometry(y))
-  })
-  fn draw_fill() -> Unit {
-    match resolve_paint_for_render(node.fill, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
-        if node.fill_opacity > 0.0 && transformed.length() >= 3 {
-          raster_polygon_fill_rule(
-            transformed,
-            apply_opacity(color, node.fill_opacity * node.opacity),
-            node.fill_rule,
-            ctx.setter,
-          )
-        }
-      _ => ()
-    }
-  }
-  fn draw_stroke() -> Unit {
-    match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
-        if node.stroke_opacity > 0.0 && node.stroke.width > 0.0 {
-          let stroke_color = apply_opacity(
-            color,
-            node.stroke_opacity * node.opacity,
-          )
-          raster_affine_stroke(
-            points,
-            node.stroke,
-            transform,
-            stroke_color,
-            ctx.setter,
-            ctx.width,
-            ctx.height,
-            false,
-          )
-        }
-      _ => ()
-    }
-  }
-
-  fn draw_markers() -> Unit {
-    render_markers_for_linear_shape(
-      points, false, node, transform, ctx, resources, node_color,
-    )
-  }
-
-  render_paint_order(node.paint_order, draw_fill, draw_stroke, draw_markers)
+  render_path(
+    points_path_commands(points, false),
+    node,
+    transform,
+    ctx,
+    node_color,
+    resources,
+  )
 }
 
 ///|
@@ -6268,88 +5345,21 @@ fn render_polygon(
   points : Array[(Double, Double)],
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   node_color : Color,
   resources : RenderResources,
 ) -> Unit {
   if points.length() < 3 {
     return
   }
-  if ctx.width > 0 && ctx.height > 0 {
-    render_path(
-      points_path_commands(points, true),
-      node,
-      transform,
-      ctx,
-      node_color,
-      resources,
-    )
-    return
-  }
-  if node_uses_paint_server(node, node_color, resources) {
-    render_path(
-      points_path_commands(points, true),
-      node,
-      transform,
-      ctx,
-      node_color,
-      resources,
-    )
-    return
-  }
-  let transformed = points.map(fn(p) {
-    let (x, y) = transform.apply(p.0, p.1)
-    (quantize_geometry(x), quantize_geometry(y))
-  })
-  fn draw_fill() -> Unit {
-    match resolve_paint_for_render(node.fill, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
-        if node.fill_opacity > 0.0 {
-          let fill_color = apply_opacity(
-            color,
-            node.fill_opacity * node.opacity,
-          )
-          raster_polygon_fill_rule(
-            transformed,
-            fill_color,
-            node.fill_rule,
-            ctx.setter,
-          )
-        }
-      _ => ()
-    }
-  }
-
-  fn draw_stroke() -> Unit {
-    match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
-        if node.stroke_opacity > 0.0 && node.stroke.width > 0.0 {
-          let stroke_color = apply_opacity(
-            color,
-            node.stroke_opacity * node.opacity,
-          )
-          raster_affine_stroke(
-            points,
-            node.stroke,
-            transform,
-            stroke_color,
-            ctx.setter,
-            ctx.width,
-            ctx.height,
-            true,
-          )
-        }
-      _ => ()
-    }
-  }
-
-  fn draw_markers() -> Unit {
-    render_markers_for_linear_shape(
-      points, true, node, transform, ctx, resources, node_color,
-    )
-  }
-
-  render_paint_order(node.paint_order, draw_fill, draw_stroke, draw_markers)
+  render_path(
+    points_path_commands(points, true),
+    node,
+    transform,
+    ctx,
+    node_color,
+    resources,
+  )
 }
 
 ///|
@@ -6380,6 +5390,22 @@ fn gradient_sample_point(
     UserSpaceOnUse => (local_x, local_y)
   }
   gradient_transform.inverse().apply(x, y)
+}
+
+///|
+fn apply_spread_inline(t : Double, spread : SpreadMethod) -> Double {
+  match spread {
+    Pad => max(0.0, min(1.0, t))
+    Repeat => t - t.floor()
+    Reflect => {
+      let period = t - (t / 2.0).floor() * 2.0
+      if period <= 1.0 {
+        period
+      } else {
+        2.0 - period
+      }
+    }
+  }
 }
 
 ///|
@@ -6464,11 +5490,11 @@ fn make_paint_server_setter(
   paint : ResolvedPaint,
   shape : Shape,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   resources : RenderResources,
   opacity : Double,
   sampling : ImageSampling,
-) -> PixelSetter? {
+) -> ColorSink? {
   let bbox = get_shape_bounds(shape)
   match paint {
     ResolvedPaint::LinearGrad(gradient) => {
@@ -6534,7 +5560,7 @@ fn render_path(
   commands : Array[PathCommand],
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   node_color : Color,
   resources : RenderResources,
 ) -> Unit {
@@ -6574,7 +5600,7 @@ fn render_path(
         if node.fill_opacity > 0.0 {
           let bbox = get_shape_bounds(node.shape)
           let inverse = transform.inverse()
-          let gradient_setter : PixelSetter = {
+          let gradient_setter : ColorSink = {
             set: (x, y, coverage_color) => {
               if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
                 return
@@ -6609,7 +5635,7 @@ fn render_path(
         if node.fill_opacity > 0.0 {
           let bbox = get_shape_bounds(node.shape)
           let inverse = transform.inverse()
-          let gradient_setter : PixelSetter = {
+          let gradient_setter : ColorSink = {
             set: (x, y, coverage_color) => {
               if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
                 return
@@ -6750,7 +5776,7 @@ fn render_text(
   font_size : Double,
   node : SVGNode,
   transform : Transform,
-  ctx : RenderContext,
+  ctx : RenderState,
   node_color : Color,
   resources : RenderResources,
 ) -> Unit {
@@ -6804,7 +5830,21 @@ fn render_text(
         let (cmds, advance) = to_paths(codepoint, font_size * sx)
         // Translate commands to cursor position
         let translated = translate_path_commands(cmds, cursor_x, ty)
-        raster_path(translated, fill_color, None, ctx.flatness, setter)
+        match fill_color {
+          Some(color) =>
+            raster_contours_coverage(
+              path_to_polylines(
+                translated,
+                device_path_flatness(Transform::identity()),
+              ),
+              color,
+              NonZero,
+              setter,
+              ctx.width,
+              ctx.height,
+            )
+          None => ()
+        }
         cursor_x = cursor_x + advance
       }
     }
@@ -6818,8 +5858,8 @@ fn render_text(
               node.fill_opacity * node.opacity,
             )
             raster_text(
-              quantize_geometry(tx),
-              quantize_geometry(ty),
+              tx.round().to_int(),
+              ty.round().to_int(),
               text,
               scaled_size,
               fill_color,
@@ -6833,8 +5873,8 @@ fn render_text(
             match paint_server_setter {
               Some(setter) =>
                 raster_text(
-                  quantize_geometry(tx),
-                  quantize_geometry(ty),
+                  tx.round().to_int(),
+                  ty.round().to_int(),
                   text,
                   scaled_size,
                   Color::white(),
@@ -6963,12 +6003,12 @@ pub fn group(id : String, children : Array[SVGNode]) -> SVGNode {
 }
 
 ///|
-/// Create a RenderContext with default settings
-pub fn RenderContext::new(
-  setter : PixelSetter,
+/// Create a RenderState with default settings
+fn RenderState::new(
+  setter : ColorSink,
   width : Int,
   height : Int,
-) -> RenderContext {
+) -> RenderState {
   {
     setter,
     width,
@@ -6989,74 +6029,9 @@ pub fn RenderContext::new(
 /// The resolver receives the authored `href` and returns decoded RGBA pixels.
 /// Filesystem access, network access, codec selection, and caching remain the
 /// responsibility of the host application.
-pub fn RenderContext::with_image_resolver(
-  self : RenderContext,
+fn RenderState::with_image_resolver(
+  self : RenderState,
   image_resolver : (String) -> Image?,
-) -> RenderContext {
+) -> RenderState {
   { ..self, image_resolver: Some(image_resolver) }
-}
-
-///|
-/// Create a RenderContext with clipping
-pub fn RenderContext::with_clip(
-  setter : PixelSetter,
-  width : Int,
-  height : Int,
-  clip : ClipRect,
-) -> RenderContext {
-  {
-    setter,
-    width,
-    height,
-    flatness: 0.5,
-    clip: Some(clip),
-    text_to_paths: None,
-    image_resolver: None,
-    target_image: None,
-    blend_pixel: None,
-    diagnostics: [],
-  }
-}
-
-///|
-/// Create a RenderContext with font callback for text rendering
-pub fn RenderContext::with_font(
-  setter : PixelSetter,
-  width : Int,
-  height : Int,
-  text_to_paths : (Int, Double) -> (Array[PathCommand], Double),
-) -> RenderContext {
-  {
-    setter,
-    width,
-    height,
-    flatness: 0.5,
-    clip: None,
-    text_to_paths: Some(text_to_paths),
-    image_resolver: None,
-    target_image: None,
-    blend_pixel: None,
-    diagnostics: [],
-  }
-}
-
-///|
-/// Create a RenderContext for a camera
-pub fn RenderContext::for_camera(
-  setter : PixelSetter,
-  camera : Camera,
-) -> RenderContext {
-  let clip = ClipRect::from_size(camera.viewport_width, camera.viewport_height)
-  {
-    setter,
-    width: camera.viewport_width,
-    height: camera.viewport_height,
-    flatness: 0.5,
-    clip: Some(clip),
-    text_to_paths: None,
-    image_resolver: None,
-    target_image: None,
-    blend_pixel: None,
-    diagnostics: [],
-  }
 }

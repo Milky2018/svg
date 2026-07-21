@@ -496,48 +496,6 @@ test "bounding box intersects" {
 }
 
 ///|
-test "render with clipping culls invisible nodes" {
-  // Create a scene with nodes at different positions
-  let visible_rect = rect("visible", 10.0, 10.0, 20.0, 20.0)
-  visible_rect.fill = SolidColor(Color::rgb(255, 0, 0))
-  let invisible_rect = rect("invisible", 200.0, 200.0, 20.0, 20.0)
-  invisible_rect.fill = SolidColor(Color::rgb(0, 255, 0))
-  let root = group("root", [visible_rect, invisible_rect])
-  let scene = Scene::new(root)
-  // Track which pixels were drawn
-  let drawn_pixels : Array[(Int, Int)] = []
-  let setter : PixelSetter = {
-    set: (x, y, _color) => drawn_pixels.push((x, y)),
-  }
-  // Render with a small clip rect that only includes the visible rect
-  let clip = ClipRect::new(0, 0, 50, 50)
-  let ctx = RenderContext::with_clip(setter, 50, 50, clip)
-  scene.render(ctx)
-  // Check that pixels were drawn (visible rect should be rendered)
-  inspect(drawn_pixels.length() > 0, content="true")
-  // All drawn pixels should be within clip bounds
-  for p in drawn_pixels {
-    let in_bounds = p.0 >= 0 && p.0 < 50 && p.1 >= 0 && p.1 < 50
-    inspect(in_bounds, content="true")
-  }
-}
-
-///|
-test "stroke dasharray" {
-  // Test dashed line directly using raster function
-  let drawn_pixels : Array[(Int, Int)] = []
-  let setter : PixelSetter = {
-    set: (x, y, _color) => drawn_pixels.push((x, y)),
-  }
-  // Draw a dashed line from (0,0) to (99,0)
-  raster_line_dashed(0, 0, 99, 0, Color::black(), [10.0, 5.0], 0.0, setter)
-  // Should have some pixels drawn
-  inspect(drawn_pixels.length() > 0, content="true")
-  // Inspect actual count for debugging
-  inspect(drawn_pixels.length(), content="70")
-}
-
-///|
 test "linear gradient color interpolation" {
   // Create a simple horizontal gradient (left=red, right=blue)
   let grad = LinearGradient::{
@@ -587,10 +545,10 @@ test "linear gradient rendering" {
   rect_node.fill = LinearGrad(grad)
   let scene = Scene::new(rect_node)
   let drawn_pixels : Array[(Int, Int, Color)] = []
-  let setter : PixelSetter = {
+  let setter : ColorSink = {
     set: (x, y, color) => drawn_pixels.push((x, y, color)),
   }
-  let ctx = RenderContext::new(setter, 100, 50)
+  let ctx = RenderState::new(setter, 100, 50)
   scene.render(ctx)
   // Should have drawn pixels (100 * 50 = 5000)
   inspect(drawn_pixels.length(), content="5000")
@@ -677,33 +635,15 @@ test "viewBox preserveAspectRatio slice" {
 }
 
 ///|
-test "viewBox render with scaling" {
-  // Create a 50x50 rect in viewBox coordinates
-  let rect_node = rect("scaled-rect", 0.0, 0.0, 50.0, 50.0)
-  rect_node.fill = SolidColor(Color::rgb(255, 0, 0))
-  let scene = Scene::new(rect_node)
-  let drawn_pixels : Array[(Int, Int, Color)] = []
-  let setter : PixelSetter = {
-    set: (x, y, color) => drawn_pixels.push((x, y, color)),
-  }
-  let ctx = RenderContext::new(setter, 100, 100)
-  // ViewBox is 50x50, viewport is 100x100, so scale 2x
-  let viewbox = ViewBox::{ min_x: 0.0, min_y: 0.0, width: 50.0, height: 50.0 }
-  scene.render_with_viewbox(ctx, viewbox, PreserveAspectRatio::default())
-  // The 50x50 rect should become 100x100 in viewport
-  inspect(drawn_pixels.length(), content="10000")
-}
-
-///|
 test "wpt rect-01 fill" {
   let svg = "<svg><rect x=\"10\" y=\"10\" width=\"50\" height=\"50\" fill=\"blue\"/></svg>"
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(80, 80)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 80, 80)
+      let ctx = RenderState::new(setter, 80, 80)
       doc.render(ctx)
       inspect(image.get_pixel(9, 9).is_transparent(), content="true")
       inspect(image.get_pixel(10, 10).b, content="255")
@@ -720,10 +660,10 @@ test "wpt rect-02 stroke" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(80, 80)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 80, 80)
+      let ctx = RenderState::new(setter, 80, 80)
       doc.render(ctx)
       inspect(image.get_pixel(15, 15).is_transparent(), content="true")
       inspect(image.get_pixel(10, 10).b, content="255")
@@ -739,10 +679,10 @@ test "wpt rect-03 rounded fill" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(80, 80)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 80, 80)
+      let ctx = RenderState::new(setter, 80, 80)
       doc.render(ctx)
       inspect(image.get_pixel(10, 10).is_transparent(), content="true")
       inspect(image.get_pixel(17, 17).b, content="255")
@@ -757,10 +697,10 @@ test "wpt rect-04 rounded stroke" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(80, 80)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 80, 80)
+      let ctx = RenderState::new(setter, 80, 80)
       doc.render(ctx)
       inspect(image.get_pixel(20, 20).is_transparent(), content="true")
       inspect(image.get_pixel(12, 12).b, content="255")
@@ -775,10 +715,10 @@ test "wpt rect-05 zero size" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(100, 100)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 100, 100)
+      let ctx = RenderState::new(setter, 100, 100)
       doc.render(ctx)
       let mut any_drawn = false
       for y in 0..<image.height {
@@ -800,10 +740,10 @@ test "wpt circle-01 r0" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(100, 100)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 100, 100)
+      let ctx = RenderState::new(setter, 100, 100)
       doc.render(ctx)
       let mut any_drawn = false
       for y in 0..<image.height {
@@ -825,10 +765,10 @@ test "wpt ellipse-09 zero" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(100, 100)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 100, 100)
+      let ctx = RenderState::new(setter, 100, 100)
       doc.render(ctx)
       let mut any_drawn = false
       for y in 0..<image.height {
@@ -850,10 +790,10 @@ test "wpt line basic" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(10, 10).b, content="255")
       inspect(image.get_pixel(19, 19).b, content="255")
@@ -869,10 +809,10 @@ test "wpt linecap butt no extend" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(7, 20).is_transparent(), content="true")
       inspect(image.get_pixel(10, 20).b, content="255")
@@ -887,10 +827,10 @@ test "wpt linecap square extends" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(7, 20).b, content="255")
       inspect(image.get_pixel(32, 20).b, content="255")
@@ -906,10 +846,10 @@ test "wpt linecap round extends" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(7, 20).b, content="255")
       inspect(image.get_pixel(32, 20).b, content="255")
@@ -925,10 +865,10 @@ test "wpt linejoin miter extends" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(400, 400)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 400, 400)
+      let ctx = RenderState::new(setter, 400, 400)
       doc.render(ctx)
       let (probe_x, probe_y) = miter_triangle_probe(
         210, 200, 230, 200, 210, 201, 6,
@@ -945,10 +885,10 @@ test "wpt linejoin miterlimit bevel" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(400, 400)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 400, 400)
+      let ctx = RenderState::new(setter, 400, 400)
       doc.render(ctx)
       let (probe_x, probe_y) = miter_triangle_probe(
         210, 200, 230, 200, 210, 201, 6,
@@ -968,10 +908,10 @@ test "wpt polyline basic" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(15, 10).b, content="255")
       inspect(image.get_pixel(20, 15).b, content="255")
@@ -987,10 +927,10 @@ test "wpt path fill-rule evenodd hole" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(6, 6).b, content="255")
       inspect(image.get_pixel(20, 20).is_transparent(), content="true")
@@ -1005,10 +945,10 @@ test "wpt path fill-rule nonzero solid" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(6, 6).b, content="255")
       inspect(image.get_pixel(20, 20).b, content="255")
@@ -1023,10 +963,10 @@ test "wpt polygon basic fill" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(15, 15).b, content="255")
       inspect(image.get_pixel(5, 5).is_transparent(), content="true")
@@ -1041,10 +981,10 @@ test "disabled polyline empty points" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       let mut any_drawn = false
       for y in 0..<image.height {
@@ -1066,10 +1006,10 @@ test "disabled polyline single point" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       let mut any_drawn = false
       for y in 0..<image.height {
@@ -1091,10 +1031,10 @@ test "disabled polygon too few points" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       let mut any_drawn = false
       for y in 0..<image.height {
@@ -1116,10 +1056,10 @@ test "polyline stroke width" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(20, 9).b, content="255")
       inspect(image.get_pixel(20, 11).b, content="255")
@@ -1134,10 +1074,10 @@ test "polygon stroke width" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(40, 40)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 40, 40)
+      let ctx = RenderState::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(20, 7).b, content="255")
       inspect(image.get_pixel(20, 20).is_transparent(), content="true")
@@ -1152,10 +1092,10 @@ test "disabled circle negative r" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(100, 100)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 100, 100)
+      let ctx = RenderState::new(setter, 100, 100)
       doc.render(ctx)
       let mut any_drawn = false
       for y in 0..<image.height {
@@ -1177,10 +1117,10 @@ test "disabled circle style negative r" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(100, 100)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 100, 100)
+      let ctx = RenderState::new(setter, 100, 100)
       doc.render(ctx)
       let mut any_drawn = false
       for y in 0..<image.height {
@@ -1202,10 +1142,10 @@ test "disabled ellipse negative rx" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(100, 100)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 100, 100)
+      let ctx = RenderState::new(setter, 100, 100)
       doc.render(ctx)
       let mut any_drawn = false
       for y in 0..<image.height {
@@ -1227,10 +1167,10 @@ test "disabled ellipse style auto" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(100, 100)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 100, 100)
+      let ctx = RenderState::new(setter, 100, 100)
       doc.render(ctx)
       let mut any_drawn = false
       for y in 0..<image.height {
@@ -1249,10 +1189,10 @@ test "disabled ellipse style auto" {
 ///|
 test "render rounded rect fill" {
   let image = Image::new(30, 30)
-  let setter : PixelSetter = {
+  let setter : ColorSink = {
     set: (x, y, color) => image.set_pixel(x, y, color),
   }
-  let ctx = RenderContext::new(setter, 30, 30)
+  let ctx = RenderState::new(setter, 30, 30)
   let node = rect("rounded", 10.0, 10.0, 10.0, 10.0)
   node.shape = Rect(x=10.0, y=10.0, width=10.0, height=10.0, rx=4.0, ry=4.0)
   node.fill = SolidColor(Color::rgb(0, 0, 255))
@@ -1265,10 +1205,10 @@ test "render rounded rect fill" {
 ///|
 test "render rect stroke width" {
   let image = Image::new(30, 30)
-  let setter : PixelSetter = {
+  let setter : ColorSink = {
     set: (x, y, color) => image.set_pixel(x, y, color),
   }
-  let ctx = RenderContext::new(setter, 30, 30)
+  let ctx = RenderState::new(setter, 30, 30)
   let node = rect("stroke", 10.0, 10.0, 10.0, 10.0)
   node.fill = None
   node.stroke = {
@@ -1285,10 +1225,10 @@ test "render rect stroke width" {
 ///|
 test "rect zero size not rendered" {
   let image = Image::new(10, 10)
-  let setter : PixelSetter = {
+  let setter : ColorSink = {
     set: (x, y, color) => image.set_pixel(x, y, color),
   }
-  let ctx = RenderContext::new(setter, 10, 10)
+  let ctx = RenderState::new(setter, 10, 10)
   let node = rect("zero", 0.0, 0.0, 0.0, 10.0)
   node.fill = SolidColor(Color::rgb(255, 0, 0))
   let scene = Scene::new(node)
@@ -1329,10 +1269,10 @@ test "text rendering basic" {
   text_node.fill = SolidColor(Color::rgb(0, 0, 0))
   let scene = Scene::new(text_node)
   let drawn_pixels : Array[(Int, Int, Color)] = []
-  let setter : PixelSetter = {
+  let setter : ColorSink = {
     set: (x, y, color) => drawn_pixels.push((x, y, color)),
   }
-  let ctx = RenderContext::new(setter, 100, 50)
+  let ctx = RenderState::new(setter, 100, 50)
   scene.render(ctx)
   // Should have drawn some pixels for the text
   inspect(drawn_pixels.length() > 0, content="true")
@@ -1557,28 +1497,6 @@ test "mark node dirty" {
   inspect(success, content="true")
   inspect(node.node_dirty, content="true")
   inspect(scene.is_dirty(), content="true")
-}
-
-///|
-test "dirty render updates bounds" {
-  let node = rect("test", 10.0, 10.0, 50.0, 50.0)
-  let scene = Scene::new(node)
-  let drawn_pixels : Array[(Int, Int, Color)] = []
-  let setter : PixelSetter = {
-    set: (x, y, color) => drawn_pixels.push((x, y, color)),
-  }
-  let ctx = RenderContext::new(setter, 200, 200)
-  // First render - should have dirty region
-  let dirty = scene.render_dirty(ctx)
-  inspect(dirty.is_empty(), content="false")
-  // After render, node should have prev_bounds set
-  match node.prev_bounds {
-    Some(bounds) => {
-      inspect(bounds.min_x, content="10")
-      inspect(bounds.min_y, content="10")
-    }
-    None => panic()
-  }
 }
 
 ///|
@@ -1933,10 +1851,10 @@ test "render with clipPath" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let drawn_pixels : Array[(Int, Int, Color)] = []
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
-      let ctx = RenderContext::new(setter, 20, 20)
+      let ctx = RenderState::new(setter, 20, 20)
       doc.render(ctx)
       // Clipped to 10x10
       inspect(drawn_pixels.length(), content="100")
@@ -1951,10 +1869,10 @@ test "render with clipPath objectBoundingBox" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let drawn_pixels : Array[(Int, Int, Color)] = []
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
-      let ctx = RenderContext::new(setter, 20, 10)
+      let ctx = RenderState::new(setter, 20, 10)
       doc.render(ctx)
       // Half width (10x10)
       inspect(drawn_pixels.length(), content="100")
@@ -1992,10 +1910,10 @@ test "pattern fill basic" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(12, 12)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 12, 12)
+      let ctx = RenderState::new(setter, 12, 12)
       doc.render(ctx)
       let px = image.get_pixel(5, 5)
       inspect(px.g, content="128")
@@ -2010,10 +1928,10 @@ test "render currentColor fill" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let image = Image::new(12, 12)
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => image.set_pixel(x, y, color),
       }
-      let ctx = RenderContext::new(setter, 12, 12)
+      let ctx = RenderState::new(setter, 12, 12)
       doc.render(ctx)
       let px = image.get_pixel(5, 5)
       inspect(px.g, content="128")
@@ -2156,10 +2074,10 @@ test "use element render with viewBox scaling" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let drawn_pixels : Array[(Int, Int, Color)] = []
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
-      let ctx = RenderContext::new(setter, 30, 30)
+      let ctx = RenderState::new(setter, 30, 30)
       doc.render(ctx)
       // 20x20 rect = 400 pixels
       inspect(drawn_pixels.length(), content="400")
@@ -2195,10 +2113,10 @@ test "use element referencing element outside defs" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let drawn_pixels : Array[(Int, Int, Color)] = []
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
-      let ctx = RenderContext::new(setter, 40, 20)
+      let ctx = RenderState::new(setter, 40, 20)
       doc.render(ctx)
       // Original rect (10x10) + use clone (10x10 at x=20) = 200 pixels
       inspect(drawn_pixels.length(), content="200")
@@ -2216,10 +2134,10 @@ test "use element referencing element defined after use (forward reference)" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let drawn_pixels : Array[(Int, Int, Color)] = []
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
-      let ctx = RenderContext::new(setter, 40, 20)
+      let ctx = RenderState::new(setter, 40, 20)
       doc.render(ctx)
       // Forward reference may not resolve during parsing (element not yet registered)
       // Only the original rect renders = 100 pixels
@@ -2455,35 +2373,6 @@ test "radial gradient color_at midpoint" {
 }
 
 ///|
-test "raster rect radial gradient" {
-  let mut pixel_count = 0
-  let setter = PixelSetter::{
-    set: (_x, _y, _c) => pixel_count = pixel_count + 1,
-  }
-  let grad = RadialGradient::new(0.5, 0.5, 0.5, [
-    { offset: 0.0, color: Color::rgb(255, 0, 0) },
-    { offset: 1.0, color: Color::rgb(0, 0, 255) },
-  ])
-  raster_rect_radial_gradient(0, 0, 10, 10, grad, 1.0, setter)
-  inspect(pixel_count, content="100") // 10x10 = 100 pixels
-}
-
-///|
-test "raster circle radial gradient" {
-  let mut pixel_count = 0
-  let setter = PixelSetter::{
-    set: (_x, _y, _c) => pixel_count = pixel_count + 1,
-  }
-  let grad = RadialGradient::new(0.5, 0.5, 0.5, [
-    { offset: 0.0, color: Color::rgb(255, 0, 0) },
-    { offset: 1.0, color: Color::rgb(0, 0, 255) },
-  ])
-  raster_circle_radial_gradient(10, 10, 5, grad, 1.0, setter)
-  // Should draw roughly pi*r^2 ≈ 78 pixels
-  inspect(pixel_count > 70, content="true")
-}
-
-///|
 test "paint radial grad" {
   let grad = RadialGradient::new(0.5, 0.5, 0.5, [
     { offset: 0.0, color: Color::rgb(255, 0, 0) },
@@ -2536,10 +2425,10 @@ test "render with mask" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let drawn_pixels : Array[(Int, Int, Color)] = []
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
-      let ctx = RenderContext::new(setter, 20, 20)
+      let ctx = RenderState::new(setter, 20, 20)
       doc.render(ctx)
       // Masked to 10x10
       inspect(drawn_pixels.length(), content="100")
@@ -2554,10 +2443,10 @@ test "render with mask objectBoundingBox content" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let drawn_pixels : Array[(Int, Int, Color)] = []
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
-      let ctx = RenderContext::new(setter, 20, 10)
+      let ctx = RenderState::new(setter, 20, 10)
       doc.render(ctx)
       // Half width (10x10)
       inspect(drawn_pixels.length(), content="100")
@@ -2572,10 +2461,10 @@ test "mask bounds percent values" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let drawn_pixels : Array[(Int, Int, Color)] = []
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
-      let ctx = RenderContext::new(setter, 20, 10)
+      let ctx = RenderState::new(setter, 20, 10)
       doc.render(ctx)
       // 25% offset, 50% width => 10x10 area
       inspect(drawn_pixels.length(), content="100")
@@ -2590,10 +2479,10 @@ test "maskUnits userSpaceOnUse respects viewBox scale" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let drawn_pixels : Array[(Int, Int, Color)] = []
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
-      let ctx = RenderContext::new(setter, 20, 20)
+      let ctx = RenderState::new(setter, 20, 20)
       doc.render(ctx)
       // ViewBox scales by 2: mask width 5 -> 10, height 10 -> 20
       inspect(drawn_pixels.length(), content="200")
@@ -2608,10 +2497,10 @@ test "maskUnits userSpaceOnUse with rotation transform" {
   match parse_svg_document(svg) {
     Some(doc) => {
       let drawn_pixels : Array[(Int, Int, Color)] = []
-      let setter : PixelSetter = {
+      let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
-      let ctx = RenderContext::new(setter, 30, 30)
+      let ctx = RenderState::new(setter, 30, 30)
       doc.render(ctx)
       let mut min_x = 9999
       let mut max_x = -9999

@@ -1143,34 +1143,11 @@ fn max_int(a : Int, b : Int) -> Int {
 }
 
 ///|
-/// Rasterize path commands
-pub fn raster_path(
-  commands : Array[PathCommand],
-  fill_color : Color?,
-  stroke_color : Color?,
-  flatness : Double,
-  setter : PixelSetter,
-) -> Unit {
-  let polylines = path_to_polylines(commands, flatness)
-  // Fill
-  if fill_color is Some(color) {
-    for polyline in polylines {
-      let int_points = polyline.map(p => {
-        (quantize_geometry(p.0), quantize_geometry(p.1))
-      })
-      if int_points.length() >= 3 {
-        raster_polygon_fill(int_points, color, setter)
-      }
-    }
-  }
-  // Stroke
-  if stroke_color is Some(color) {
-    for polyline in polylines {
-      let int_points = polyline.map(p => {
-        (quantize_geometry(p.0), quantize_geometry(p.1))
-      })
-      raster_polyline(int_points, color, setter)
-    }
+fn min_int(a : Int, b : Int) -> Int {
+  if a < b {
+    a
+  } else {
+    b
   }
 }
 

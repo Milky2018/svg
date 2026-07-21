@@ -11,7 +11,7 @@ SVG パーサー/レンダラーの [MoonBit](https://www.moonbitlang.com/) 実�
 - スタイリング: グラデーション、フィルタ、マスク、クリッピング、ブレンドモード
 - 2D アフィン変換 (translate, scale, rotate, skew)
 - SVG パスコマンド (`PathCommand` enum, SVG 1.1 仕様準拠)
-- テキストレンダリング (ビットマップフォント + `text_to_paths` コールバック)
+- テキストレンダリング (最小ビットマップフォントフォールバック)
 - 画像処理フィルタ (blur, brightness, contrast, grayscale, etc.)
 - ヒットテスト・衝突判定
 - スプライトアニメーション、パーティクルシステム

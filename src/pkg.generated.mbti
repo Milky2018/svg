@@ -90,56 +90,6 @@ pub fn process_white_space(String, WhiteSpace) -> String
 
 pub fn radians_to_degrees(Double) -> Double
 
-pub fn raster_circle_fill(Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_circle_radial_gradient(Int, Int, Int, RadialGradient, Double, PixelSetter) -> Unit
-
-pub fn raster_circle_stroke(Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_ellipse_fill(Int, Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_ellipse_radial_gradient(Int, Int, Int, Int, RadialGradient, Double, PixelSetter) -> Unit
-
-pub fn raster_ellipse_stroke(Int, Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_line(Int, Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_line_dashed(Int, Int, Int, Int, Color, Array[Double], Double, PixelSetter) -> Unit
-
-pub fn raster_path(Array[PathCommand], Color?, Color?, Double, PixelSetter) -> Unit
-
-pub fn raster_polygon_fill(Array[(Int, Int)], Color, PixelSetter) -> Unit
-
-pub fn raster_polygon_fill_rule(Array[(Int, Int)], Color, FillRule, PixelSetter) -> Unit
-
-pub fn raster_polygon_stroke(Array[(Int, Int)], Color, PixelSetter) -> Unit
-
-pub fn raster_polygons_fill_rule(Array[Array[(Int, Int)]], Color, FillRule, PixelSetter) -> Unit
-
-pub fn raster_polyline(Array[(Int, Int)], Color, PixelSetter) -> Unit
-
-pub fn raster_polyline_dashed(Array[(Int, Int)], Color, Array[Double], Double, PixelSetter) -> Unit
-
-pub fn raster_rect_fill(Int, Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_rect_gradient(Int, Int, Int, Int, LinearGradient, Double, PixelSetter) -> Unit
-
-pub fn raster_rect_radial_gradient(Int, Int, Int, Int, RadialGradient, Double, PixelSetter) -> Unit
-
-pub fn raster_rect_stroke(Int, Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_rect_stroke_thick(Int, Int, Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_rounded_rect_fill(Int, Int, Int, Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_rounded_rect_stroke(Int, Int, Int, Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_rounded_rect_stroke_thick(Int, Int, Int, Int, Int, Int, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_text(Int, Int, String, Int, Color, PixelSetter) -> Unit
-
-pub fn raster_thick_line(Int, Int, Int, Int, Int, Color, PixelSetter) -> Unit
-
 pub fn rect(String, Double, Double, Double, Double) -> SVGNode
 
 pub fn render_path_commands_to_image(Array[PathCommand], Int, Int, Color, transform? : Array[Double]) -> Image
@@ -836,13 +786,6 @@ pub(all) enum PatternUnits {
   ObjectBoundingBox
 }
 
-pub(all) struct PixelSetter {
-  set : (Int, Int, Color) -> Unit
-}
-pub fn PixelSetter::pixel(Self, Int, Int, Color) -> Unit
-pub fn PixelSetter::with_clip(Self, ClipRect) -> Self
-pub fn PixelSetter::with_clip_and_offset(Self, ClipRect, Int, Int) -> Self
-
 pub(all) struct PointerEvent {
   x : Double
   y : Double
@@ -874,24 +817,6 @@ pub fn RadialGradient::build_lut(Self, Int) -> Array[Color]
 pub fn RadialGradient::color_at(Self, Double, Double, Double, Double) -> Color
 pub fn RadialGradient::new(Double, Double, Double, Array[GradientStop]) -> Self
 
-pub(all) struct RenderContext {
-  setter : PixelSetter
-  width : Int
-  height : Int
-  flatness : Double
-  clip : ClipRect?
-  text_to_paths : ((Int, Double) -> (Array[PathCommand], Double))?
-  image_resolver : ((String) -> Image?)?
-  target_image : Image?
-  blend_pixel : ((Int, Int, Color, BlendMode) -> Unit)?
-  diagnostics : Array[RenderDiagnostic]
-}
-pub fn RenderContext::for_camera(PixelSetter, Camera) -> Self
-pub fn RenderContext::new(PixelSetter, Int, Int) -> Self
-pub fn RenderContext::with_clip(PixelSetter, Int, Int, ClipRect) -> Self
-pub fn RenderContext::with_font(PixelSetter, Int, Int, (Int, Double) -> (Array[PathCommand], Double)) -> Self
-pub fn RenderContext::with_image_resolver(Self, (String) -> Image?) -> Self
-
 pub(all) struct RenderDiagnostic {
   kind : RenderDiagnosticKind
   stage : RenderStage
@@ -910,6 +835,7 @@ pub(all) struct RenderOptions {
   image_resolver : ((String) -> Image?)?
 }
 pub fn RenderOptions::default() -> Self
+pub fn RenderOptions::with_image_resolver((String) -> Image?) -> Self
 
 pub(all) struct RenderResult {
   image : Image
@@ -934,7 +860,6 @@ pub(all) struct SVGDocument {
   markers : MarkerRegistry
 }
 pub fn SVGDocument::new(SVGNode) -> Self
-pub fn SVGDocument::render(Self, RenderContext) -> Unit
 
 pub(all) struct SVGNode {
   mut id : String
@@ -1008,11 +933,6 @@ pub fn Scene::mark_dirty(Self) -> Unit
 pub fn Scene::mark_node_dirty(Self, String) -> Bool
 pub fn Scene::new(SVGNode) -> Self
 pub fn Scene::remove_node(Self, String) -> Bool
-pub fn Scene::render(Self, RenderContext) -> Unit
-pub fn Scene::render_dirty(Self, RenderContext) -> BoundingBox
-pub fn Scene::render_with_camera(Self, RenderContext, Camera) -> Unit
-pub fn Scene::render_with_viewbox(Self, RenderContext, ViewBox, PreserveAspectRatio) -> Unit
-pub fn Scene::render_with_viewbox_and_camera(Self, RenderContext, ViewBox, PreserveAspectRatio, Camera) -> Unit
 pub fn Scene::send_to_back(Self, String) -> Bool
 pub fn Scene::set_z_index(Self, String, Int) -> Bool
 pub fn Scene::update_node(Self, String, (SVGNode) -> SVGNode) -> Bool

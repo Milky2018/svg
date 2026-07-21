@@ -33,6 +33,14 @@ pub fn RenderOptions::default() -> RenderOptions {
 }
 
 ///|
+/// Return these options with a host callback for decoded raster images.
+pub fn RenderOptions::with_image_resolver(
+  image_resolver : (String) -> Image?,
+) -> RenderOptions {
+  { image_resolver: Some(image_resolver) }
+}
+
+///|
 pub(all) struct RenderResult {
   image : Image
   diagnostics : Array[RenderDiagnostic]

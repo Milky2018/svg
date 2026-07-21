@@ -499,7 +499,7 @@ fn intersect_coverage_masks(
 fn paint_coverage_mask(
   mask : CoverageMask,
   color : Color,
-  setter : PixelSetter,
+  setter : ColorSink,
 ) -> Unit {
   let source = PremulColor16::from_color(color)
   for local_y in 0..<mask.height {
@@ -526,7 +526,7 @@ fn raster_contours_coverage(
   contours : Array[Array[(Double, Double)]],
   color : Color,
   rule : FillRule,
-  setter : PixelSetter,
+  setter : ColorSink,
   canvas_width : Int,
   canvas_height : Int,
 ) -> Unit {
