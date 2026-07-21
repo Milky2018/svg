@@ -436,6 +436,66 @@ fn CoverageMask::get_device(self : CoverageMask, x : Int, y : Int) -> Int {
 }
 
 ///|
+fn union_coverage_masks(
+  left : CoverageMask,
+  right : CoverageMask,
+) -> CoverageMask {
+  if left.width == 0 || left.height == 0 {
+    return right
+  }
+  if right.width == 0 || right.height == 0 {
+    return left
+  }
+  let origin_x = min_int(left.origin_x, right.origin_x)
+  let origin_y = min_int(left.origin_y, right.origin_y)
+  let end_x = max_int(left.origin_x + left.width, right.origin_x + right.width)
+  let end_y = max_int(
+    left.origin_y + left.height,
+    right.origin_y + right.height,
+  )
+  let width = end_x - origin_x
+  let height = end_y - origin_y
+  let values = Array::make(width * height, 0)
+  for y in origin_y..<end_y {
+    for x in origin_x..<end_x {
+      values[(y - origin_y) * width + x - origin_x] = max_int(
+        left.get_device(x, y),
+        right.get_device(x, y),
+      )
+    }
+  }
+  { origin_x, origin_y, width, height, values }
+}
+
+///|
+fn intersect_coverage_masks(
+  left : CoverageMask,
+  right : CoverageMask,
+) -> CoverageMask {
+  let origin_x = max_int(left.origin_x, right.origin_x)
+  let origin_y = max_int(left.origin_y, right.origin_y)
+  let end_x = min_int(left.origin_x + left.width, right.origin_x + right.width)
+  let end_y = min_int(
+    left.origin_y + left.height,
+    right.origin_y + right.height,
+  )
+  let width = max_int(0, end_x - origin_x)
+  let height = max_int(0, end_y - origin_y)
+  let values = Array::make(width * height, 0)
+  for local_y in 0..<height {
+    for local_x in 0..<width {
+      let x = origin_x + local_x
+      let y = origin_y + local_y
+      values[local_y * width + local_x] = multiply_channel16(
+        left.get_device(x, y),
+        right.get_device(x, y),
+      )
+    }
+  }
+  { origin_x, origin_y, width, height, values }
+}
+
+///|
 fn paint_coverage_mask(
   mask : CoverageMask,
   color : Color,

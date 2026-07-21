@@ -883,6 +883,7 @@ pub(all) struct RenderContext {
   text_to_paths : ((Int, Double) -> (Array[PathCommand], Double))?
   image_resolver : ((String) -> Image?)?
   target_image : Image?
+  blend_pixel : ((Int, Int, Color, BlendMode) -> Unit)?
   diagnostics : Array[RenderDiagnostic]
 }
 pub fn RenderContext::for_camera(PixelSetter, Camera) -> Self

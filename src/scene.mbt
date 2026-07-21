@@ -593,6 +593,7 @@ pub(all) struct RenderContext {
   /// Host callback for resolving image references into decoded RGBA pixels.
   image_resolver : ((String) -> Image?)?
   target_image : Image?
+  blend_pixel : ((Int, Int, Color, BlendMode) -> Unit)?
   diagnostics : Array[RenderDiagnostic]
 }
 
@@ -606,6 +607,7 @@ priv struct RenderResources {
   markers : MarkerRegistry
   active_patterns : Array[String]
   pattern_tiles : Map[String, PatternTile]
+  surface_pool : RenderSurfacePool
 }
 
 ///|
@@ -619,6 +621,7 @@ fn RenderResources::empty() -> RenderResources {
     markers: MarkerRegistry::new(),
     active_patterns: [],
     pattern_tiles: Map([]),
+    surface_pool: RenderSurfacePool::new(),
   }
 }
 
@@ -634,6 +637,7 @@ pub fn SVGDocument::render(self : SVGDocument, ctx : RenderContext) -> Unit {
     markers: self.markers,
     active_patterns: [],
     pattern_tiles: Map([]),
+    surface_pool: RenderSurfacePool::new(),
   }
   match self.root.view_box {
     Some(vb) => {
@@ -859,13 +863,14 @@ fn render_node(
   }
   let has_mask = node.mask_id is Some(_)
   let has_filter_graph = node.filter_graph_id is Some(_)
-  let needs_image_mask = has_mask && ctx.target_image is Some(_)
+  let needs_surface_mask = has_mask &&
+    (ctx.target_image is Some(_) || ctx.blend_pixel is Some(_))
   if allow_mask &&
     (
       needs_group_opacity ||
       !node.filters.is_empty() ||
       has_filter_graph ||
-      needs_image_mask ||
+      needs_surface_mask ||
       node.blend_mode != Normal ||
       node.isolation == Isolate
     ) {
@@ -895,7 +900,7 @@ fn render_node(
               compute_bounds_without_self_transform(node, Transform::identity())
             ClipPathUnits::UserSpaceOnUse => BoundingBox::empty()
           }
-          apply_clip_path(ctx, clip, transform, bbox_local)
+          apply_clip_path(ctx, clip, transform, bbox_local, resources)
         }
         None => ctx
       }
@@ -1007,11 +1012,42 @@ fn render_isolated_node(
   resources : RenderResources,
   parent_color : Color,
 ) -> Unit {
-  let layer = Image::new(ctx.width, ctx.height)
+  let bounds = isolated_node_region(node, parent_transform, ctx, resources)
+  let origin_x = max_int(0, floor_to_int(bounds.min_x))
+  let origin_y = max_int(0, floor_to_int(bounds.min_y))
+  let end_x = min_int(ctx.width, ceil_to_int(bounds.max_x))
+  let end_y = min_int(ctx.height, ceil_to_int(bounds.max_y))
+  if end_x <= origin_x || end_y <= origin_y {
+    return
+  }
+  let layer = resources.surface_pool.acquire(
+    origin_x,
+    origin_y,
+    end_x - origin_x,
+    end_y - origin_y,
+    SRGB,
+  )
+  let layer_setter : PixelSetter = {
+    set: fn(x, y, color) {
+      layer.composite_device(x, y, PremulColor16::from_color(color))
+    },
+  }
+  let layer_blend = fn(x : Int, y : Int, color : Color, mode : BlendMode) {
+    if layer.contains_device(x, y) {
+      layer.set_device(
+        x,
+        y,
+        PremulColor16::from_color(
+          blend_with_mode(layer.get_device(x, y).to_color(), color, mode),
+        ),
+      )
+    }
+  }
   let layer_ctx = {
     ..ctx,
-    setter: make_image_compositing_setter(layer),
-    target_image: Some(layer),
+    setter: layer_setter,
+    target_image: None,
+    blend_pixel: Some(layer_blend),
   }
   let layer_node = node.clone()
   layer_node.opacity = 1.0
@@ -1023,20 +1059,24 @@ fn render_isolated_node(
   render_node(
     layer_node, parent_transform, layer_ctx, resources, true, parent_color,
   )
-  let mut result = layer
   for filter in node.filters {
-    result = apply_filter(result, filter)
+    let filtered = apply_filter(layer.to_image(), filter)
+    layer.replace_from_image(filtered)
   }
   match node.filter_graph_id {
     Some(id) =>
       match resources.filter_graphs.get(id) {
-        Some(graph) =>
-          result = evaluate_filter_graph(
+        Some(graph) => {
+          let result = evaluate_filter_graph(
             graph,
-            result,
+            layer.to_image(),
             compute_bounds(node, parent_transform),
             ctx.image_resolver,
+            layer.origin_x,
+            layer.origin_y,
           )
+          layer.replace_from_image(result)
+        }
         None => ()
       }
     None => ()
@@ -1045,22 +1085,225 @@ fn render_isolated_node(
     Some(id) =>
       match resources.masks.get(id) {
         Some(mask) =>
-          result = apply_mask_to_isolated_layer(
-            result, node, parent_transform, ctx, resources, mask, parent_color,
+          apply_mask_to_isolated_surface(
+            layer, node, parent_transform, ctx, resources, mask, parent_color,
           )
         None => ()
       }
     None => ()
   }
-  for y in 0..<result.height {
-    for x in 0..<result.width {
-      let color = result.get_pixel(x, y)
-      if color.a > 0 {
-        result.set_pixel(x, y, apply_opacity(color, node.opacity))
+  layer.apply_opacity(node.opacity)
+  composite_surface_to_context(layer, ctx, node.blend_mode)
+  resources.surface_pool.release(layer)
+}
+
+///|
+fn expand_effect_bounds(bounds : BoundingBox, amount : Double) -> BoundingBox {
+  if bounds.is_empty() {
+    bounds
+  } else {
+    {
+      min_x: bounds.min_x - amount,
+      min_y: bounds.min_y - amount,
+      max_x: bounds.max_x + amount,
+      max_y: bounds.max_y + amount,
+    }
+  }
+}
+
+///|
+fn isolated_node_region(
+  node : SVGNode,
+  parent_transform : Transform,
+  ctx : RenderContext,
+  resources : RenderResources,
+) -> BoundingBox {
+  let mut bounds = compute_bounds(node, parent_transform)
+  let (scale_x, scale_y) = parent_transform.multiply(node.transform).get_scale()
+  if node.stroke.width > 0.0 {
+    bounds = expand_effect_bounds(
+      bounds,
+      node.stroke.width * max(scale_x.abs(), scale_y.abs()) * 0.5 + 1.0,
+    )
+  }
+  for filter in node.filters {
+    match filter {
+      Blur(radius) => bounds = expand_effect_bounds(bounds, radius * 3.0 + 1.0)
+      DropShadow(dx, dy, radius, _) => {
+        let shadow = expand_effect_bounds(bounds, radius * 3.0 + 1.0)
+        bounds = bounds.union({
+          min_x: shadow.min_x + dx,
+          min_y: shadow.min_y + dy,
+          max_x: shadow.max_x + dx,
+          max_y: shadow.max_y + dy,
+        })
+      }
+      _ => ()
+    }
+  }
+  match node.filter_graph_id {
+    Some(id) =>
+      match resources.filter_graphs.get(id) {
+        Some(graph) => bounds = bounds.union(graph.get_filter_bounds(bounds))
+        None => ()
+      }
+    None => ()
+  }
+  let canvas = BoundingBox::from_rect(
+    0.0,
+    0.0,
+    ctx.width.to_double(),
+    ctx.height.to_double(),
+  )
+  {
+    min_x: max(bounds.min_x, canvas.min_x),
+    min_y: max(bounds.min_y, canvas.min_y),
+    max_x: min(bounds.max_x, canvas.max_x),
+    max_y: min(bounds.max_y, canvas.max_y),
+  }
+}
+
+///|
+fn apply_mask_to_isolated_surface(
+  source : RenderSurface,
+  node : SVGNode,
+  parent_transform : Transform,
+  ctx : RenderContext,
+  resources : RenderResources,
+  mask : Mask,
+  parent_color : Color,
+) -> Unit {
+  let bbox_local = compute_bounds_without_self_transform(
+    node,
+    Transform::identity(),
+  )
+  if bbox_local.is_empty() {
+    source.clear()
+    return
+  }
+  let element_transform = parent_transform.multiply(node.transform)
+  let mask_surface = resources.surface_pool.acquire(
+    source.origin_x,
+    source.origin_y,
+    source.width,
+    source.height,
+    SRGB,
+  )
+  let mask_setter : PixelSetter = {
+    set: fn(x, y, color) {
+      mask_surface.composite_device(x, y, PremulColor16::from_color(color))
+    },
+  }
+  let mask_blend = fn(x : Int, y : Int, color : Color, mode : BlendMode) {
+    if mask_surface.contains_device(x, y) {
+      mask_surface.set_device(
+        x,
+        y,
+        PremulColor16::from_color(
+          blend_with_mode(mask_surface.get_device(x, y).to_color(), color, mode),
+        ),
+      )
+    }
+  }
+  let base_mask_ctx = {
+    ..ctx,
+    setter: mask_setter,
+    target_image: None,
+    blend_pixel: Some(mask_blend),
+  }
+  let mask_bounds_local = mask.get_mask_bounds(bbox_local)
+  let region_clip = ClipPath::with_transform(
+    "mask-region",
+    Rect(
+      x=mask_bounds_local.min_x,
+      y=mask_bounds_local.min_y,
+      width=mask_bounds_local.width(),
+      height=mask_bounds_local.height(),
+      rx=0.0,
+      ry=0.0,
+    ),
+    element_transform,
+  )
+  let mask_ctx = apply_clip_path(
+    base_mask_ctx,
+    region_clip,
+    Transform::identity(),
+    BoundingBox::empty(),
+    resources,
+  )
+  let mask_parent = match mask.mask_content_units {
+    MaskUnits::ObjectBoundingBox => {
+      let translate = Transform::translate(bbox_local.min_x, bbox_local.min_y)
+      let scale = Transform::scale(bbox_local.width(), bbox_local.height())
+      element_transform.multiply(translate.multiply(scale))
+    }
+    MaskUnits::UserSpaceOnUse => element_transform
+  }
+  for content_node in mask.content {
+    render_node(
+      content_node, mask_parent, mask_ctx, resources, true, parent_color,
+    )
+  }
+  for index in 0..<source.pixels.length() {
+    let mask_color = mask_surface.pixels[index]
+    let factor = match mask.mask_type {
+      Alpha => mask_color.a
+      Luminance =>
+        clamp_channel16(
+          round_div_nonnegative(
+            mask_color.r.to_int64() * 2126L +
+            mask_color.g.to_int64() * 7152L +
+            mask_color.b.to_int64() * 722L,
+            10000L,
+          ),
+        )
+    }
+    source.pixels[index] = source.pixels[index].scaled(factor)
+  }
+  resources.surface_pool.release(mask_surface)
+}
+
+///|
+fn composite_surface_to_context(
+  surface : RenderSurface,
+  ctx : RenderContext,
+  mode : BlendMode,
+) -> Unit {
+  for local_y in 0..<surface.height {
+    for local_x in 0..<surface.width {
+      let color = surface.pixels[local_y * surface.width + local_x]
+      if color.a == 0 {
+        continue
+      }
+      let x = surface.origin_x + local_x
+      let y = surface.origin_y + local_y
+      let visible = match ctx.clip {
+        Some(clip) => clip.contains(x, y)
+        None => true
+      }
+      if !visible {
+        continue
+      }
+      let source = color.to_color()
+      if mode == Normal {
+        ctx.setter.pixel(x, y, source)
+      } else {
+        match ctx.blend_pixel {
+          Some(blend) => blend(x, y, source, mode)
+          None =>
+            match ctx.target_image {
+              Some(target) =>
+                target.set_pixel(
+                  x,
+                  y,
+                  blend_with_mode(target.get_pixel(x, y), source, mode),
+                )
+              None => ctx.setter.pixel(x, y, source)
+            }
+        }
       }
     }
   }
-  composite_image_to_context(result, ctx, 0, 0, node.blend_mode)
 }
 
 ///|
@@ -1773,10 +2016,11 @@ fn filter_primitive_position_x(
   graph : FilterGraph,
   value : Double,
   target : BoundingBox,
+  origin_x : Int,
 ) -> Double {
   match graph.primitive_units {
     MaskUnits::ObjectBoundingBox => target.min_x + value * target.width()
-    MaskUnits::UserSpaceOnUse => value
+    MaskUnits::UserSpaceOnUse => value - origin_x.to_double()
   }
 }
 
@@ -1785,10 +2029,11 @@ fn filter_primitive_position_y(
   graph : FilterGraph,
   value : Double,
   target : BoundingBox,
+  origin_y : Int,
 ) -> Double {
   match graph.primitive_units {
     MaskUnits::ObjectBoundingBox => target.min_y + value * target.height()
-    MaskUnits::UserSpaceOnUse => value
+    MaskUnits::UserSpaceOnUse => value - origin_y.to_double()
   }
 }
 
@@ -1797,13 +2042,15 @@ fn resolve_filter_light(
   graph : FilterGraph,
   light : FilterLight,
   target : BoundingBox,
+  origin_x : Int,
+  origin_y : Int,
 ) -> FilterLight {
   match light {
     DistantLight(..) => light
     PointLight(x~, y~, z~) =>
       PointLight(
-        x=filter_primitive_position_x(graph, x, target),
-        y=filter_primitive_position_y(graph, y, target),
+        x=filter_primitive_position_x(graph, x, target, origin_x),
+        y=filter_primitive_position_y(graph, y, target, origin_y),
         z=filter_primitive_x(graph, z, target),
       )
     SpotLight(
@@ -1817,11 +2064,15 @@ fn resolve_filter_light(
       limiting_cone_angle~
     ) =>
       SpotLight(
-        x=filter_primitive_position_x(graph, x, target),
-        y=filter_primitive_position_y(graph, y, target),
+        x=filter_primitive_position_x(graph, x, target, origin_x),
+        y=filter_primitive_position_y(graph, y, target, origin_y),
         z=filter_primitive_x(graph, z, target),
-        points_at_x=filter_primitive_position_x(graph, points_at_x, target),
-        points_at_y=filter_primitive_position_y(graph, points_at_y, target),
+        points_at_x=filter_primitive_position_x(
+          graph, points_at_x, target, origin_x,
+        ),
+        points_at_y=filter_primitive_position_y(
+          graph, points_at_y, target, origin_y,
+        ),
         points_at_z=filter_primitive_x(graph, points_at_z, target),
         exponent~,
         limiting_cone_angle~,
@@ -1966,7 +2217,15 @@ fn evaluate_filter_graph(
   source : Image,
   target_bounds : BoundingBox,
   image_resolver : ((String) -> Image?)?,
+  origin_x : Int,
+  origin_y : Int,
 ) -> Image {
+  let target_bounds = {
+    min_x: target_bounds.min_x - origin_x.to_double(),
+    min_y: target_bounds.min_y - origin_y.to_double(),
+    max_x: target_bounds.max_x - origin_x.to_double(),
+    max_y: target_bounds.max_y - origin_y.to_double(),
+  }
   let source_alpha = filter_source_alpha(source)
   let named : Map[String, Image] = Map([])
   let mut previous = source
@@ -2182,8 +2441,8 @@ fn evaluate_filter_graph(
             source.width,
             source.height,
             href,
-            filter_primitive_position_x(graph, x, target_bounds),
-            filter_primitive_position_y(graph, y, target_bounds),
+            filter_primitive_position_x(graph, x, target_bounds, origin_x),
+            filter_primitive_position_y(graph, y, target_bounds, origin_y),
             filter_primitive_x(graph, width, target_bounds),
             filter_primitive_y(graph, height, target_bounds),
             image_resolver,
@@ -2207,7 +2466,9 @@ fn evaluate_filter_graph(
             diffuse_constant,
             1.0,
             color,
-            resolve_filter_light(graph, light, target_bounds),
+            resolve_filter_light(
+              graph, light, target_bounds, origin_x, origin_y,
+            ),
             false,
           ),
           result,
@@ -2230,7 +2491,9 @@ fn evaluate_filter_graph(
             specular_constant,
             specular_exponent,
             color,
-            resolve_filter_light(graph, light, target_bounds),
+            resolve_filter_light(
+              graph, light, target_bounds, origin_x, origin_y,
+            ),
             true,
           ),
           result,
@@ -2241,55 +2504,25 @@ fn evaluate_filter_graph(
       named.set(result_name, output)
     }
   }
-  clip_filter_result(previous, graph.get_filter_bounds(target_bounds))
-}
-
-///|
-fn apply_mask_to_isolated_layer(
-  source : Image,
-  node : SVGNode,
-  parent_transform : Transform,
-  ctx : RenderContext,
-  resources : RenderResources,
-  mask : Mask,
-  parent_color : Color,
-) -> Image {
-  let bbox_local = compute_bounds_without_self_transform(
-    node,
-    Transform::identity(),
-  )
-  if bbox_local.is_empty() {
-    return Image::new(source.width, source.height)
-  }
-  let element_transform = parent_transform.multiply(node.transform)
-  let mask_image = Image::new(source.width, source.height)
-  let base_mask_ctx = {
-    ..ctx,
-    setter: make_image_compositing_setter(mask_image),
-    target_image: Some(mask_image),
-  }
-  let mask_bounds_local = mask.get_mask_bounds(bbox_local)
-  let mask_ctx = match
-    apply_transformed_rect_clip(
-      base_mask_ctx, mask_bounds_local, element_transform,
-    ) {
-    Some(clipped) => clipped
-    None => return Image::new(source.width, source.height)
-  }
-  let mask_parent = match mask.mask_content_units {
-    MaskUnits::ObjectBoundingBox => {
-      let translate = Transform::translate(bbox_local.min_x, bbox_local.min_y)
-      let scale = Transform::scale(bbox_local.width(), bbox_local.height())
-      element_transform.multiply(translate.multiply(scale))
+  let filter_bounds = match graph.units {
+    MaskUnits::ObjectBoundingBox => graph.get_filter_bounds(target_bounds)
+    MaskUnits::UserSpaceOnUse => {
+      let device_target = {
+        min_x: target_bounds.min_x + origin_x.to_double(),
+        min_y: target_bounds.min_y + origin_y.to_double(),
+        max_x: target_bounds.max_x + origin_x.to_double(),
+        max_y: target_bounds.max_y + origin_y.to_double(),
+      }
+      let device_bounds = graph.get_filter_bounds(device_target)
+      {
+        min_x: device_bounds.min_x - origin_x.to_double(),
+        min_y: device_bounds.min_y - origin_y.to_double(),
+        max_x: device_bounds.max_x - origin_x.to_double(),
+        max_y: device_bounds.max_y - origin_y.to_double(),
+      }
     }
-    MaskUnits::UserSpaceOnUse => element_transform
   }
-  for content_node in mask.content {
-    render_node(
-      content_node, mask_parent, mask_ctx, resources, true, parent_color,
-    )
-  }
-  apply_mask_to_image(source, mask_image, mask.mask_type)
+  clip_filter_result(previous, filter_bounds)
 }
 
 ///|
@@ -2298,12 +2531,168 @@ fn apply_clip_path(
   clip : ClipPath,
   element_transform : Transform,
   bbox_local : BoundingBox,
+  resources : RenderResources,
 ) -> RenderContext {
+  let mask = build_clip_path_coverage(
+    clip,
+    element_transform,
+    bbox_local,
+    ctx.width,
+    ctx.height,
+    resources,
+    0,
+  )
+  if mask.width == 0 || mask.height == 0 {
+    let setter : PixelSetter = { set: fn(_, _, _) { () } }
+    return { ..ctx, setter, }
+  }
+  let inner = ctx.setter
+  let setter : PixelSetter = {
+    set: fn(x, y, color) {
+      let coverage = mask.get_device(x, y)
+      if coverage > 0 {
+        inner.pixel(
+          x,
+          y,
+          if coverage == 65535 {
+            color
+          } else {
+            apply_coverage(color, coverage)
+          },
+        )
+      }
+    },
+  }
+  { ..ctx, setter, }
+}
+
+///|
+fn clip_shape_contours(
+  shape : Shape,
+  transform : Transform,
+) -> Array[Array[(Double, Double)]] {
+  let commands = match shape {
+    Rect(x~, y~, width~, height~, rx~, ry~) =>
+      if width > 0.0 && height > 0.0 {
+        rect_path_commands(x, y, width, height, rx, ry)
+      } else {
+        []
+      }
+    Circle(cx~, cy~, r~) =>
+      if r > 0.0 {
+        ellipse_path_commands(cx, cy, r, r)
+      } else {
+        []
+      }
+    Ellipse(cx~, cy~, rx~, ry~) =>
+      if rx > 0.0 && ry > 0.0 {
+        ellipse_path_commands(cx, cy, rx, ry)
+      } else {
+        []
+      }
+    Polyline(points~) | Polygon(points~) => points_path_commands(points, true)
+    Path(commands~) => commands
+    Text(x~, y~, text~, font_size~) =>
+      rect_path_commands(
+        x,
+        y - font_size,
+        font_size * 0.6 * text.length().to_double(),
+        font_size,
+        0.0,
+        0.0,
+      )
+    Line(..) | Image(..) | Group => []
+  }
+  let contours : Array[Array[(Double, Double)]] = []
+  for polyline in path_to_polylines(commands, device_path_flatness(transform)) {
+    contours.push(polyline.map(fn(point) { transform.apply(point.0, point.1) }))
+  }
+  contours
+}
+
+///|
+fn build_clip_node_coverage(
+  node : SVGNode,
+  parent_transform : Transform,
+  width : Int,
+  height : Int,
+  resources : RenderResources,
+  depth : Int,
+) -> CoverageMask {
+  if depth >= 32 {
+    return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [] }
+  }
+  let base_transform = parent_transform.multiply(node.transform)
+  let transform = match
+    (node.view_box, node.viewport_width, node.viewport_height) {
+    (Some(vb), Some(vw), Some(vh)) =>
+      base_transform.multiply(
+        vb.get_transform(vw, vh, node.preserve_aspect_ratio),
+      )
+    _ => base_transform
+  }
+  let mut result = build_coverage_mask(
+    clip_shape_contours(node.shape, transform),
+    node.fill_rule,
+    width,
+    height,
+  )
+  for child in node.children {
+    result = union_coverage_masks(
+      result,
+      build_clip_node_coverage(
+        child,
+        transform,
+        width,
+        height,
+        resources,
+        depth + 1,
+      ),
+    )
+  }
+  match node.clip_path_id {
+    Some(id) =>
+      match resources.clips.get(id) {
+        Some(nested) => {
+          let local_bounds = compute_bounds_without_self_transform(
+            node,
+            Transform::identity(),
+          )
+          result = intersect_coverage_masks(
+            result,
+            build_clip_path_coverage(
+              nested,
+              transform,
+              local_bounds,
+              width,
+              height,
+              resources,
+              depth + 1,
+            ),
+          )
+        }
+        None => ()
+      }
+    None => ()
+  }
+  result
+}
+
+///|
+fn build_clip_path_coverage(
+  clip : ClipPath,
+  element_transform : Transform,
+  bbox_local : BoundingBox,
+  width : Int,
+  height : Int,
+  resources : RenderResources,
+  depth : Int,
+) -> CoverageMask {
   let base_transform = match clip.units {
     ClipPathUnits::UserSpaceOnUse => element_transform
     ClipPathUnits::ObjectBoundingBox => {
       if bbox_local.is_empty() {
-        return ctx
+        return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [] }
       }
       let translate = Transform::translate(bbox_local.min_x, bbox_local.min_y)
       let scale = Transform::scale(bbox_local.width(), bbox_local.height())
@@ -2311,25 +2700,35 @@ fn apply_clip_path(
     }
   }
   let combined = base_transform.multiply(clip.transform)
-  let clip = ClipPath::{
-    id: clip.id,
-    shape: clip.shape,
-    content: clip.content,
-    transform: combined,
-    clip_rule: clip.clip_rule,
-    units: clip.units,
+  if clip.content.is_empty() {
+    return build_coverage_mask(
+      clip_shape_contours(clip.shape, combined),
+      clip.clip_rule,
+      width,
+      height,
+    )
   }
-  let inner = ctx.setter
-  let setter : PixelSetter = {
-    set: fn(x, y, color) {
-      let px = x.to_double() + 0.5
-      let py = y.to_double() + 0.5
-      if clip.contains(px, py) {
-        inner.pixel(x, y, color)
-      }
-    },
+  let mut result : CoverageMask = {
+    origin_x: 0,
+    origin_y: 0,
+    width: 0,
+    height: 0,
+    values: [],
   }
-  { ..ctx, setter, }
+  for child in clip.content {
+    result = union_coverage_masks(
+      result,
+      build_clip_node_coverage(
+        child,
+        combined,
+        width,
+        height,
+        resources,
+        depth + 1,
+      ),
+    )
+  }
+  result
 }
 
 ///|
@@ -2412,6 +2811,7 @@ fn make_image_context(
     text_to_paths: parent.text_to_paths,
     image_resolver: parent.image_resolver,
     target_image: Some(image),
+    blend_pixel: parent.blend_pixel,
     diagnostics: parent.diagnostics,
   }
 }
@@ -2423,44 +2823,6 @@ fn make_image_compositing_setter(image : Image) -> PixelSetter {
       let backdrop = image.get_pixel(x, y)
       image.set_pixel(x, y, blend_colors(backdrop, source))
     },
-  }
-}
-
-///|
-fn composite_image_to_context(
-  image : Image,
-  ctx : RenderContext,
-  offset_x : Int,
-  offset_y : Int,
-  mode : BlendMode,
-) -> Unit {
-  if mode == Normal {
-    blit_image_to_context(image, ctx, offset_x, offset_y)
-    return
-  }
-  match ctx.target_image {
-    Some(target) =>
-      for y in 0..<image.height {
-        for x in 0..<image.width {
-          let source = image.get_pixel(x, y)
-          if source.a > 0 {
-            let tx = x + offset_x
-            let ty = y + offset_y
-            let visible = match ctx.clip {
-              Some(clip) => clip.contains(tx, ty)
-              None => true
-            }
-            if visible {
-              target.set_pixel(
-                tx,
-                ty,
-                blend_with_mode(target.get_pixel(tx, ty), source, mode),
-              )
-            }
-          }
-        }
-      }
-    None => blit_image_to_context(image, ctx, offset_x, offset_y)
   }
 }
 
@@ -2770,6 +3132,7 @@ fn build_pattern_tile(
     text_to_paths: ctx.text_to_paths,
     image_resolver: ctx.image_resolver,
     target_image: Some(image),
+    blend_pixel: None,
     diagnostics: ctx.diagnostics,
   }
   let pixel_scale = Transform::scale(
@@ -4041,6 +4404,7 @@ fn render_marker_instance(
       clip,
       Transform::identity(),
       BoundingBox::empty(),
+      resources,
     )
   }
   render_node(
@@ -6614,6 +6978,7 @@ pub fn RenderContext::new(
     text_to_paths: None,
     image_resolver: None,
     target_image: None,
+    blend_pixel: None,
     diagnostics: [],
   }
 }
@@ -6648,6 +7013,7 @@ pub fn RenderContext::with_clip(
     text_to_paths: None,
     image_resolver: None,
     target_image: None,
+    blend_pixel: None,
     diagnostics: [],
   }
 }
@@ -6669,6 +7035,7 @@ pub fn RenderContext::with_font(
     text_to_paths: Some(text_to_paths),
     image_resolver: None,
     target_image: None,
+    blend_pixel: None,
     diagnostics: [],
   }
 }
@@ -6689,6 +7056,7 @@ pub fn RenderContext::for_camera(
     text_to_paths: None,
     image_resolver: None,
     target_image: None,
+    blend_pixel: None,
     diagnostics: [],
   }
 }

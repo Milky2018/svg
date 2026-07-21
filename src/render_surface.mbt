@@ -257,6 +257,46 @@ fn RenderSurface::clear(self : RenderSurface) -> Unit {
 }
 
 ///|
+fn RenderSurface::to_image(self : RenderSurface) -> Image {
+  let image = Image::new(self.width, self.height)
+  for local_y in 0..<self.height {
+    for local_x in 0..<self.width {
+      image.set_pixel(
+        local_x,
+        local_y,
+        self.pixels[local_y * self.width + local_x].to_color(),
+      )
+    }
+  }
+  image
+}
+
+///|
+fn RenderSurface::replace_from_image(
+  self : RenderSurface,
+  image : Image,
+) -> Unit {
+  self.clear()
+  let width = min_int(self.width, image.width)
+  let height = min_int(self.height, image.height)
+  for local_y in 0..<height {
+    for local_x in 0..<width {
+      self.pixels[local_y * self.width + local_x] = PremulColor16::from_color(
+        image.get_pixel(local_x, local_y),
+      )
+    }
+  }
+}
+
+///|
+fn RenderSurface::apply_opacity(self : RenderSurface, opacity : Double) -> Unit {
+  let factor = unit_to_channel16(opacity)
+  for index in 0..<self.pixels.length() {
+    self.pixels[index] = self.pixels[index].scaled(factor)
+  }
+}
+
+///|
 #warnings("-unused_value")
 fn RenderSurface::convert_space(
   self : RenderSurface,

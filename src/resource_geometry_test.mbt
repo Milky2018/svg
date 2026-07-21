@@ -84,6 +84,46 @@ test "path clip honors evenodd subpaths" {
 }
 
 ///|
+test "clip path preserves fractional coverage" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"3\" height=\"1\">" +
+    "<defs><clipPath id=\"clip\"><rect x=\"0.5\" width=\"1\" height=\"1\"/></clipPath></defs>" +
+    "<rect width=\"3\" height=\"1\" fill=\"red\" clip-path=\"url(#clip)\"/>" +
+    "</svg>"
+  let image = render_resource_fixture(svg, 3, 1)
+  inspect(image.get_pixel(0, 0).a, content="128")
+  inspect(image.get_pixel(1, 0).a, content="128")
+  inspect(image.get_pixel(2, 0).a, content="0")
+}
+
+///|
+test "nested clip paths multiply fractional coverage" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"2\" height=\"1\">" +
+    "<defs>" +
+    "<clipPath id=\"inner\"><rect x=\"0.5\" width=\"1\" height=\"1\"/></clipPath>" +
+    "<clipPath id=\"outer\"><rect x=\"0.5\" width=\"1\" height=\"1\" clip-path=\"url(#inner)\"/></clipPath>" +
+    "</defs>" +
+    "<rect width=\"2\" height=\"1\" fill=\"red\" clip-path=\"url(#outer)\"/>" +
+    "</svg>"
+  let image = render_resource_fixture(svg, 2, 1)
+  inspect(image.get_pixel(0, 0).a, content="64")
+  inspect(image.get_pixel(1, 0).a, content="64")
+}
+
+///|
+test "clip path use instances preserve placement and transforms" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"2\">" +
+    "<defs><rect id=\"shape\" width=\"2\" height=\"2\"/>" +
+    "<clipPath id=\"clip\"><use href=\"#shape\" x=\"1\" transform=\"translate(4 0)\"/></clipPath></defs>" +
+    "<rect width=\"8\" height=\"2\" fill=\"red\" clip-path=\"url(#clip)\"/>" +
+    "</svg>"
+  let image = render_resource_fixture(svg, 8, 2)
+  inspect(image.get_pixel(4, 0).a, content="0")
+  inspect(image.get_pixel(5, 0).a, content="255")
+  inspect(image.get_pixel(6, 0).a, content="255")
+  inspect(image.get_pixel(7, 0).a, content="0")
+}
+
+///|
 test "affine mask region clips outside its parallelogram" {
   let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
     "<defs><mask id=\"mask\" mask-type=\"alpha\" maskUnits=\"userSpaceOnUse\" " +
@@ -110,4 +150,31 @@ test "mask renders nested transformed path content" {
   let image = render_resource_fixture(svg, 8, 2)
   inspect(image.get_pixel(1, 0).is_transparent(), content="true")
   inspect(image.get_pixel(7, 0).is_transparent(), content="false")
+}
+
+///|
+test "mask region preserves fractional coverage and transparent exterior" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"3\" height=\"1\">" +
+    "<defs><mask id=\"mask\" mask-type=\"alpha\" maskUnits=\"userSpaceOnUse\" " +
+    "maskContentUnits=\"userSpaceOnUse\" x=\"0.5\" y=\"0\" width=\"1\" height=\"1\">" +
+    "<rect width=\"3\" height=\"1\" fill=\"white\"/></mask></defs>" +
+    "<rect width=\"3\" height=\"1\" fill=\"red\" mask=\"url(#mask)\"/>" +
+    "</svg>"
+  let image = render_resource_fixture(svg, 3, 1)
+  inspect(image.get_pixel(0, 0).a, content="128")
+  inspect(image.get_pixel(1, 0).a, content="128")
+  inspect(image.get_pixel(2, 0).a, content="0")
+}
+
+///|
+test "mask content filters run inside the isolated mask surface" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"2\" height=\"1\">" +
+    "<defs><filter id=\"black\"><feColorMatrix type=\"matrix\" " +
+    "values=\"0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0\"/></filter>" +
+    "<mask id=\"mask\" mask-type=\"luminance\"><rect width=\"2\" height=\"1\" fill=\"white\" filter=\"url(#black)\"/></mask></defs>" +
+    "<rect width=\"2\" height=\"1\" fill=\"red\" mask=\"url(#mask)\"/>" +
+    "</svg>"
+  let image = render_resource_fixture(svg, 2, 1)
+  inspect(image.get_pixel(0, 0).a, content="0")
+  inspect(image.get_pixel(1, 0).a, content="0")
 }
