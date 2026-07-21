@@ -2774,7 +2774,7 @@ fn make_pattern_setter(
   let inverse = transform.inverse()
   let pattern_inverse = pattern.transform.inverse()
   Some({
-    set: (x, y, _color) => {
+    set: (x, y, coverage_color) => {
       if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
         return
       }
@@ -2791,7 +2791,11 @@ fn make_pattern_setter(
       let sample_y = (v * tile.image.height.to_double()).floor().to_int()
       let color = tile.image.get_pixel(sample_x, sample_y)
       if color.a > 0 {
-        ctx.setter.pixel(x, y, apply_opacity(color, opacity))
+        ctx.setter.pixel(
+          x,
+          y,
+          apply_coverage(apply_opacity(color, opacity), coverage_color.a * 257),
+        )
       }
     },
   })
@@ -3261,6 +3265,15 @@ fn rect_path_commands(
 ) -> Array[PathCommand] {
   let clamped_rx = min(max(rx, 0.0), width / 2.0)
   let clamped_ry = min(max(ry, 0.0), height / 2.0)
+  if (clamped_rx - width / 2.0).abs() <= 0.000000000001 &&
+    (clamped_ry - height / 2.0).abs() <= 0.000000000001 {
+    return ellipse_path_commands(
+      x + width / 2.0,
+      y + height / 2.0,
+      clamped_rx,
+      clamped_ry,
+    )
+  }
   if clamped_rx <= 0.0 || clamped_ry <= 0.0 {
     return [
       MoveTo(x, y),
@@ -3340,6 +3353,17 @@ fn render_rect(
   node_color : Color,
 ) -> Unit {
   if width <= 0.0 || height <= 0.0 {
+    return
+  }
+  if ctx.width > 0 && ctx.height > 0 {
+    render_path(
+      rect_path_commands(x, y, width, height, rx, ry),
+      node,
+      transform,
+      ctx,
+      node_color,
+      resources,
+    )
     return
   }
   if node_has_rendered_stroke(node, node_color, resources) ||
@@ -3467,6 +3491,17 @@ fn render_circle(
   if r <= 0.0 {
     return
   }
+  if ctx.width > 0 && ctx.height > 0 {
+    render_path(
+      ellipse_path_commands(cx, cy, r, r),
+      node,
+      transform,
+      ctx,
+      node_color,
+      resources,
+    )
+    return
+  }
   if !transform_preserves_circles(transform) ||
     node_has_rendered_stroke(node, node_color, resources) ||
     node_uses_paint_server(node, node_color, resources) {
@@ -3552,6 +3587,17 @@ fn render_ellipse(
   node_color : Color,
 ) -> Unit {
   if rx <= 0.0 || ry <= 0.0 {
+    return
+  }
+  if ctx.width > 0 && ctx.height > 0 {
+    render_path(
+      ellipse_path_commands(cx, cy, rx, ry),
+      node,
+      transform,
+      ctx,
+      node_color,
+      resources,
+    )
     return
   }
   if node_has_rendered_stroke(node, node_color, resources) ||
@@ -3653,6 +3699,8 @@ fn render_line(
             transform,
             stroke_color,
             ctx.setter,
+            ctx.width,
+            ctx.height,
             false,
           )
         }
@@ -4144,23 +4192,21 @@ fn dash_local_polyline_pieces(
 
 ///|
 fn push_transformed_stroke_polygon(
-  outlines : Array[Array[(Int, Int)]],
+  outlines : Array[Array[(Double, Double)]],
   local_points : Array[(Double, Double)],
   transform : Transform,
 ) -> Unit {
-  let transformed : Array[(Int, Int)] = []
+  let transformed : Array[(Double, Double)] = []
   for point in local_points {
     let device = transform.apply(point.0, point.1)
-    push_distinct_point(
-      transformed,
-      (quantize_geometry(device.0), quantize_geometry(device.1)),
-    )
+    push_distinct_local_point(transformed, device)
   }
-  if transformed.length() >= 3 && polygon_area_int(transformed) != 0 {
-    if polygon_area_int(transformed) > 0 {
+  let area = polygon_signed_area(transformed)
+  if transformed.length() >= 3 && area.abs() > 0.000000000001 {
+    if area > 0.0 {
       outlines.push(transformed)
     } else {
-      let reversed : Array[(Int, Int)] = []
+      let reversed : Array[(Double, Double)] = []
       for index in 0..<transformed.length() {
         reversed.push(transformed[transformed.length() - 1 - index])
       }
@@ -4171,7 +4217,7 @@ fn push_transformed_stroke_polygon(
 
 ///|
 fn push_affine_stroke_disk(
-  outlines : Array[Array[(Int, Int)]],
+  outlines : Array[Array[(Double, Double)]],
   center : (Double, Double),
   radius : Double,
   transform : Transform,
@@ -4192,7 +4238,7 @@ fn push_affine_stroke_disk(
 
 ///|
 fn push_affine_stroke_join(
-  outlines : Array[Array[(Int, Int)]],
+  outlines : Array[Array[(Double, Double)]],
   previous : (Double, Double),
   vertex : (Double, Double),
   next : (Double, Double),
@@ -4252,7 +4298,7 @@ fn push_affine_stroke_join(
 
 ///|
 fn append_affine_stroke_piece(
-  outlines : Array[Array[(Int, Int)]],
+  outlines : Array[Array[(Double, Double)]],
   points : Array[(Double, Double)],
   stroke : StrokeStyle,
   transform : Transform,
@@ -4359,24 +4405,12 @@ fn raster_affine_stroke(
   transform : Transform,
   color : Color,
   setter : PixelSetter,
+  canvas_width : Int,
+  canvas_height : Int,
   closed : Bool,
 ) -> Unit {
   if source_points.length() < 2 || stroke.width <= 0.0 {
     return
-  }
-  if transform_preserves_circles(transform) {
-    let (scale, _) = transform.get_scale()
-    let stroke_px = ceil_to_int(stroke.width * scale)
-    if stroke_px <= 1 {
-      let device_points = source_points.map(fn(point) {
-        let device = transform.apply(point.0, point.1)
-        (quantize_geometry(device.0), quantize_geometry(device.1))
-      })
-      raster_normalized_stroke(
-        device_points, stroke, stroke_px, color, setter, closed,
-      )
-      return
-    }
   }
   let points = source_points.copy()
   if closed && points.length() > 1 {
@@ -4387,7 +4421,7 @@ fn raster_affine_stroke(
       let _ = points.pop()
     }
   }
-  let outlines : Array[Array[(Int, Int)]] = []
+  let outlines : Array[Array[(Double, Double)]] = []
   match stroke.dasharray {
     Some(dasharray) => {
       let dash_points = if closed {
@@ -4410,7 +4444,14 @@ fn raster_affine_stroke(
       append_affine_stroke_piece(outlines, points, stroke, transform, closed)
   }
   if outlines.length() > 0 {
-    raster_polygons_fill_rule(outlines, color, NonZero, setter)
+    raster_contours_coverage(
+      outlines,
+      color,
+      NonZero,
+      setter,
+      canvas_width,
+      canvas_height,
+    )
   }
 }
 
@@ -5226,26 +5267,6 @@ fn is_closed_polyline(points : Array[(Int, Int)]) -> Bool {
 }
 
 ///|
-fn polygon_area_int(points : Array[(Int, Int)]) -> Int {
-  if points.length() < 3 {
-    return 0
-  }
-  let mut area = 0
-  let last = points.length() - 1
-  for i in 0..<last {
-    let (x0, y0) = points[i]
-    let (x1, y1) = points[i + 1]
-    area = area + (x0 * y1 - x1 * y0)
-  }
-  let (lx, ly) = points[last]
-  let (fx, fy) = points[0]
-  if lx != fx || ly != fy {
-    area = area + (lx * fy - fx * ly)
-  }
-  area
-}
-
-///|
 fn draw_polyline_joins_caps(
   points : Array[(Int, Int)],
   stroke_px : Int,
@@ -5499,6 +5520,17 @@ fn render_polyline(
   if points.length() < 2 {
     return
   }
+  if ctx.width > 0 && ctx.height > 0 {
+    render_path(
+      points_path_commands(points, false),
+      node,
+      transform,
+      ctx,
+      node_color,
+      resources,
+    )
+    return
+  }
   if node_uses_paint_server(node, node_color, resources) {
     render_path(
       points_path_commands(points, false),
@@ -5542,6 +5574,8 @@ fn render_polyline(
             transform,
             stroke_color,
             ctx.setter,
+            ctx.width,
+            ctx.height,
             false,
           )
         }
@@ -5568,6 +5602,17 @@ fn render_polygon(
   resources : RenderResources,
 ) -> Unit {
   if points.length() < 3 {
+    return
+  }
+  if ctx.width > 0 && ctx.height > 0 {
+    render_path(
+      points_path_commands(points, true),
+      node,
+      transform,
+      ctx,
+      node_color,
+      resources,
+    )
     return
   }
   if node_uses_paint_server(node, node_color, resources) {
@@ -5618,6 +5663,8 @@ fn render_polygon(
             transform,
             stroke_color,
             ctx.setter,
+            ctx.width,
+            ctx.height,
             true,
           )
         }
@@ -5756,7 +5803,7 @@ fn make_paint_server_setter(
     ResolvedPaint::LinearGrad(gradient) => {
       let inverse = transform.inverse()
       Some({
-        set: (x, y, _color) => {
+        set: (x, y, coverage_color) => {
           if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
             return
           }
@@ -5767,9 +5814,12 @@ fn make_paint_server_setter(
           ctx.setter.pixel(
             x,
             y,
-            apply_opacity(
-              sample_linear_gradient(gradient, local_x, local_y, bbox),
-              opacity,
+            apply_coverage(
+              apply_opacity(
+                sample_linear_gradient(gradient, local_x, local_y, bbox),
+                opacity,
+              ),
+              coverage_color.a * 257,
             ),
           )
         },
@@ -5779,7 +5829,7 @@ fn make_paint_server_setter(
       let inverse = transform.inverse()
       let lut = gradient.build_lut(256)
       Some({
-        set: (x, y, _color) => {
+        set: (x, y, coverage_color) => {
           if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
             return
           }
@@ -5790,9 +5840,12 @@ fn make_paint_server_setter(
           ctx.setter.pixel(
             x,
             y,
-            apply_opacity(
-              sample_radial_gradient(gradient, lut, local_x, local_y, bbox),
-              opacity,
+            apply_coverage(
+              apply_opacity(
+                sample_radial_gradient(gradient, lut, local_x, local_y, bbox),
+                opacity,
+              ),
+              coverage_color.a * 257,
             ),
           )
         },
@@ -5813,19 +5866,15 @@ fn render_path(
   node_color : Color,
   resources : RenderResources,
 ) -> Unit {
-  // Convert to polylines with transform
-  let polylines = path_to_polylines(commands, ctx.flatness)
-  let transformed_polylines : Array[Array[(Int, Int)]] = []
+  let polylines = path_to_polylines(commands, device_path_flatness(transform))
+  let transformed_polylines : Array[Array[(Double, Double)]] = []
   for polyline in polylines {
-    let transformed = polyline.map(fn(p) {
-      let (x, y) = transform.apply(p.0, p.1)
-      (quantize_geometry(x), quantize_geometry(y))
-    })
+    let transformed = polyline.map(fn(p) { transform.apply(p.0, p.1) })
     transformed_polylines.push(transformed)
   }
-  let fill_polylines : Array[Array[(Int, Int)]] = []
+  let fill_polylines : Array[Array[(Double, Double)]] = []
   for polyline in transformed_polylines {
-    if polyline.length() >= 3 && polygon_area_int(polyline) != 0 {
+    if polyline.length() >= 3 && polygon_area_abs(polyline) > 0.000000000001 {
       fill_polylines.push(polyline)
     }
   }
@@ -5838,11 +5887,13 @@ fn render_path(
             node.fill_opacity * node.opacity,
           )
           if fill_polylines.length() > 0 {
-            raster_polygons_fill_rule(
+            raster_contours_coverage(
               fill_polylines,
               fill_color,
               node.fill_rule,
               ctx.setter,
+              ctx.width,
+              ctx.height,
             )
           }
         }
@@ -5851,7 +5902,7 @@ fn render_path(
           let bbox = get_shape_bounds(node.shape)
           let inverse = transform.inverse()
           let gradient_setter : PixelSetter = {
-            set: (x, y, _color) => {
+            set: (x, y, coverage_color) => {
               if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
                 return
               }
@@ -5862,18 +5913,23 @@ fn render_path(
               ctx.setter.pixel(
                 x,
                 y,
-                apply_opacity(
-                  sample_linear_gradient(gradient, local_x, local_y, bbox),
-                  node.fill_opacity * node.opacity,
+                apply_coverage(
+                  apply_opacity(
+                    sample_linear_gradient(gradient, local_x, local_y, bbox),
+                    node.fill_opacity * node.opacity,
+                  ),
+                  coverage_color.a * 257,
                 ),
               )
             },
           }
-          raster_polygons_fill_rule(
+          raster_contours_coverage(
             fill_polylines,
             Color::white(),
             node.fill_rule,
             gradient_setter,
+            ctx.width,
+            ctx.height,
           )
         }
       ResolvedPaint::RadialGrad(gradient) =>
@@ -5882,7 +5938,7 @@ fn render_path(
           let inverse = transform.inverse()
           let lut = gradient.build_lut(256)
           let gradient_setter : PixelSetter = {
-            set: (x, y, _color) => {
+            set: (x, y, coverage_color) => {
               if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
                 return
               }
@@ -5893,18 +5949,25 @@ fn render_path(
               ctx.setter.pixel(
                 x,
                 y,
-                apply_opacity(
-                  sample_radial_gradient(gradient, lut, local_x, local_y, bbox),
-                  node.fill_opacity * node.opacity,
+                apply_coverage(
+                  apply_opacity(
+                    sample_radial_gradient(
+                      gradient, lut, local_x, local_y, bbox,
+                    ),
+                    node.fill_opacity * node.opacity,
+                  ),
+                  coverage_color.a * 257,
                 ),
               )
             },
           }
-          raster_polygons_fill_rule(
+          raster_contours_coverage(
             fill_polylines,
             Color::white(),
             node.fill_rule,
             gradient_setter,
+            ctx.width,
+            ctx.height,
           )
         }
       ResolvedPaint::Pattern(pattern) =>
@@ -5920,11 +5983,13 @@ fn render_path(
               node.fill_opacity * node.opacity,
             ) {
             Some(pattern_setter) =>
-              raster_polygons_fill_rule(
+              raster_contours_coverage(
                 fill_polylines,
                 Color::white(),
                 node.fill_rule,
                 pattern_setter,
+                ctx.width,
+                ctx.height,
               )
             None => ()
           }
@@ -5958,6 +6023,8 @@ fn render_path(
               transform,
               stroke_color,
               ctx.setter,
+              ctx.width,
+              ctx.height,
               closed,
             )
           }
@@ -5988,6 +6055,8 @@ fn render_path(
                   transform,
                   Color::white(),
                   stroke_setter,
+                  ctx.width,
+                  ctx.height,
                   closed,
                 )
               }
@@ -6148,6 +6217,11 @@ fn apply_opacity(color : Color, opacity : Double) -> Color {
     .scaled(unit_to_channel16(opacity))
     .to_color()
   }
+}
+
+///|
+fn apply_coverage(color : Color, coverage : Int) -> Color {
+  PremulColor16::from_color(color).scaled(clamp_channel16(coverage)).to_color()
 }
 
 ///|

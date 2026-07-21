@@ -856,7 +856,8 @@ test "wpt line basic" {
       let ctx = RenderContext::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(10, 10).b, content="255")
-      inspect(image.get_pixel(20, 20).b, content="255")
+      inspect(image.get_pixel(19, 19).b, content="255")
+      inspect(image.get_pixel(20, 20).is_transparent(), content="true")
     }
     None => panic()
   }
@@ -892,7 +893,8 @@ test "wpt linecap square extends" {
       let ctx = RenderContext::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(7, 20).b, content="255")
-      inspect(image.get_pixel(33, 20).b, content="255")
+      inspect(image.get_pixel(32, 20).b, content="255")
+      inspect(image.get_pixel(33, 20).is_transparent(), content="true")
     }
     None => panic()
   }
@@ -910,7 +912,8 @@ test "wpt linecap round extends" {
       let ctx = RenderContext::new(setter, 40, 40)
       doc.render(ctx)
       inspect(image.get_pixel(7, 20).b, content="255")
-      inspect(image.get_pixel(33, 20).b, content="255")
+      inspect(image.get_pixel(32, 20).b, content="255")
+      inspect(image.get_pixel(33, 20).is_transparent(), content="true")
     }
     None => panic()
   }
