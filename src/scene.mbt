@@ -4249,7 +4249,12 @@ fn push_affine_stroke_disk(
   transform : Transform,
 ) -> Unit {
   let polygon : Array[(Double, Double)] = []
-  let segments = 32
+  let error = min(radius, device_path_flatness(transform))
+  let max_angle = 2.0 * @math.acos(1.0 - error / radius)
+  let segments = min_int(
+    65536,
+    max_int((6.283185307179586 / max_angle).ceil().to_int(), 8),
+  )
   for index in 0..<segments {
     let angle = 6.283185307179586 * index.to_double() / segments.to_double()
     polygon.push(

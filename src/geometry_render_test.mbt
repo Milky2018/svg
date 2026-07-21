@@ -272,6 +272,38 @@ test "non-scaling stroke constructs its outline in device space" {
 }
 
 ///|
+test "curved dash construction is stable under uniform scaling" {
+  let transformed = render_geometry_fixture(
+    "<svg width=\"40\" height=\"30\"><path d=\"M4 16 C8 2 16 2 20 16\" transform=\"scale(1.5)\" fill=\"none\" stroke=\"black\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-dasharray=\"4 3\" stroke-dashoffset=\"1\"/></svg>",
+    40, 30,
+  )
+  let prescaled = render_geometry_fixture(
+    "<svg width=\"40\" height=\"30\"><path d=\"M6 24 C12 3 24 3 30 24\" fill=\"none\" stroke=\"black\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-dasharray=\"6 4.5\" stroke-dashoffset=\"1.5\"/></svg>",
+    40, 30,
+  )
+  inspect(image_difference_count(transformed, prescaled), content="0")
+}
+
+///|
+test "marker overflow clips to its viewport unless visible" {
+  fn fixture(overflow : String) -> Image {
+    render_geometry_fixture(
+      "<svg width=\"24\" height=\"20\"><defs><marker id=\"m\" markerWidth=\"4\" markerHeight=\"4\" refX=\"2\" refY=\"2\" markerUnits=\"userSpaceOnUse\" overflow=\"" +
+      overflow +
+      "\"><rect x=\"-4\" y=\"-4\" width=\"12\" height=\"12\" fill=\"red\"/></marker></defs><path d=\"M12 10 L18 10\" marker-start=\"url(#m)\"/></svg>",
+      24,
+      20,
+    )
+  }
+
+  inspect(
+    visible_geometry_pixels(fixture("visible")) >
+    visible_geometry_pixels(fixture("hidden")),
+    content="true",
+  )
+}
+
+///|
 test "skew functions and equivalent matrices render identically" {
   let skew_x = render_geometry_fixture(
     "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"48\"><rect x=\"8\" y=\"8\" width=\"16\" height=\"16\" transform=\"skewX(20)\"/></svg>",

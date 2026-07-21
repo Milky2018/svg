@@ -26,3 +26,21 @@ test "zero-length strokes follow linecap shape semantics" {
     )
   }
 }
+
+///|
+test "curve marker vertices retain endpoint tangents" {
+  let subpaths = build_marker_subpaths([
+    MoveTo(4.0, 12.0),
+    CurveTo(8.0, 4.0, 12.0, 4.0, 16.0, 12.0),
+  ])
+  inspect(subpaths.length(), content="1")
+  inspect(subpaths[0].points.length(), content="2")
+  let start = subpaths[0].points[0]
+  let end = subpaths[0].points[1]
+  inspect(start.has_out, content="true")
+  inspect(start.out_dx, content="4")
+  inspect(start.out_dy, content="-8")
+  inspect(end.has_in, content="true")
+  inspect(end.in_dx, content="4")
+  inspect(end.in_dy, content="8")
+}
