@@ -6144,12 +6144,9 @@ fn apply_opacity(color : Color, opacity : Double) -> Color {
   } else if opacity <= 0.0 {
     Color::transparent()
   } else {
-    {
-      r: color.r,
-      g: color.g,
-      b: color.b,
-      a: (color.a.to_double() * opacity).round().to_int(),
-    }
+    PremulColor16::from_color(color)
+    .scaled(unit_to_channel16(opacity))
+    .to_color()
   }
 }
 

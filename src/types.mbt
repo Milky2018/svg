@@ -3671,25 +3671,9 @@ pub fn Image::sub_image(
 ///|
 /// Alpha blend two colors
 fn blend_colors(dst : Color, src : Color) -> Color {
-  let sa = src.a.to_double() / 255.0
-  let da = dst.a.to_double() / 255.0
-  let out_a = sa + da * (1.0 - sa)
-  if out_a == 0.0 {
-    return Color::transparent()
-  }
-  let r = ((src.r.to_double() * sa + dst.r.to_double() * da * (1.0 - sa)) /
-    out_a)
-    .round()
-    .to_int()
-  let g = ((src.g.to_double() * sa + dst.g.to_double() * da * (1.0 - sa)) /
-    out_a)
-    .round()
-    .to_int()
-  let b = ((src.b.to_double() * sa + dst.b.to_double() * da * (1.0 - sa)) /
-    out_a)
-    .round()
-    .to_int()
-  { r, g, b, a: (out_a * 255.0).round().to_int() }
+  PremulColor16::from_color(src)
+  .source_over(PremulColor16::from_color(dst))
+  .to_color()
 }
 
 ///|
