@@ -1,9 +1,9 @@
 ///|
 priv struct CoverageEdge {
-  x0 : Double
-  y0 : Double
-  x1 : Double
-  y1 : Double
+  x0 : Int64
+  y0 : Int64
+  x1 : Int64
+  y1 : Int64
   winding : Int
 }
 
@@ -23,8 +23,24 @@ priv struct CoverageMask {
 }
 
 ///|
-fn quantize_coverage_coordinate(value : Double) -> Double {
-  (value * 65536.0).round() / 65536.0
+fn quantize_coverage_coordinate(value : Double) -> Int64 {
+  if value.is_nan() {
+    return 0L
+  }
+  if value.is_pos_inf() {
+    return 2305843009213693952L
+  }
+  if value.is_neg_inf() {
+    return -2305843009213693952L
+  }
+  let scaled = value * 65536.0
+  let bounded = max(-2305843009213693952.0, min(2305843009213693952.0, scaled))
+  bounded.round().to_int64()
+}
+
+///|
+fn fixed_coverage_coordinate(value : Int64) -> Double {
+  value.to_double() / 65536.0
 }
 
 ///|
@@ -45,29 +61,24 @@ fn device_path_flatness(transform : Transform) -> Double {
 ///|
 fn CoverageEdge::x_at(self : CoverageEdge, y : Double) -> Double {
   let dy = self.y1 - self.y0
-  if dy.abs() <= 0.000000000001 {
-    self.x0
+  if dy == 0L {
+    fixed_coverage_coordinate(self.x0)
   } else {
-    self.x0 + (y - self.y0) * (self.x1 - self.x0) / dy
+    fixed_coverage_coordinate(self.x0) +
+    (y - fixed_coverage_coordinate(self.y0)) *
+    (self.x1 - self.x0).to_double() /
+    dy.to_double()
   }
 }
 
 ///|
 fn CoverageEdge::min_y(self : CoverageEdge) -> Double {
-  if self.y0 < self.y1 {
-    self.y0
-  } else {
-    self.y1
-  }
+  fixed_coverage_coordinate(if self.y0 < self.y1 { self.y0 } else { self.y1 })
 }
 
 ///|
 fn CoverageEdge::max_y(self : CoverageEdge) -> Double {
-  if self.y0 > self.y1 {
-    self.y0
-  } else {
-    self.y1
-  }
+  fixed_coverage_coordinate(if self.y0 > self.y1 { self.y0 } else { self.y1 })
 }
 
 ///|
@@ -98,7 +109,7 @@ fn make_coverage_edges(
       let y0 = quantize_coverage_coordinate(p0.1)
       let x1 = quantize_coverage_coordinate(p1.0)
       let y1 = quantize_coverage_coordinate(p1.1)
-      if (y1 - y0).abs() <= 0.000000000001 {
+      if y1 == y0 {
         continue
       }
       edges.push({ x0, y0, x1, y1, winding: if y1 > y0 { 1 } else { -1 } })
@@ -150,17 +161,19 @@ fn sort_crossings(values : Array[CoverageCrossing]) -> Unit {
 fn edge_intersection_y(left : CoverageEdge, right : CoverageEdge) -> Double? {
   let left_dy = left.y1 - left.y0
   let right_dy = right.y1 - right.y0
-  if left_dy.abs() <= 0.000000000001 || right_dy.abs() <= 0.000000000001 {
+  if left_dy == 0L || right_dy == 0L {
     return None
   }
-  let left_slope = (left.x1 - left.x0) / left_dy
-  let right_slope = (right.x1 - right.x0) / right_dy
+  let left_slope = (left.x1 - left.x0).to_double() / left_dy.to_double()
+  let right_slope = (right.x1 - right.x0).to_double() / right_dy.to_double()
   let slope_delta = left_slope - right_slope
   if slope_delta.abs() <= 0.000000000001 {
     return None
   }
-  let left_intercept = left.x0 - left_slope * left.y0
-  let right_intercept = right.x0 - right_slope * right.y0
+  let left_intercept = fixed_coverage_coordinate(left.x0) -
+    left_slope * fixed_coverage_coordinate(left.y0)
+  let right_intercept = fixed_coverage_coordinate(right.x0) -
+    right_slope * fixed_coverage_coordinate(right.y0)
   Some((right_intercept - left_intercept) / slope_delta)
 }
 
@@ -195,7 +208,7 @@ fn polygon_signed_area(polygon : Array[(Double, Double)]) -> Double {
 }
 
 ///|
-fn clamp_unit(value : Double) -> Double {
+fn clamp_coverage_unit(value : Double) -> Double {
   max(0.0, min(1.0, value))
 }
 
@@ -210,7 +223,7 @@ fn integrate_clamped_edge(
   let value1 = edge.x_at(y1) - pixel_x
   let delta = value1 - value0
   if delta.abs() <= 0.000000000001 {
-    return clamp_unit(value0) * (y1 - y0)
+    return clamp_coverage_unit(value0) * (y1 - y0)
   }
   let cuts : Array[Double] = [0.0, 1.0]
   let zero_crossing = -value0 / delta
@@ -226,8 +239,8 @@ fn integrate_clamped_edge(
   for index in 0..<(cuts.length() - 1) {
     let t0 = cuts[index]
     let t1 = cuts[index + 1]
-    let clamped0 = clamp_unit(value0 + delta * t0)
-    let clamped1 = clamp_unit(value0 + delta * t1)
+    let clamped0 = clamp_coverage_unit(value0 + delta * t0)
+    let clamped1 = clamp_coverage_unit(value0 + delta * t1)
     integral = integral + (clamped0 + clamped1) * 0.5 * (t1 - t0)
   }
   integral * (y1 - y0)
@@ -272,13 +285,25 @@ fn build_coverage_mask(
   if edges.is_empty() || canvas_width <= 0 || canvas_height <= 0 {
     return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [] }
   }
-  let mut min_x = edges[0].x0
-  let mut max_x = edges[0].x0
+  let mut min_x = fixed_coverage_coordinate(edges[0].x0)
+  let mut max_x = min_x
   let mut min_y = edges[0].min_y()
   let mut max_y = edges[0].max_y()
   for edge in edges {
-    min_x = min(min_x, min(edge.x0, edge.x1))
-    max_x = max(max_x, max(edge.x0, edge.x1))
+    min_x = min(
+      min_x,
+      min(
+        fixed_coverage_coordinate(edge.x0),
+        fixed_coverage_coordinate(edge.x1),
+      ),
+    )
+    max_x = max(
+      max_x,
+      max(
+        fixed_coverage_coordinate(edge.x0),
+        fixed_coverage_coordinate(edge.x1),
+      ),
+    )
     min_y = min(min_y, edge.min_y())
     max_y = max(max_y, edge.max_y())
   }
@@ -300,11 +325,13 @@ fn build_coverage_mask(
     for edge in edges {
       if edge.max_y() > row_start && edge.min_y() < row_end {
         row_edges.push(edge)
-        if edge.y0 > row_start && edge.y0 < row_end {
-          boundaries.push(edge.y0)
+        let edge_y0 = fixed_coverage_coordinate(edge.y0)
+        let edge_y1 = fixed_coverage_coordinate(edge.y1)
+        if edge_y0 > row_start && edge_y0 < row_end {
+          boundaries.push(edge_y0)
         }
-        if edge.y1 > row_start && edge.y1 < row_end {
-          boundaries.push(edge.y1)
+        if edge_y1 > row_start && edge_y1 < row_end {
+          boundaries.push(edge_y1)
         }
       }
     }

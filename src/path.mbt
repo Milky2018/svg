@@ -787,7 +787,24 @@ fn flatten_cubic(
   flatness : Double,
   points : Array[(Double, Double)],
 ) -> Unit {
-  flatten_cubic_recursive(x0, y0, x1, y1, x2, y2, x3, y3, flatness, points, 0)
+  flatten_cubic_recursive(
+    x0,
+    y0,
+    x1,
+    y1,
+    x2,
+    y2,
+    x3,
+    y3,
+    max(flatness, 1.0 / 65536.0),
+    points,
+    0,
+  )
+}
+
+///|
+fn clamp_path_unit(value : Double) -> Double {
+  max(0.0, min(1.0, value))
 }
 
 ///|
@@ -805,7 +822,7 @@ fn flatten_cubic_recursive(
   depth : Int,
 ) -> Unit {
   // Limit recursion depth
-  if depth > 16 {
+  if depth >= 24 {
     points.push((x3, y3))
     return
   }
@@ -824,8 +841,8 @@ fn flatten_cubic_recursive(
   } else {
     let len_sq = dx * dx + dy * dy
     // Distance from control points to line segment
-    let t1 = ((x1 - x0) * dx + (y1 - y0) * dy) / len_sq
-    let t2 = ((x2 - x0) * dx + (y2 - y0) * dy) / len_sq
+    let t1 = clamp_path_unit(((x1 - x0) * dx + (y1 - y0) * dy) / len_sq)
+    let t2 = clamp_path_unit(((x2 - x0) * dx + (y2 - y0) * dy) / len_sq)
     let px1 = x0 + t1 * dx
     let py1 = y0 + t1 * dy
     let px2 = x0 + t2 * dx
@@ -893,7 +910,17 @@ fn flatten_quadratic(
   flatness : Double,
   points : Array[(Double, Double)],
 ) -> Unit {
-  flatten_quadratic_recursive(x0, y0, x1, y1, x2, y2, flatness, points, 0)
+  flatten_quadratic_recursive(
+    x0,
+    y0,
+    x1,
+    y1,
+    x2,
+    y2,
+    max(flatness, 1.0 / 65536.0),
+    points,
+    0,
+  )
 }
 
 ///|
@@ -908,7 +935,7 @@ fn flatten_quadratic_recursive(
   points : Array[(Double, Double)],
   depth : Int,
 ) -> Unit {
-  if depth > 16 {
+  if depth >= 24 {
     points.push((x2, y2))
     return
   }
@@ -921,7 +948,7 @@ fn flatten_quadratic_recursive(
     d1x * d1x + d1y * d1y
   } else {
     let len_sq = dx * dx + dy * dy
-    let t = ((x1 - x0) * dx + (y1 - y0) * dy) / len_sq
+    let t = clamp_path_unit(((x1 - x0) * dx + (y1 - y0) * dy) / len_sq)
     let px = x0 + t * dx
     let py = y0 + t * dy
     let d1x = x1 - px
@@ -1030,8 +1057,13 @@ fn flatten_arc(
   } else if sweep && dtheta < 0.0 {
     dtheta = dtheta + 2.0 * pi
   }
-  // Generate points along the arc
-  let n = max_int(((dtheta / flatness).abs() / 0.5).to_int(), 2)
+  // Bound the sagitta using the larger ellipse radius. The hard cap prevents
+  // hostile coordinates from producing an unbounded allocation.
+  let max_radius = max(rx, ry)
+  let error = max(flatness, 1.0 / 65536.0)
+  let ratio = min(1.0, error / max_radius)
+  let max_angle = 2.0 * @math.acos(1.0 - ratio)
+  let n = min_int(65536, max_int((dtheta.abs() / max_angle).ceil().to_int(), 2))
   for i in 1..<=n {
     let t = i.to_double() / n.to_double()
     let theta = theta1 + t * dtheta

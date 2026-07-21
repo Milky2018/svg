@@ -8,6 +8,22 @@ fn coverage_sum(mask : CoverageMask) -> Int64 {
 }
 
 ///|
+test "coverage coordinates use symmetric 16.16 storage" {
+  inspect(quantize_coverage_coordinate(1.25) == 81920L, content="true")
+  inspect(
+    quantize_coverage_coordinate(0.99999) +
+    quantize_coverage_coordinate(1.00001) ==
+    131072L,
+    content="true",
+  )
+  inspect(
+    quantize_coverage_coordinate(1.0 / 0.0) == 2305843009213693952L,
+    content="true",
+  )
+  inspect(quantize_coverage_coordinate(0.0 / 0.0) == 0L, content="true")
+}
+
+///|
 test "fractional rectangle produces analytic horizontal coverage" {
   let mask = build_coverage_mask(
     [[(1.25, 1.0), (2.25, 1.0), (2.25, 2.0), (1.25, 2.0)]],

@@ -11,13 +11,12 @@ No ready issues.
 | ID | Status | Priority | Type | Assignee | Blocked by | Blocks | Title |
 | --- | --- | ---: | --- | --- | --- | --- | --- |
 | [ISS-001](ISS-001.md) | in_progress | 1 | epic | codex | ISS-003, ISS-005, ISS-007, ISS-009 | none | Complete static SVG CSS computed semantics |
-| [ISS-028](ISS-028.md) | in_progress | 1 | epic | codex | ISS-031, ISS-032, ISS-033, ISS-034, ISS-035 | none | Replace the integer SVG renderer |
-| [ISS-031](ISS-031.md) | in_progress | 1 | task | codex | none | ISS-028, ISS-032 | Rasterize continuous geometry into coverage |
+| [ISS-028](ISS-028.md) | in_progress | 1 | epic | codex | ISS-032, ISS-033, ISS-034, ISS-035 | none | Replace the integer SVG renderer |
+| [ISS-032](ISS-032.md) | in_progress | 1 | task | codex | none | ISS-028, ISS-033 | Rebuild strokes dashes and markers |
 | [ISS-003](ISS-003.md) | open | 1 | bug | unassigned | ISS-012 | ISS-001, ISS-007 | Complete CSS-wide and inherited property behavior |
 | [ISS-011](ISS-011.md) | blocked | 1 | task | unassigned | none | ISS-005 | Upstream complete CSS Color 3 parsing |
 | [ISS-012](ISS-012.md) | blocked | 1 | task | unassigned | none | ISS-003 | Upstream expose custom-property resolution for extension values |
 | [ISS-013](ISS-013.md) | blocked | 1 | bug | unassigned | none | ISS-009 | Upstream compute font-size from inherited custom properties |
-| [ISS-032](ISS-032.md) | open | 1 | task | unassigned | ISS-031 | ISS-028, ISS-033 | Rebuild strokes dashes and markers |
 | [ISS-033](ISS-033.md) | open | 1 | task | unassigned | ISS-032 | ISS-028, ISS-034 | Rebuild paint servers and raster images |
 | [ISS-034](ISS-034.md) | open | 1 | task | unassigned | ISS-033 | ISS-028, ISS-035 | Migrate clipping masks filters and blending |
 | [ISS-035](ISS-035.md) | open | 1 | task | unassigned | ISS-034 | ISS-028 | Cut over the rendering facade and remove the old rasterizer |
