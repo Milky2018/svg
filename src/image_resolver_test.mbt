@@ -85,14 +85,14 @@ test "resolved image defaults to meet alignment" {
 test "resolved image supports none and slice alignment" {
   let resolved_none : Array[String] = []
   let svg_none = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
-    "<image href=\"asset.png\" width=\"4\" height=\"4\" preserveAspectRatio=\"none\"/>" +
+    "<image href=\"asset.png\" width=\"4\" height=\"4\" preserveAspectRatio=\"none\" image-rendering=\"pixelated\"/>" +
     "</svg>"
   let none_image = render_with_test_resolver(svg_none, resolved_none)
   inspect(none_image.get_pixel(0, 0).a, content="128")
   inspect(none_image.get_pixel(3, 3).g, content="255")
   let resolved_slice : Array[String] = []
   let svg_slice = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
-    "<image href=\"asset.png\" width=\"2\" height=\"2\" preserveAspectRatio=\"xMidYMid slice\"/>" +
+    "<image href=\"asset.png\" width=\"2\" height=\"2\" preserveAspectRatio=\"xMidYMid slice\" image-rendering=\"pixelated\"/>" +
     "</svg>"
   let slice_image = render_with_test_resolver(svg_slice, resolved_slice)
   inspect(slice_image.get_pixel(0, 0).a, content="128")

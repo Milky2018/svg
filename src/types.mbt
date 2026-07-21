@@ -213,6 +213,13 @@ pub(all) enum Shape {
 } derive(Debug)
 
 ///|
+pub(all) enum ImageSampling {
+  Nearest
+  Bilinear
+  Bicubic
+} derive(Debug, Eq)
+
+///|
 /// Gradient stop (position 0.0-1.0 and color)
 pub(all) struct GradientStop {
   offset : Double // 0.0 to 1.0
@@ -325,32 +332,7 @@ pub fn LinearGradient::color_at(self : LinearGradient, t : Double) -> Color {
       }
     }
   }
-  // Find surrounding stops
-  let mut prev_stop = self.stops[0]
-  let mut next_stop = self.stops[self.stops.length() - 1]
-  for i in 0..<(self.stops.length() - 1) {
-    if t >= self.stops[i].offset && t <= self.stops[i + 1].offset {
-      prev_stop = self.stops[i]
-      next_stop = self.stops[i + 1]
-      break
-    }
-  }
-  // Interpolate
-  let range = next_stop.offset - prev_stop.offset
-  if range < 0.0001 {
-    return prev_stop.color
-  }
-  let local_t = (t - prev_stop.offset) / range
-  Color::rgba(
-    (prev_stop.color.r.to_double() * (1.0 - local_t) +
-    next_stop.color.r.to_double() * local_t).to_int(),
-    (prev_stop.color.g.to_double() * (1.0 - local_t) +
-    next_stop.color.g.to_double() * local_t).to_int(),
-    (prev_stop.color.b.to_double() * (1.0 - local_t) +
-    next_stop.color.b.to_double() * local_t).to_int(),
-    (prev_stop.color.a.to_double() * (1.0 - local_t) +
-    next_stop.color.a.to_double() * local_t).to_int(),
-  )
+  interpolate_gradient_color(t, self.stops)
 }
 
 ///|
@@ -473,6 +455,7 @@ pub(all) struct SVGNode {
   mut viewport_height : Double?
   mut preserve_aspect_ratio : PreserveAspectRatio
   mut preserve_aspect_ratio_is_set : Bool
+  mut image_sampling : ImageSampling
   mut fill : Paint
   mut fill_is_set : Bool
   mut color : Color?
@@ -515,6 +498,7 @@ pub fn SVGNode::new(shape : Shape) -> SVGNode {
     viewport_height: None,
     preserve_aspect_ratio: PreserveAspectRatio::default(),
     preserve_aspect_ratio_is_set: false,
+    image_sampling: Bilinear,
     fill: SolidColor(Color::black()),
     fill_is_set: false,
     color: None,
@@ -1846,29 +1830,57 @@ fn interpolate_gradient_color(t : Double, stops : Array[GradientStop]) -> Color 
   if stops.length() == 1 {
     return stops[0].color
   }
-  // Find surrounding stops
-  let mut prev_stop = stops[0]
-  let mut next_stop = stops[stops.length() - 1]
-  for stop in stops {
-    if stop.offset <= t {
-      prev_stop = stop
-    }
-    if stop.offset >= t && next_stop.offset < stop.offset {
-      next_stop = stop
-    }
+  if t < stops[0].offset {
+    return stops[0].color
   }
-  for stop in stops {
-    if stop.offset >= t {
-      next_stop = stop
+  let mut left_index = 0
+  for index in 1..<stops.length() {
+    if stops[index].offset <= t {
+      left_index = index
+    } else {
       break
     }
   }
-  // Interpolate
-  if prev_stop.offset >= next_stop.offset {
-    return prev_stop.color
+  if left_index == stops.length() - 1 {
+    return stops[left_index].color
   }
-  let local_t = (t - prev_stop.offset) / (next_stop.offset - prev_stop.offset)
-  lerp_color(prev_stop.color, next_stop.color, local_t)
+  let left = stops[left_index]
+  let right = stops[left_index + 1]
+  if right.offset <= left.offset {
+    return right.color
+  }
+  let amount = max(
+    0.0,
+    min(1.0, (t - left.offset) / (right.offset - left.offset)),
+  )
+  let left_color = PremulColor16::from_color(left.color)
+  let right_color = PremulColor16::from_color(right.color)
+  PremulColor16::{
+    r: clamp_channel16(
+      (left_color.r.to_double() * (1.0 - amount) +
+      right_color.r.to_double() * amount)
+      .round()
+      .to_int(),
+    ),
+    g: clamp_channel16(
+      (left_color.g.to_double() * (1.0 - amount) +
+      right_color.g.to_double() * amount)
+      .round()
+      .to_int(),
+    ),
+    b: clamp_channel16(
+      (left_color.b.to_double() * (1.0 - amount) +
+      right_color.b.to_double() * amount)
+      .round()
+      .to_int(),
+    ),
+    a: clamp_channel16(
+      (left_color.a.to_double() * (1.0 - amount) +
+      right_color.a.to_double() * amount)
+      .round()
+      .to_int(),
+    ),
+  }.to_color()
 }
 
 // ============================================================================
@@ -5640,6 +5652,7 @@ pub fn SVGNode::clone(self : SVGNode) -> SVGNode {
     viewport_height: self.viewport_height,
     preserve_aspect_ratio: self.preserve_aspect_ratio,
     preserve_aspect_ratio_is_set: self.preserve_aspect_ratio_is_set,
+    image_sampling: self.image_sampling,
     fill: self.fill,
     fill_is_set: self.fill_is_set,
     color: self.color,

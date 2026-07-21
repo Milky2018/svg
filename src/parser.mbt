@@ -67,6 +67,7 @@ priv struct InheritedStyle {
   marker_start : String?
   marker_mid : String?
   marker_end : String?
+  image_sampling : ImageSampling
   stop_color : Color
   stop_opacity : Double
   css_style : @css_style.Style
@@ -86,6 +87,7 @@ fn InheritedStyle::default() -> InheritedStyle {
     marker_start: None,
     marker_mid: None,
     marker_end: None,
+    image_sampling: Bilinear,
     stop_color: Color::black(),
     stop_opacity: 1.0,
     css_style: @css_style.Style::default(),
@@ -228,6 +230,7 @@ fn inherited_style_from_node(
     marker_start: node.marker_start,
     marker_mid: node.marker_mid,
     marker_end: node.marker_end,
+    image_sampling: node.image_sampling,
     stop_color,
     stop_opacity,
     css_style,
@@ -1304,6 +1307,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
       node.color_is_set = true
     }
     "paint-order" => node.paint_order = parse_paint_order(value)
+    "image-rendering" => node.image_sampling = parse_image_sampling(value)
     "stroke" => {
       node.stroke = {
         paint: parse_paint(value),
@@ -3705,6 +3709,15 @@ fn parse_linecap(value : String) -> LineCap {
     "round" => Round
     "square" => Square
     _ => Butt // Default
+  }
+}
+
+///|
+fn parse_image_sampling(value : String) -> ImageSampling {
+  match trim_string(value).to_lower() {
+    "pixelated" | "crisp-edges" | "optimizespeed" => Nearest
+    "optimizequality" => Bicubic
+    _ => Bilinear
   }
 }
 

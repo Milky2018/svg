@@ -604,6 +604,7 @@ priv struct RenderResources {
   gradients : GradientRegistry
   markers : MarkerRegistry
   active_patterns : Array[String]
+  pattern_tiles : Map[String, PatternTile]
 }
 
 ///|
@@ -616,6 +617,7 @@ fn RenderResources::empty() -> RenderResources {
     gradients: GradientRegistry::new(),
     markers: MarkerRegistry::new(),
     active_patterns: [],
+    pattern_tiles: Map([]),
   }
 }
 
@@ -630,6 +632,7 @@ pub fn SVGDocument::render(self : SVGDocument, ctx : RenderContext) -> Unit {
     gradients: self.gradients,
     markers: self.markers,
     active_patterns: [],
+    pattern_tiles: Map([]),
   }
   match self.root.view_box {
     Some(vb) => {
@@ -983,6 +986,7 @@ fn render_node(
         ctx_for_node,
         node.preserve_aspect_ratio,
         node.preserve_aspect_ratio_is_set,
+        node.image_sampling,
         node.opacity,
       )
     Group => ()
@@ -2702,6 +2706,35 @@ fn build_pattern_tile(
   if ctx.height > 0 && pixel_height > ctx.height {
     pixel_height = ctx.height
   }
+  let cache_key = pattern.id +
+    ":" +
+    bbox.min_x.to_string() +
+    ":" +
+    bbox.min_y.to_string() +
+    ":" +
+    bbox.max_x.to_string() +
+    ":" +
+    bbox.max_y.to_string() +
+    ":" +
+    transform.a.to_string() +
+    ":" +
+    transform.b.to_string() +
+    ":" +
+    transform.c.to_string() +
+    ":" +
+    transform.d.to_string() +
+    ":" +
+    transform.e.to_string() +
+    ":" +
+    transform.f.to_string() +
+    ":" +
+    pixel_width.to_string() +
+    ":" +
+    pixel_height.to_string()
+  match resources.pattern_tiles.get(cache_key) {
+    Some(tile) => return Some(tile)
+    None => ()
+  }
   let image = Image::new(pixel_width, pixel_height)
   let active_patterns = resources.active_patterns.copy()
   active_patterns.push(pattern.id)
@@ -2754,7 +2787,15 @@ fn build_pattern_tile(
       Color::black(),
     )
   }
-  Some({ image, x: tile_x, y: tile_y, width: tile_width, height: tile_height })
+  let tile : PatternTile = {
+    image,
+    x: tile_x,
+    y: tile_y,
+    width: tile_width,
+    height: tile_height,
+  }
+  resources.pattern_tiles.set(cache_key, tile)
+  Some(tile)
 }
 
 ///|
@@ -2787,9 +2828,13 @@ fn make_pattern_setter(
       let tile_v = (pattern_y - tile.y) / tile.height
       let u = tile_u - tile_u.floor()
       let v = tile_v - tile_v.floor()
-      let sample_x = (u * tile.image.width.to_double()).floor().to_int()
-      let sample_y = (v * tile.image.height.to_double()).floor().to_int()
-      let color = tile.image.get_pixel(sample_x, sample_y)
+      let color = sample_raster_color(
+        tile.image,
+        u * tile.image.width.to_double(),
+        v * tile.image.height.to_double(),
+        Bilinear,
+        true,
+      )
       if color.a > 0 {
         ctx.setter.pixel(
           x,
@@ -3056,6 +3101,7 @@ fn render_image(
   ctx : RenderContext,
   preserve_aspect_ratio : PreserveAspectRatio,
   preserve_aspect_ratio_is_set : Bool,
+  sampling : ImageSampling,
   opacity : Double,
 ) -> Unit {
   if width <= 0.0 || height <= 0.0 {
@@ -3079,7 +3125,7 @@ fn render_image(
     Some(svg) =>
       render_embedded_svg_image(
         svg, x, y, width, height, transform, ctx, preserve_aspect_ratio, preserve_aspect_ratio_is_set,
-        opacity,
+        sampling, opacity,
       )
     None =>
       match ctx.image_resolver {
@@ -3088,7 +3134,7 @@ fn render_image(
             Some(image) =>
               render_raster_image(
                 image, x, y, width, height, transform, ctx, preserve_aspect_ratio,
-                opacity,
+                sampling, opacity,
               )
             None => ()
           }
@@ -3108,6 +3154,7 @@ fn render_embedded_svg_image(
   ctx : RenderContext,
   preserve_aspect_ratio : PreserveAspectRatio,
   preserve_aspect_ratio_is_set : Bool,
+  sampling : ImageSampling,
   opacity : Double,
 ) -> Unit {
   let image_width = ceil_to_int(width)
@@ -3153,6 +3200,7 @@ fn render_embedded_svg_image(
         transform,
         ctx,
         PreserveAspectRatio::{ align: None, meet_or_slice: Meet },
+        sampling,
         opacity,
       )
     }
@@ -3170,6 +3218,7 @@ fn render_raster_image(
   transform : Transform,
   ctx : RenderContext,
   preserve_aspect_ratio : PreserveAspectRatio,
+  sampling : ImageSampling,
   opacity : Double,
 ) -> Unit {
   if image.width <= 0 || image.height <= 0 || !transform.is_invertible() {
@@ -3225,15 +3274,150 @@ fn render_raster_image(
           source_x < image.width.to_double() &&
           source_y >= 0.0 &&
           source_y < image.height.to_double() {
-          let color = image.get_pixel(
-            floor_to_int(source_x),
-            floor_to_int(source_y),
+          let color = sample_raster_color(
+            image, source_x, source_y, sampling, false,
           )
           if color.a > 0 {
             setter.pixel(px, py, apply_opacity(color, opacity))
           }
         }
       }
+    }
+  }
+}
+
+///|
+fn sample_index(index : Int, length : Int, wrap : Bool) -> Int {
+  if wrap {
+    let value = index % length
+    if value < 0 {
+      value + length
+    } else {
+      value
+    }
+  } else {
+    max_int(0, min_int(length - 1, index))
+  }
+}
+
+///|
+fn sampled_premul_pixel(
+  image : Image,
+  x : Int,
+  y : Int,
+  wrap : Bool,
+) -> PremulColor16 {
+  PremulColor16::from_color(
+    image.get_pixel(
+      sample_index(x, image.width, wrap),
+      sample_index(y, image.height, wrap),
+    ),
+  )
+}
+
+///|
+fn sampled_premul_color(
+  red : Double,
+  green : Double,
+  blue : Double,
+  alpha : Double,
+) -> Color {
+  let output_alpha = clamp_channel16(alpha.round().to_int())
+  PremulColor16::{
+    r: min_int(output_alpha, clamp_channel16(red.round().to_int())),
+    g: min_int(output_alpha, clamp_channel16(green.round().to_int())),
+    b: min_int(output_alpha, clamp_channel16(blue.round().to_int())),
+    a: output_alpha,
+  }.to_color()
+}
+
+///|
+fn cubic_sample_weight(distance : Double) -> Double {
+  let x = distance.abs()
+  if x <= 1.0 {
+    (1.5 * x - 2.5) * x * x + 1.0
+  } else if x < 2.0 {
+    ((-0.5 * x + 2.5) * x - 4.0) * x + 2.0
+  } else {
+    0.0
+  }
+}
+
+///|
+fn sample_raster_color(
+  image : Image,
+  source_x : Double,
+  source_y : Double,
+  sampling : ImageSampling,
+  wrap : Bool,
+) -> Color {
+  match sampling {
+    Nearest =>
+      image.get_pixel(
+        sample_index(source_x.floor().to_int(), image.width, wrap),
+        sample_index(source_y.floor().to_int(), image.height, wrap),
+      )
+    Bilinear => {
+      let x = source_x - 0.5
+      let y = source_y - 0.5
+      let x0 = x.floor().to_int()
+      let y0 = y.floor().to_int()
+      let tx = x - x0.to_double()
+      let ty = y - y0.to_double()
+      let p00 = sampled_premul_pixel(image, x0, y0, wrap)
+      let p10 = sampled_premul_pixel(image, x0 + 1, y0, wrap)
+      let p01 = sampled_premul_pixel(image, x0, y0 + 1, wrap)
+      let p11 = sampled_premul_pixel(image, x0 + 1, y0 + 1, wrap)
+      let w00 = (1.0 - tx) * (1.0 - ty)
+      let w10 = tx * (1.0 - ty)
+      let w01 = (1.0 - tx) * ty
+      let w11 = tx * ty
+      sampled_premul_color(
+        p00.r.to_double() * w00 +
+        p10.r.to_double() * w10 +
+        p01.r.to_double() * w01 +
+        p11.r.to_double() * w11,
+        p00.g.to_double() * w00 +
+        p10.g.to_double() * w10 +
+        p01.g.to_double() * w01 +
+        p11.g.to_double() * w11,
+        p00.b.to_double() * w00 +
+        p10.b.to_double() * w10 +
+        p01.b.to_double() * w01 +
+        p11.b.to_double() * w11,
+        p00.a.to_double() * w00 +
+        p10.a.to_double() * w10 +
+        p01.a.to_double() * w01 +
+        p11.a.to_double() * w11,
+      )
+    }
+    Bicubic => {
+      let x = source_x - 0.5
+      let y = source_y - 0.5
+      let base_x = x.floor().to_int()
+      let base_y = y.floor().to_int()
+      let mut red = 0.0
+      let mut green = 0.0
+      let mut blue = 0.0
+      let mut alpha = 0.0
+      for offset_y in -1..<=2 {
+        let wy = cubic_sample_weight(y - (base_y + offset_y).to_double())
+        for offset_x in -1..<=2 {
+          let wx = cubic_sample_weight(x - (base_x + offset_x).to_double())
+          let weight = wx * wy
+          let pixel = sampled_premul_pixel(
+            image,
+            base_x + offset_x,
+            base_y + offset_y,
+            wrap,
+          )
+          red = red + pixel.r.to_double() * weight
+          green = green + pixel.g.to_double() * weight
+          blue = blue + pixel.b.to_double() * weight
+          alpha = alpha + pixel.a.to_double() * weight
+        }
+      }
+      sampled_premul_color(red, green, blue, alpha)
     }
   }
 }
@@ -5819,7 +6003,6 @@ fn sample_linear_gradient(
 ///|
 fn sample_radial_gradient(
   gradient : RadialGradient,
-  lut : Array[Color],
   local_x : Double,
   local_y : Double,
   bbox : BoundingBox,
@@ -5866,7 +6049,7 @@ fn sample_radial_gradient(
     }
   }
   let t = apply_spread_inline(t, gradient.spread_method)
-  lut_color_at(lut, t)
+  interpolate_gradient_color(t, gradient.stops)
 }
 
 ///|
@@ -5907,7 +6090,6 @@ fn make_paint_server_setter(
     }
     ResolvedPaint::RadialGrad(gradient) => {
       let inverse = transform.inverse()
-      let lut = gradient.build_lut(256)
       Some({
         set: (x, y, coverage_color) => {
           if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
@@ -5922,7 +6104,7 @@ fn make_paint_server_setter(
             y,
             apply_coverage(
               apply_opacity(
-                sample_radial_gradient(gradient, lut, local_x, local_y, bbox),
+                sample_radial_gradient(gradient, local_x, local_y, bbox),
                 opacity,
               ),
               coverage_color.a * 257,
@@ -6017,7 +6199,6 @@ fn render_path(
         if node.fill_opacity > 0.0 {
           let bbox = get_shape_bounds(node.shape)
           let inverse = transform.inverse()
-          let lut = gradient.build_lut(256)
           let gradient_setter : PixelSetter = {
             set: (x, y, coverage_color) => {
               if x < 0 || x >= ctx.width || y < 0 || y >= ctx.height {
@@ -6032,9 +6213,7 @@ fn render_path(
                 y,
                 apply_coverage(
                   apply_opacity(
-                    sample_radial_gradient(
-                      gradient, lut, local_x, local_y, bbox,
-                    ),
+                    sample_radial_gradient(gradient, local_x, local_y, bbox),
                     node.fill_opacity * node.opacity,
                   ),
                   coverage_color.a * 257,

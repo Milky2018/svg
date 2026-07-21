@@ -159,10 +159,42 @@ test "paint-server href inherits content and rejects cycles" {
 }
 
 ///|
+test "gradient stops interpolate premultiplied alpha and preserve hard stops" {
+  let transparent_to_blue = LinearGradient::new(0.0, 0.0, 1.0, 0.0, [
+    { offset: 0.0, color: Color::rgba(255, 0, 0, 0) },
+    { offset: 1.0, color: Color::rgb(0, 0, 255) },
+  ]).color_at(0.5)
+  inspect(transparent_to_blue.r, content="0")
+  inspect(transparent_to_blue.b, content="255")
+  inspect(transparent_to_blue.a, content="128")
+  let hard_stop = LinearGradient::new(0.0, 0.0, 1.0, 0.0, [
+    { offset: 0.0, color: Color::black() },
+    { offset: 0.5, color: Color::rgb(255, 0, 0) },
+    { offset: 0.5, color: Color::rgb(0, 0, 255) },
+    { offset: 1.0, color: Color::white() },
+  ]).color_at(0.5)
+  inspect(hard_stop.r, content="0")
+  inspect(hard_stop.b, content="255")
+}
+
+///|
 test "recursive pattern content is rejected" {
   let image = render_paint_fixture(
     "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\"><defs><pattern id=\"recursive\" width=\"4\" height=\"4\" patternUnits=\"userSpaceOnUse\"><rect width=\"4\" height=\"4\" fill=\"url(#recursive)\"/></pattern></defs><rect width=\"12\" height=\"12\" fill=\"url(#recursive)\"/></svg>",
     12, 12,
   )
   inspect(count_visible_paint_pixels(image), content="0")
+}
+
+///|
+test "pattern tiles are cached within one render" {
+  let resolved : Array[String] = []
+  let svg = "<svg width=\"8\" height=\"8\"><defs><pattern id=\"p\" width=\"4\" height=\"4\" patternUnits=\"userSpaceOnUse\"><image href=\"tile.png\" width=\"4\" height=\"4\" preserveAspectRatio=\"none\"/></pattern></defs><rect width=\"8\" height=\"8\" fill=\"url(#p)\"/><rect width=\"8\" height=\"8\" fill=\"url(#p)\"/></svg>"
+  let _ = render_svg_to_image_with_resolver(svg, 8, 8, fn(href) {
+    resolved.push(href)
+    let image = Image::new(1, 1)
+    image.set_pixel(0, 0, Color::rgb(255, 0, 0))
+    Some(image)
+  })
+  inspect(resolved.length(), content="1")
 }

@@ -563,8 +563,8 @@ test "linear gradient color interpolation" {
   inspect(c1.b, content="255")
   // Test color at middle (t=0.5)
   let c05 = grad.color_at(0.5)
-  inspect(c05.r, content="127")
-  inspect(c05.b, content="127")
+  inspect(c05.r, content="128")
+  inspect(c05.b, content="128")
 }
 
 ///|
@@ -596,14 +596,14 @@ test "linear gradient rendering" {
   inspect(drawn_pixels.length(), content="5000")
   // Pixel centers lie just inside the gradient endpoints.
   let left = drawn_pixels[0]
-  inspect(left.2.r, content="253")
+  inspect(left.2.r, content="254")
   inspect(left.2.b, content="1")
   // Check right edge is nearly blue (last row, x=99)
   let right = drawn_pixels.iter().find_first(p => p.0 == 99 && p.1 == 0)
   match right {
     Some((_, _, c)) => {
       inspect(c.r, content="1")
-      inspect(c.b, content="253")
+      inspect(c.b, content="254")
     }
     None => panic()
   }

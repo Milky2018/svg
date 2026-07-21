@@ -281,6 +281,7 @@ fn resolve_computed_style(
   node.marker_start = parent.marker_start
   node.marker_mid = parent.marker_mid
   node.marker_end = parent.marker_end
+  node.image_sampling = parent.image_sampling
   let mut stop_color = parent.stop_color
   let mut stop_opacity = parent.stop_opacity
   if apply_noncomputed {
@@ -393,6 +394,12 @@ fn resolve_computed_style(
         ..node.stroke,
         non_scaling: trim_string(value).to_lower() == "non-scaling-stroke",
       }
+  }
+  match
+    resolve_style_choice(declarations, custom_properties, StyleImageRendering) {
+    StyleInitial => node.image_sampling = Bilinear
+    StyleInherited => ()
+    StyleSpecified(value) => node.image_sampling = parse_image_sampling(value)
   }
   match resolve_style_choice(declarations, custom_properties, StylePaintOrder) {
     StyleInitial => node.paint_order = PaintOrder::default()

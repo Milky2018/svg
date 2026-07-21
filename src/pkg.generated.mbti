@@ -573,6 +573,12 @@ pub fn Image::set_pixel(Self, Int, Int, Color) -> Unit
 pub fn Image::set_pixel_unchecked(Self, Int, Int, Color) -> Unit
 pub fn Image::sub_image(Self, Int, Int, Int, Int) -> Self
 
+pub(all) enum ImageSampling {
+  Nearest
+  Bilinear
+  Bicubic
+} derive(Eq, @debug.Debug)
+
 pub(all) enum Isolation {
   Auto
   Isolate
@@ -904,6 +910,7 @@ pub(all) struct SVGNode {
   mut viewport_height : Double?
   mut preserve_aspect_ratio : PreserveAspectRatio
   mut preserve_aspect_ratio_is_set : Bool
+  mut image_sampling : ImageSampling
   mut fill : Paint
   mut fill_is_set : Bool
   mut color : Color?

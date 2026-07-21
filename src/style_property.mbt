@@ -12,6 +12,7 @@ priv enum ComputedStyleProperty {
   StyleStrokeDashoffset
   StyleStrokeOpacity
   StyleVectorEffect
+  StyleImageRendering
   StyleColor
   StylePaintOrder
   StyleOpacity
@@ -38,6 +39,7 @@ fn computed_style_property(name : String) -> ComputedStyleProperty? {
     "stroke-dashoffset" => Some(StyleStrokeDashoffset)
     "stroke-opacity" => Some(StyleStrokeOpacity)
     "vector-effect" => Some(StyleVectorEffect)
+    "image-rendering" => Some(StyleImageRendering)
     "color" => Some(StyleColor)
     "paint-order" => Some(StylePaintOrder)
     "opacity" => Some(StyleOpacity)
@@ -66,6 +68,7 @@ fn ComputedStyleProperty::name(self : ComputedStyleProperty) -> String {
     StyleStrokeDashoffset => "stroke-dashoffset"
     StyleStrokeOpacity => "stroke-opacity"
     StyleVectorEffect => "vector-effect"
+    StyleImageRendering => "image-rendering"
     StyleColor => "color"
     StylePaintOrder => "paint-order"
     StyleOpacity => "opacity"

@@ -74,6 +74,23 @@ test "vector-effect is computed but not inherited by default" {
 }
 
 ///|
+test "image-rendering selects and inherits raster filters" {
+  let svg = "<svg><g image-rendering=\"pixelated\"><rect id=\"nearest\"/><rect id=\"quality\" style=\"image-rendering: optimizeQuality\"/><rect id=\"initial\" image-rendering=\"initial\"/></g></svg>"
+  match css_test_node(svg, "nearest") {
+    Some(node) => assert_true(node.image_sampling is Nearest)
+    None => fail("expected nearest image")
+  }
+  match css_test_node(svg, "quality") {
+    Some(node) => assert_true(node.image_sampling is Bicubic)
+    None => fail("expected quality image")
+  }
+  match css_test_node(svg, "initial") {
+    Some(node) => assert_true(node.image_sampling is Bilinear)
+    None => fail("expected initial image")
+  }
+}
+
+///|
 test "css wide keywords use inherited and initial values" {
   let svg = "<svg><g fill=\"red\" stroke=\"blue\" opacity=\"0.2\"><rect id=\"inherited\" width=\"8\" height=\"8\" fill=\"inherit\" stroke=\"unset\" opacity=\"unset\"/><rect id=\"initial\" width=\"8\" height=\"8\" fill=\"initial\" stroke=\"initial\"/></g></svg>"
   match css_test_node(svg, "inherited") {
