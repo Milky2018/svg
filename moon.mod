@@ -4,10 +4,6 @@ version = "0.3.1"
 
 description = "Standalone SVG scene graph and renderer"
 
-import {
-  "mizchi/css@0.7.3",
-}
-
 source = "src"
 
 readme = "README.md"

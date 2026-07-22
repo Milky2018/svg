@@ -61,6 +61,19 @@ test "group opacity composites children through an isolated layer" {
 }
 
 ///|
+test "explicitly inherited opacity composes at child and container boundaries" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<g opacity=\"0.5\">" +
+    "<rect width=\"8\" height=\"8\" fill=\"red\" opacity=\"inherit\"/>" +
+    "</g></svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  inspect(image.get_pixel(4, 4).a, content="64")
+}
+
+///|
 test "overlapping translucent elements use source-over compositing" {
   let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
     "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +

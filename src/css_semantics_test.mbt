@@ -111,6 +111,15 @@ test "css wide keywords use inherited and initial values" {
 }
 
 ///|
+test "explicit opacity inheritance uses the parent computed value" {
+  let svg = "<svg><g opacity=\"0.25\"><rect id=\"target\" width=\"8\" height=\"8\" opacity=\"inherit\"/></g></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => assert_eq(node.opacity, 0.25)
+    None => fail("expected inherited opacity target")
+  }
+}
+
+///|
 test "custom properties inherit and var fallback is resolved" {
   let svg = "<svg><g style=\"--paint: hsl(120, 100%, 25%); --width: 4; --x: 3\"><rect id=\"target\" width=\"8\" height=\"8\" color=\"blue\" style=\"x: var(--x); fill: var(--paint); stroke: var(--missing, currentColor); stroke-width: var(--width)\"/></g></svg>"
   match css_test_node(svg, "target") {
