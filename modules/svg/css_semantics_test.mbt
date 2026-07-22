@@ -111,11 +111,107 @@ test "css wide keywords use inherited and initial values" {
 }
 
 ///|
+test "fill-rule and clip-rule compute and inherit independently" {
+  let svg = "<svg><g fill-rule=\"evenodd\" clip-rule=\"evenodd\"><path id=\"target\" fill-rule=\"nonzero\" clip-rule=\"inherit\" d=\"M0 0 L8 0 L8 8 Z\"/></g></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => {
+      assert_true(node.fill_rule is NonZero)
+      assert_true(node.clip_rule is EvenOdd)
+    }
+    None => fail("expected target")
+  }
+}
+
+///|
+test "non-inherited geometry and transform CSS-wide values use initials" {
+  let svg = "<svg><rect id=\"target\" x=\"7\" width=\"8\" height=\"8\" transform=\"translate(4 5)\" style=\"x: initial; transform: unset\"/></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => {
+      match node.shape {
+        Rect(x~, ..) => assert_eq(x, 0.0)
+        _ => fail("expected rect")
+      }
+      assert_eq(node.transform.a, 1.0)
+      assert_eq(node.transform.d, 1.0)
+      assert_eq(node.transform.e, 0.0)
+      assert_eq(node.transform.f, 0.0)
+    }
+    None => fail("expected target")
+  }
+}
+
+///|
+test "invalid declarations are rejected before and after var substitution" {
+  let svg = "<svg><style>#direct { fill: red; fill: not-a-color; transform: translate(2); transform: bogus(1); }</style><g fill=\"blue\"><rect id=\"direct\" width=\"8\" height=\"8\"/><rect id=\"variable\" width=\"8\" height=\"8\" style=\"--bad: not-a-color; fill: var(--bad)\"/></g></svg>"
+  match css_test_node(svg, "direct") {
+    Some(node) => {
+      assert_solid_color(node.fill, 255, 0, 0, 255)
+      assert_eq(node.transform.e, 2.0)
+    }
+    None => fail("expected direct target")
+  }
+  match css_test_node(svg, "variable") {
+    Some(node) => assert_solid_color(node.fill, 0, 0, 255, 255)
+    None => fail("expected variable target")
+  }
+}
+
+///|
+test "SVG paint opacity computed values clamp to the unit interval" {
+  let svg = "<svg><rect id=\"target\" width=\"8\" height=\"8\" fill-opacity=\"-1\" stroke-opacity=\"2\"/></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => {
+      assert_eq(node.fill_opacity, 0.0)
+      assert_eq(node.stroke_opacity, 1.0)
+    }
+    None => fail("expected target")
+  }
+}
+
+///|
+test "SVG paint uses the CSS named-color table" {
+  let svg = "<svg><rect id=\"target\" width=\"8\" height=\"8\" fill=\"darkslategray\"/></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) => assert_solid_color(node.fill, 47, 79, 79, 255)
+    None => fail("expected target")
+  }
+}
+
+///|
 test "explicit opacity inheritance uses the parent computed value" {
   let svg = "<svg><g opacity=\"0.25\"><rect id=\"target\" width=\"8\" height=\"8\" opacity=\"inherit\"/></g></svg>"
   match css_test_node(svg, "target") {
     Some(node) => assert_eq(node.opacity, 0.25)
     None => fail("expected inherited opacity target")
+  }
+}
+
+///|
+test "revert keywords use the documented author-only fallback boundary" {
+  let svg = "<svg><g fill=\"red\" opacity=\"0.25\"><rect id=\"revert\" width=\"8\" height=\"8\" fill=\"revert\" opacity=\"revert\"/><rect id=\"layer\" width=\"8\" height=\"8\" fill=\"revert-layer\"/></g></svg>"
+  match css_test_node(svg, "revert") {
+    Some(node) => {
+      assert_solid_color(node.fill, 255, 0, 0, 255)
+      assert_eq(node.opacity, 1.0)
+    }
+    None => fail("expected revert target")
+  }
+  match css_test_node(svg, "layer") {
+    Some(node) => assert_solid_color(node.fill, 255, 0, 0, 255)
+    None => fail("expected layer target")
+  }
+}
+
+///|
+test "marker references inherit and CSS-wide initial clears them" {
+  let svg = "<svg><g marker-start=\"url(#dot)\"><path id=\"inherited\"/><path id=\"initial\" marker-start=\"initial\"/></g></svg>"
+  match css_test_node(svg, "inherited") {
+    Some(node) => assert_eq(node.marker_start, Some("dot"))
+    None => fail("expected inherited marker")
+  }
+  match css_test_node(svg, "initial") {
+    Some(node) => assert_true(node.marker_start is None)
+    None => fail("expected initial marker")
   }
 }
 
@@ -345,6 +441,19 @@ test "text inherits computed font size" {
     Some(node) =>
       match node.shape {
         Text(font_size~, ..) => assert_eq(font_size, 20.0)
+        _ => fail("expected text shape")
+      }
+    None => fail("expected text target")
+  }
+}
+
+///|
+test "text resolves font size from an inherited custom property" {
+  let svg = "<svg><g style=\"--size: 18px\"><text id=\"target\" style=\"font-size: var(--size)\">Variable</text></g></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) =>
+      match node.shape {
+        Text(font_size~, ..) => assert_eq(font_size, 18.0)
         _ => fail("expected text shape")
       }
     None => fail("expected text target")

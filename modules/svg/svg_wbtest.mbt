@@ -413,7 +413,7 @@ test "parse_svg_group" {
 }
 
 ///|
-test "parse_hex_color" {
+test "CSS color adapter parses hexadecimal colors" {
   // This tests the color parsing indirectly through parse_svg
   let svg = "<rect fill=\"#ff0000\" width=\"10\" height=\"10\"/>"
   match parse_svg(svg) {

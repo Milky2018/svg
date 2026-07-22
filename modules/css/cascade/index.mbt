@@ -207,6 +207,7 @@ fn cascade_indexed_stylesheet_matches_into(
       source_order_offset,
       max_so,
       @selector.matches_complex,
+      fn(_property, _value) { true },
     )
   }
   max_so

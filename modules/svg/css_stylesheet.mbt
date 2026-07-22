@@ -221,11 +221,12 @@ fn cascade_element_styles(
   for stylesheet in stylesheets {
     author_stylesheets.push(stylesheet)
   }
-  @css.cascade_element_with_media(
+  @css.cascade_element_with_media_and_validator(
     element,
     author_stylesheets,
     inline_declarations(attrs),
     Some(media_environment),
+    svg_declaration_is_valid,
   )
 }
 

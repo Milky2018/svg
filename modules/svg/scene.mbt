@@ -183,6 +183,7 @@ fn update_node_recursive(
     node.preserve_aspect_ratio = updated.preserve_aspect_ratio
     node.fill = updated.fill
     node.fill_rule = updated.fill_rule
+    node.clip_rule = updated.clip_rule
     node.fill_opacity = updated.fill_opacity
     node.stroke = updated.stroke
     node.stroke_opacity = updated.stroke_opacity
@@ -2518,7 +2519,7 @@ fn build_clip_node_coverage(
   }
   let mut result = build_coverage_mask(
     clip_shape_contours(node.shape, transform),
-    node.fill_rule,
+    node.clip_rule,
     width,
     height,
   )

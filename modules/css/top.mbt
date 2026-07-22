@@ -175,6 +175,19 @@ pub fn cascade_element_with_media(
 }
 
 ///|
+pub fn cascade_element_with_media_and_validator(
+  element : @selector.Element,
+  stylesheets : Array[@cascade.Stylesheet],
+  inline_style : Array[@cascade.Declaration],
+  media_env : @media.MediaEnvironment?,
+  declaration_is_valid : (String, @cascade.PropertyValue) -> Bool,
+) -> @cascade.CascadedValues {
+  @cascade.cascade_element_with_media_and_validator(
+    element, stylesheets, inline_style, media_env, declaration_is_valid,
+  )
+}
+
+///|
 pub fn cascade_element_indexed(
   element : @selector.Element,
   stylesheets : Array[@cascade.IndexedStylesheet],
@@ -200,6 +213,14 @@ pub fn compute_style_with_vars(
   ctx : @computed.ComputeContext,
 ) -> (@style.Style, Map[String, String]) {
   @computed.compute_with_vars(cascaded, ctx)
+}
+
+///|
+pub fn resolve_custom_property_value(
+  value : String,
+  custom_properties : Map[String, String],
+) -> String? {
+  @computed.resolve_custom_property_value(value, custom_properties)
 }
 
 ///|

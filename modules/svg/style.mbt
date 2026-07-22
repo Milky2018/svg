@@ -38,166 +38,9 @@ fn declarations_are_same(
 }
 
 ///|
-fn custom_property_get(
-  properties : Array[(String, String)],
-  name : String,
-) -> String? {
-  for i = properties.length() - 1; i >= 0; i = i - 1 {
-    if properties[i].0 == name {
-      return Some(properties[i].1)
-    }
-  }
-  None
-}
-
-///|
-fn custom_properties_as_pairs(
-  properties : Map[String, String],
-) -> Array[(String, String)] {
-  let pairs : Array[(String, String)] = []
-  for name, value in properties {
-    pairs.push((name, value))
-  }
-  pairs
-}
-
-///|
-fn find_var_function(value : String) -> Int {
-  let lower = value.to_lower()
-  for i in 0..<(lower.length() - 3) {
-    if lower[i] == 'v' &&
-      lower[i + 1] == 'a' &&
-      lower[i + 2] == 'r' &&
-      lower[i + 3] == '(' {
-      return i
-    }
-  }
-  -1
-}
-
-///|
-fn find_matching_parenthesis(value : String, open : Int) -> Int {
-  let mut depth = 0
-  for i in open..<value.length() {
-    let c = Int::unsafe_to_char(value[i].to_int())
-    if c == '(' {
-      depth += 1
-    } else if c == ')' {
-      depth -= 1
-      if depth == 0 {
-        return i
-      }
-    }
-  }
-  -1
-}
-
-///|
-fn find_top_level_comma(value : String) -> Int {
-  let mut depth = 0
-  for i in 0..<value.length() {
-    let c = Int::unsafe_to_char(value[i].to_int())
-    if c == '(' {
-      depth += 1
-    } else if c == ')' {
-      depth -= 1
-    } else if c == ',' && depth == 0 {
-      return i
-    }
-  }
-  -1
-}
-
-///|
-fn resolve_css_variables(
-  value : String,
-  properties : Array[(String, String)],
-  stack : Array[String],
-  depth : Int,
-) -> String? {
-  if depth > 32 {
-    return None
-  }
-  let start = find_var_function(value)
-  if start < 0 {
-    return Some(value)
-  }
-  let open = start + 3
-  let close = find_matching_parenthesis(value, open)
-  if close < 0 {
-    return None
-  }
-  let inner = build_substring(value, open + 1, close)
-  let comma = find_top_level_comma(inner)
-  let name = trim_string(
-    if comma < 0 {
-      inner
-    } else {
-      build_substring(inner, 0, comma)
-    },
-  )
-  if !is_custom_property(name) {
-    return None
-  }
-  let fallback : String? = if comma < 0 {
-    None
-  } else {
-    Some(trim_string(build_substring(inner, comma + 1, inner.length())))
-  }
-  let replacement = if stack.contains(name) {
-    match fallback {
-      Some(fallback_value) =>
-        resolve_css_variables(fallback_value, properties, stack, depth + 1)
-      None => None
-    }
-  } else {
-    match custom_property_get(properties, name) {
-      Some(custom_value) => {
-        let next_stack = stack.copy()
-        next_stack.push(name)
-        match
-          resolve_css_variables(custom_value, properties, next_stack, depth + 1) {
-          Some(resolved) => Some(resolved)
-          None =>
-            match fallback {
-              Some(fallback_value) =>
-                resolve_css_variables(
-                  fallback_value,
-                  properties,
-                  stack,
-                  depth + 1,
-                )
-              None => None
-            }
-        }
-      }
-      None =>
-        match fallback {
-          Some(fallback_value) =>
-            resolve_css_variables(fallback_value, properties, stack, depth + 1)
-          None => None
-        }
-    }
-  }
-  match replacement {
-    Some(resolved) => {
-      let before = build_substring(value, 0, start)
-      let after = build_substring(value, close + 1, value.length())
-      resolve_css_variables(
-        before + resolved + after,
-        properties,
-        stack,
-        depth + 1,
-      )
-    }
-    None => None
-  }
-}
-
-///|
 fn resolve_style_choice(
   declarations : Array[StyleDeclaration],
-  properties : Array[(String, String)],
+  properties : Map[String, String],
   property : ComputedStyleProperty,
 ) -> StyleChoice {
   let default_choice = if property.is_inherited() {
@@ -207,14 +50,19 @@ fn resolve_style_choice(
   }
   match find_winning_declaration(declarations, property.name()) {
     Some(declaration) =>
-      match resolve_css_variables(declaration.value, properties, [], 0) {
+      match @css.resolve_custom_property_value(declaration.value, properties) {
         Some(resolved) =>
           match trim_string(resolved).to_lower() {
             "inherit" => StyleInherited
             "initial" => StyleInitial
             "unset" => default_choice
             "revert" | "revert-layer" => default_choice
-            _ => StyleSpecified(trim_string(resolved))
+            _ =>
+              if svg_property_value_is_valid(property.name(), resolved) {
+                StyleSpecified(trim_string(resolved))
+              } else {
+                default_choice
+              }
           }
         None => default_choice
       }
@@ -227,14 +75,15 @@ fn apply_resolved_noncomputed_attributes(
   node : SVGNode,
   attrs : Array[(String, String)],
   declarations : Array[StyleDeclaration],
-  properties : Array[(String, String)],
+  properties : Map[String, String],
 ) -> Unit {
   for attr in attrs {
     let name = attr.0
     if name != "style" && !is_computed_style_property(name.to_lower()) {
-      match resolve_css_variables(attr.1, properties, [], 0) {
-        Some(value) => apply_presentation_attribute(node, name, value)
-        None => ()
+      match @css.resolve_custom_property_value(attr.1, properties) {
+        Some(value) if svg_property_value_is_valid(name, value) =>
+          apply_presentation_attribute(node, name, value)
+        Some(_) | None => ()
       }
     }
   }
@@ -243,13 +92,54 @@ fn apply_resolved_noncomputed_attributes(
       !is_computed_style_property(declaration.name) {
       match find_winning_declaration(declarations, declaration.name) {
         Some(winner) if declarations_are_same(winner, declaration) =>
-          match resolve_css_variables(winner.value, properties, [], 0) {
-            Some(value) => apply_attribute(node, winner.name, value)
-            None => ()
+          match @css.resolve_custom_property_value(winner.value, properties) {
+            Some(value) if svg_property_value_is_valid(winner.name, value) =>
+              apply_attribute(node, winner.name, value)
+            Some(_) | None =>
+              apply_initial_noncomputed_attribute(node, winner.name)
           }
         _ => ()
       }
     }
+  }
+}
+
+///|
+fn apply_initial_noncomputed_attribute(node : SVGNode, name : String) -> Unit {
+  match name {
+    "x"
+    | "y"
+    | "width"
+    | "height"
+    | "rx"
+    | "ry"
+    | "cx"
+    | "cy"
+    | "r"
+    | "x1"
+    | "y1"
+    | "x2"
+    | "y2" => apply_attribute(node, name, "0")
+    "d" | "points" => apply_attribute(node, name, "")
+    "transform" => node.transform = Transform::identity()
+    "clip-path" => node.clear_clip_path()
+    "mask" => node.clear_mask()
+    "filter" => node.filter_graph_id = None
+    "mix-blend-mode" => node.blend_mode = Normal
+    "isolation" => node.isolation = Auto
+    _ => ()
+  }
+}
+
+///|
+fn clamp_svg_opacity(value : String) -> Double {
+  let parsed = parse_number(value)
+  if parsed < 0.0 {
+    0.0
+  } else if parsed > 1.0 {
+    1.0
+  } else {
+    parsed
   }
 }
 
@@ -269,9 +159,10 @@ fn resolve_computed_style(
     ),
   )
   let declarations = cascaded_style_declarations(cascaded)
-  let custom_properties = custom_properties_as_pairs(custom_property_map)
+  let custom_properties = custom_property_map
   node.fill = parent.fill
   node.fill_rule = parent.fill_rule
+  node.clip_rule = parent.clip_rule
   node.fill_opacity = parent.fill_opacity
   node.stroke = parent.stroke
   node.stroke_opacity = parent.stroke_opacity
@@ -299,11 +190,16 @@ fn resolve_computed_style(
     StyleInherited => ()
     StyleSpecified(value) => node.fill_rule = parse_fill_rule(value)
   }
+  match resolve_style_choice(declarations, custom_properties, StyleClipRule) {
+    StyleInitial => node.clip_rule = NonZero
+    StyleInherited => ()
+    StyleSpecified(value) => node.clip_rule = parse_fill_rule(value)
+  }
   match
     resolve_style_choice(declarations, custom_properties, StyleFillOpacity) {
     StyleInitial => node.fill_opacity = 1.0
     StyleInherited => ()
-    StyleSpecified(value) => node.fill_opacity = parse_number(value)
+    StyleSpecified(value) => node.fill_opacity = clamp_svg_opacity(value)
   }
   match resolve_style_choice(declarations, custom_properties, StyleStroke) {
     StyleInitial => node.stroke = { ..node.stroke, paint: None }
@@ -363,7 +259,7 @@ fn resolve_computed_style(
     resolve_style_choice(declarations, custom_properties, StyleStopOpacity) {
     StyleInitial => stop_opacity = 1.0
     StyleInherited => ()
-    StyleSpecified(value) => stop_opacity = parse_number(value)
+    StyleSpecified(value) => stop_opacity = clamp_svg_opacity(value)
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleStrokeDasharray) {
@@ -383,7 +279,7 @@ fn resolve_computed_style(
     resolve_style_choice(declarations, custom_properties, StyleStrokeOpacity) {
     StyleInitial => node.stroke_opacity = 1.0
     StyleInherited => ()
-    StyleSpecified(value) => node.stroke_opacity = parse_number(value)
+    StyleSpecified(value) => node.stroke_opacity = clamp_svg_opacity(value)
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleVectorEffect) {

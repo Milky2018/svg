@@ -17,6 +17,8 @@ pub fn cascade_element_with_forced_states(@selector.Element, Array[Stylesheet], 
 
 pub fn cascade_element_with_media(@selector.Element, Array[Stylesheet], Array[Declaration], @media.MediaEnvironment?) -> CascadedValues
 
+pub fn cascade_element_with_media_and_validator(@selector.Element, Array[Stylesheet], Array[Declaration], @media.MediaEnvironment?, (String, PropertyValue) -> Bool) -> CascadedValues
+
 // Errors
 
 // Types and methods

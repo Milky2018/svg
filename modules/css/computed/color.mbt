@@ -7,6 +7,7 @@
 // - Named colors (148 CSS named colors)
 // - Hex colors (#rgb, #rrggbb, #rgba, #rrggbbaa)
 // - rgb() and rgba() functional notation
+// - hsl() and hsla() functional notation
 // - transparent, currentColor, inherit keywords
 
 ///|
@@ -15,6 +16,7 @@ pub(all) enum CssColorValue {
   Resolved(@types.Color) // Fully resolved RGBA color
   CurrentColor // Needs parent's color to resolve
   Inherit // Inherit from parent
+  Invalid // Invalid or unsupported as a solid CSS color
 }
 
 ///|
@@ -50,6 +52,7 @@ pub impl Show for CssColorValue with fn output(self, logger) {
     Resolved(c) => c.output(logger)
     CurrentColor => logger.write_string("currentColor")
     Inherit => logger.write_string("inherit")
+    Invalid => logger.write_string("invalid")
   }
 }
 
@@ -174,7 +177,7 @@ fn parse_color_value(v : String) -> CssColorValue {
   }
   // Empty value (unresolved var())
   if v == "" {
-    return Resolved(@types.Color::transparent())
+    return Invalid
   }
   // color-mix()
   if v.has_prefix("color-mix(") {
@@ -183,15 +186,14 @@ fn parse_color_value(v : String) -> CssColorValue {
       None => ()
     }
   }
-  // Unsupported CSS functions - return transparent
-  // (gradients, url(), etc. cannot be represented as solid colors)
+  // Gradients and URLs are paint values, not solid colors.
   if v.has_prefix("linear-gradient") ||
     v.has_prefix("radial-gradient") ||
     v.has_prefix("conic-gradient") ||
     v.has_prefix("repeating-linear-gradient") ||
     v.has_prefix("repeating-radial-gradient") ||
     v.has_prefix("url(") {
-    return Resolved(@types.Color::transparent())
+    return Invalid
   }
 
   // Hex color
@@ -210,14 +212,21 @@ fn parse_color_value(v : String) -> CssColorValue {
     }
   }
 
+  // hsl() / hsla()
+  if v.has_prefix("hsl") {
+    match parse_hsl_function(v.to_string()) {
+      Some(c) => return Resolved(c)
+      None => ()
+    }
+  }
+
   // Named color
   match get_named_color(v.to_string()) {
     Some(c) => return Resolved(c)
     None => ()
   }
 
-  // Default: transparent for unknown values (safer than black)
-  Resolved(@types.Color::transparent())
+  Invalid
 }
 
 ///|
@@ -247,6 +256,11 @@ fn parse_hex_color(value : String) -> @types.Color? {
   }
   // Skip the '#' prefix
   let len = value.length() - 1
+  for i in 1..<value.length() {
+    if hex_digit(char_at(value, i)) < 0 {
+      return None
+    }
+  }
   fn hex1(idx : Int) -> Int {
     let d = hex_digit(char_at(value, idx))
     d * 16 + d
@@ -337,18 +351,37 @@ fn parse_rgb_function(value : String) -> @types.Color? {
 
   // Split by comma or space
   let parts = split_color_args(content.to_owned())
-  if parts.length() < 3 {
+  if parts.length() != 3 && parts.length() != 4 {
     return None
   }
-  let r = parse_color_component(parts[0], false)
-  let g = parse_color_component(parts[1], false)
-  let b = parse_color_component(parts[2], false)
+  let r = match parse_color_component(parts[0], false) {
+    Some(value) => value
+    None => return None
+  }
+  let g = match parse_color_component(parts[1], false) {
+    Some(value) => value
+    None => return None
+  }
+  let b = match parse_color_component(parts[2], false) {
+    Some(value) => value
+    None => return None
+  }
   let a = if parts.length() >= 4 {
-    parse_color_component(parts[3], true)
+    match parse_color_component(parts[3], true) {
+      Some(value) => value
+      None => return None
+    }
   } else {
     1.0
   }
-  Some(@types.Color::rgba(r.to_int(), g.to_int(), b.to_int(), a))
+  Some(
+    @types.Color::rgba(
+      color_clamp(r, 0.0, 255.0).to_int(),
+      color_clamp(g, 0.0, 255.0).to_int(),
+      color_clamp(b, 0.0, 255.0).to_int(),
+      color_clamp(a, 0.0, 1.0),
+    ),
+  )
 }
 
 ///|
@@ -376,29 +409,98 @@ fn split_color_args(s : String) -> Array[String] {
 
 ///|
 /// Parse a color component (0-255 or 0%-100%, or 0-1 for alpha)
-fn parse_color_component(s : String, is_alpha : Bool) -> Double {
+fn parse_color_component(s : String, is_alpha : Bool) -> Double? {
   let v = s.trim().to_owned()
   if v.has_suffix("%") {
     let num_str = substr(v, 0, v.length() - 1)
-    let n = @string.parse_double(num_str) catch { _ => 0.0 }
+    let n = @string.parse_double(num_str) catch { _ => return None }
     if is_alpha {
-      n / 100.0
+      Some(n / 100.0)
     } else {
-      n * 255.0 / 100.0
+      Some(n * 255.0 / 100.0)
     }
   } else {
-    let n = @string.parse_double(v) catch { _ => 0.0 }
-    if is_alpha {
-      // Alpha can be 0-1 or 0-100%
-      if n > 1.0 {
-        n / 255.0
-      } else {
-        n
-      }
-    } else {
-      n
-    }
+    let n = @string.parse_double(v) catch { _ => return None }
+    Some(n)
   }
+}
+
+///|
+fn color_clamp(value : Double, minimum : Double, maximum : Double) -> Double {
+  if value < minimum {
+    minimum
+  } else if value > maximum {
+    maximum
+  } else {
+    value
+  }
+}
+
+///|
+fn parse_hsl_percentage(value : String) -> Double? {
+  let v = value.trim().to_owned()
+  guard v.strip_suffix("%") is Some(number) else { return None }
+  let parsed = @string.parse_double(number.to_owned()) catch {
+    _ => return None
+  }
+  Some(color_clamp(parsed / 100.0, 0.0, 1.0))
+}
+
+///|
+fn parse_hsl_function(value : String) -> @types.Color? {
+  let start = find_char(value, '(')
+  let end = find_char_last(value, ')')
+  if start < 0 || end != value.length() - 1 || end <= start {
+    return None
+  }
+  let parts = split_color_args(substr(value, start + 1, end).trim().to_owned())
+  if parts.length() != 3 && parts.length() != 4 {
+    return None
+  }
+  let raw_hue = @string.parse_double(parts[0]) catch { _ => return None }
+  let saturation = match parse_hsl_percentage(parts[1]) {
+    Some(value) => value
+    None => return None
+  }
+  let lightness = match parse_hsl_percentage(parts[2]) {
+    Some(value) => value
+    None => return None
+  }
+  let alpha = if parts.length() == 4 {
+    match parse_color_component(parts[3], true) {
+      Some(value) => color_clamp(value, 0.0, 1.0)
+      None => return None
+    }
+  } else {
+    1.0
+  }
+  let hue = raw_hue - (raw_hue / 360.0).floor() * 360.0
+  let chroma = (1.0 - (2.0 * lightness - 1.0).abs()) * saturation
+  let segment = hue / 60.0
+  let segment_mod = segment - (segment / 2.0).floor() * 2.0
+  let x = chroma * (1.0 - (segment_mod - 1.0).abs())
+  let (r1, g1, b1) = if segment < 1.0 {
+    (chroma, x, 0.0)
+  } else if segment < 2.0 {
+    (x, chroma, 0.0)
+  } else if segment < 3.0 {
+    (0.0, chroma, x)
+  } else if segment < 4.0 {
+    (0.0, x, chroma)
+  } else if segment < 5.0 {
+    (x, 0.0, chroma)
+  } else {
+    (chroma, 0.0, x)
+  }
+  let m = lightness - chroma / 2.0
+  Some(
+    @types.Color::rgba(
+      ((r1 + m) * 255.0).round().to_int(),
+      ((g1 + m) * 255.0).round().to_int(),
+      ((b1 + m) * 255.0).round().to_int(),
+      alpha,
+    ),
+  )
 }
 
 ///|
@@ -568,6 +670,7 @@ pub fn resolve_current_color(
     Resolved(c) => c
     CurrentColor => parent_color
     Inherit => parent_color
+    Invalid => parent_color
   }
 }
 

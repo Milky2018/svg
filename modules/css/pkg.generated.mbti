@@ -25,6 +25,8 @@ pub fn cascade_element_indexed(@selector.Element, Array[@cascade.IndexedStyleshe
 
 pub fn cascade_element_with_media(@selector.Element, Array[@cascade.Stylesheet], Array[@cascade.Declaration], @media.MediaEnvironment?) -> @cascade.CascadedValues
 
+pub fn cascade_element_with_media_and_validator(@selector.Element, Array[@cascade.Stylesheet], Array[@cascade.Declaration], @media.MediaEnvironment?, (String, @cascade.PropertyValue) -> Bool) -> @cascade.CascadedValues
+
 pub fn compute_inline_raw(String, @computed.ComputeContext) -> @style.Style
 
 pub fn compute_inline_style(String, @computed.ComputeContext) -> @style.Style
@@ -54,6 +56,8 @@ pub fn parse_selector_list(String) -> @selector.SelectorList?
 pub fn parse_stylesheet(String) -> @cascade.Stylesheet
 
 pub fn parse_stylesheet_with_diagnostics(String) -> @parser.ParseResult
+
+pub fn resolve_custom_property_value(String, Map[String, String]) -> String?
 
 // Errors
 

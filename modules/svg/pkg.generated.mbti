@@ -877,6 +877,7 @@ pub(all) struct SVGNode {
   mut color_is_set : Bool
   mut paint_order : PaintOrder
   mut fill_rule : FillRule
+  mut clip_rule : FillRule
   mut fill_opacity : Double
   mut stroke : StrokeStyle
   mut stroke_paint_is_set : Bool

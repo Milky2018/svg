@@ -10,14 +10,6 @@ No ready issues.
 
 | ID | Status | Priority | Type | Assignee | Blocked by | Blocks | Title |
 | --- | --- | ---: | --- | --- | --- | --- | --- |
-| [ISS-001](ISS-001.md) | in_progress | 1 | epic | codex | ISS-003, ISS-005, ISS-007, ISS-009 | none | Complete static SVG CSS computed semantics |
-| [ISS-003](ISS-003.md) | open | 1 | bug | unassigned | ISS-012 | ISS-001, ISS-007 | Complete CSS-wide and inherited property behavior |
-| [ISS-011](ISS-011.md) | blocked | 1 | task | unassigned | none | ISS-005 | Upstream complete CSS Color 3 parsing |
-| [ISS-012](ISS-012.md) | blocked | 1 | task | unassigned | none | ISS-003 | Upstream expose custom-property resolution for extension values |
-| [ISS-013](ISS-013.md) | blocked | 1 | bug | unassigned | none | ISS-009 | Upstream compute font-size from inherited custom properties |
-| [ISS-005](ISS-005.md) | open | 2 | feature | unassigned | ISS-011 | ISS-001, ISS-007 | Adapt mizchi/css color values to SVG paint |
-| [ISS-007](ISS-007.md) | open | 2 | task | unassigned | ISS-003, ISS-005, ISS-009 | ISS-001 | Verify and document static CSS support |
-| [ISS-009](ISS-009.md) | blocked | 2 | feature | codex | ISS-013 | ISS-001, ISS-007 | Parse text elements with computed font size |
 | [ISS-026](ISS-026.md) | deferred | 3 | feature | unassigned | none | none | Resolve external SVG resource documents |
 | [ISS-027](ISS-027.md) | deferred | 3 | task | unassigned | none | none | Align advanced Filter Effects numerical semantics |
 | [ISS-008](ISS-008.md) | deferred | 4 | epic | unassigned | none | none | Design external and dynamic CSS integration |
@@ -31,15 +23,15 @@ graph TD
   ISS_002["ISS-002: Centralize computed property metadata"]
   ISS_003["ISS-003: Complete CSS-wide and inherited property behavior"]
   ISS_004["ISS-004: Integrate gradient stops with the CSS cascade"]
-  ISS_005["ISS-005: Adapt mizchi/css color values to SVG paint"]
+  ISS_005["ISS-005: Adapt CSS core color values to SVG paint"]
   ISS_006["ISS-006: Complete the SVG element adapter for upstream selectors"]
   ISS_007["ISS-007: Verify and document static CSS support"]
   ISS_008["ISS-008: Design external and dynamic CSS integration"]
   ISS_009["ISS-009: Parse text elements with computed font size"]
   ISS_010["ISS-010: Adopt mizchi/css as the CSS engine"]
-  ISS_011["ISS-011: Upstream complete CSS Color 3 parsing"]
-  ISS_012["ISS-012: Upstream expose custom-property resolution for extension values"]
-  ISS_013["ISS-013: Upstream compute font-size from inherited custom properties"]
+  ISS_011["ISS-011: Complete CSS Color 3 parsing"]
+  ISS_012["ISS-012: Expose custom-property resolution for extension values"]
+  ISS_013["ISS-013: Compute font-size from inherited custom properties"]
   ISS_014["ISS-014: Align opacity and isolated compositing with browsers"]
   ISS_015["ISS-015: Implement SVG filter graph evaluation"]
   ISS_016["ISS-016: Expand SVG filter primitive coverage"]

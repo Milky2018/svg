@@ -43,5 +43,6 @@ fn cascade_stylesheet_forced_into(
     fn(el, sel) {
       @selector.matches_complex_with_forced_states(el, sel, forced)
     },
+    fn(_property, _value) { true },
   )
 }

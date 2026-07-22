@@ -7,6 +7,11 @@ fn resolved(value : String) -> @types.Color raise {
 }
 
 ///|
+fn assert_invalid(value : String) -> Unit raise {
+  assert_true(@computed.parse_color(value) is Invalid)
+}
+
+///|
 test "parse_color - keywords" {
   let t = @computed.parse_color("transparent")
   inspect(t.is_resolved(), content="true")
@@ -121,29 +126,31 @@ test "parse_color - case insensitive named" {
 }
 
 ///|
-test "parse_color - hsl gracefully handles (may not fully resolve)" {
-  // Some implementations may not parse hsl() and return transparent
-  let _ = @computed.parse_color("hsl(0, 100%, 50%)")
-  inspect(true, content="true")
+test "parse_color - hsl and hsla" {
+  let red = resolved("hsl(0, 100%, 50%)")
+  inspect(red.r, content="255")
+  inspect(red.g, content="0")
+  inspect(red.b, content="0")
+  let green = resolved("hsla(120, 100%, 25%, 50%)")
+  inspect(green.r, content="0")
+  inspect(green.g, content="128")
+  inspect(green.b, content="0")
+  inspect(green.a, content="0.5")
 }
 
 ///|
-test "parse_color - gradient returns transparent" {
-  let c = resolved("linear-gradient(to right, red, blue)")
-  // gradients are not solid colors -> transparent
-  inspect(c.a, content="0")
+test "parse_color - gradient is not a solid color" {
+  assert_invalid("linear-gradient(to right, red, blue)")
 }
 
 ///|
-test "parse_color - url returns transparent" {
-  let c = resolved("url(image.png)")
-  inspect(c.a, content="0")
+test "parse_color - url is not a solid color" {
+  assert_invalid("url(image.png)")
 }
 
 ///|
-test "parse_color - empty string is transparent" {
-  let c = resolved("")
-  inspect(c.a, content="0")
+test "parse_color - empty string is invalid" {
+  assert_invalid("")
 }
 
 ///|
@@ -231,31 +238,24 @@ test "parse_color - rgb percentage alpha" {
 }
 
 ///|
-test "parse_color - rgb 0-255 alpha out of range coerced" {
+test "parse_color - numeric alpha is clamped to one" {
   let c = resolved("rgba(255, 0, 0, 128)")
-  // alpha > 1.0 is divided by 255 (since "128" treated as 0-255 scale)
-  let expected = 128.0 / 255.0
-  assert_true((c.a - expected).abs() < 0.01)
+  inspect(c.a, content="1")
 }
 
 ///|
-test "parse_color - unknown name resolves to transparent" {
-  let c = resolved("definitely-not-a-color")
-  inspect(c.a, content="0")
+test "parse_color - unknown name is invalid" {
+  assert_invalid("definitely-not-a-color")
 }
 
 ///|
 test "parse_color - hex 5 digit is invalid" {
-  let c = resolved("#abcde")
-  // Falls through to transparent
-  inspect(c.a, content="0")
+  assert_invalid("#abcde")
 }
 
 ///|
 test "parse_color - rgb without closing paren is invalid" {
-  let c = resolved("rgb(10, 20, 30")
-  // Falls through
-  inspect(c.a, content="0")
+  assert_invalid("rgb(10, 20, 30")
 }
 
 ///|
@@ -267,11 +267,11 @@ test "parse_color - mixed-case hex" {
 }
 
 ///|
-test "parse_color - radial-gradient and conic-gradient are transparent" {
-  inspect(resolved("radial-gradient(red, blue)").a, content="0")
-  inspect(resolved("conic-gradient(red, blue)").a, content="0")
-  inspect(resolved("repeating-linear-gradient(red, blue)").a, content="0")
-  inspect(resolved("repeating-radial-gradient(red, blue)").a, content="0")
+test "parse_color - gradient functions are invalid as solid colors" {
+  assert_invalid("radial-gradient(red, blue)")
+  assert_invalid("conic-gradient(red, blue)")
+  assert_invalid("repeating-linear-gradient(red, blue)")
+  assert_invalid("repeating-radial-gradient(red, blue)")
 }
 
 ///|
@@ -302,10 +302,8 @@ test "parse_color - hex with paren in var() balanced" {
 }
 
 ///|
-test "parse_color - var() with no fallback returns input unchanged" {
-  // No comma in var() -> returns "var(--x)" which then parses as transparent.
-  let c = resolved("var(--no-fallback)")
-  inspect(c.a, content="0")
+test "parse_color - unresolved var() is invalid" {
+  assert_invalid("var(--no-fallback)")
 }
 
 ///|
@@ -411,21 +409,13 @@ test "parse_linear_gradient - bad color in stop resolves to transparent" {
 }
 
 ///|
-test "parse_color - hex with non-hex digit returns hex_digit -1" {
-  // The hex_digit function returns -1 for non-hex chars.
-  // parse_hex_color with 6 chars where one is invalid still returns Some
-  // because hex_digit is used in arithmetic — the result will be wrong but doesn't fail.
-  let c = resolved("#zzzzzz") // invalid hex chars
-  // Resolves but components are mathematically derived from -1
-  let _ = c
-  inspect(true, content="true")
+test "parse_color - hex rejects non-hex digits" {
+  assert_invalid("#zzzzzz")
 }
 
 ///|
 test "parse_color - empty hex (just #)" {
-  // Length less than 2 → returns None from parse_hex_color, falls to transparent
-  let c = resolved("#")
-  inspect(c.a, content="0")
+  assert_invalid("#")
 }
 
 ///|

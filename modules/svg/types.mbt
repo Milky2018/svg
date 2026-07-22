@@ -462,6 +462,7 @@ pub(all) struct SVGNode {
   mut color_is_set : Bool
   mut paint_order : PaintOrder
   mut fill_rule : FillRule
+  mut clip_rule : FillRule
   mut fill_opacity : Double
   mut stroke : StrokeStyle
   mut stroke_paint_is_set : Bool
@@ -505,6 +506,7 @@ pub fn SVGNode::new(shape : Shape) -> SVGNode {
     color_is_set: false,
     paint_order: PaintOrder::default(),
     fill_rule: NonZero,
+    clip_rule: NonZero,
     fill_opacity: 1.0,
     stroke: StrokeStyle::default(),
     stroke_paint_is_set: false,
@@ -3883,7 +3885,7 @@ fn clip_node_contains(
     return false
   }
   let (local_x, local_y) = transform.inverse().apply(x, y)
-  if clip_shape_contains(local_x, local_y, node.shape, node.fill_rule) {
+  if clip_shape_contains(local_x, local_y, node.shape, node.clip_rule) {
     return true
   }
   for child in node.children {
@@ -5659,6 +5661,7 @@ pub fn SVGNode::clone(self : SVGNode) -> SVGNode {
     color_is_set: self.color_is_set,
     paint_order: self.paint_order,
     fill_rule: self.fill_rule,
+    clip_rule: self.clip_rule,
     fill_opacity: self.fill_opacity,
     stroke: self.stroke,
     stroke_paint_is_set: self.stroke_paint_is_set,

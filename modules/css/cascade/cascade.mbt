@@ -345,6 +345,7 @@ fn cascade_rule_into(
   source_order_offset : Int,
   prev_max : Int,
   matches : (@selector.Element, @selector.ComplexSelector) -> Bool,
+  declaration_is_valid : (String, PropertyValue) -> Bool,
 ) -> Int {
   let media_matches = match (rule.media_query, media_env) {
     (Some(mq), Some(env)) => mq.evaluate(env)
@@ -360,6 +361,9 @@ fn cascade_rule_into(
   let specificity = @selector.complex_specificity(rule.selector)
   let mut max_so = prev_max
   for decl in rule.declarations {
+    if !declaration_is_valid(decl.property, decl.value) {
+      continue
+    }
     let adjusted_source_order = source_order_offset +
       rule.source_order * 10000 +
       decl.source_order
@@ -389,6 +393,7 @@ fn cascade_stylesheet_into(
   media_env : @media.MediaEnvironment?,
   source_order_offset : Int,
   matches : (@selector.Element, @selector.ComplexSelector) -> Bool,
+  declaration_is_valid : (String, PropertyValue) -> Bool,
 ) -> Int {
   let mut max_so = source_order_offset - 1
   let idx = stylesheet.get_or_build_index()
@@ -402,6 +407,7 @@ fn cascade_stylesheet_into(
       source_order_offset,
       max_so,
       matches,
+      declaration_is_valid,
     )
   }
   max_so
@@ -416,7 +422,28 @@ fn cascade_stylesheet_matches_into(
   source_order_offset : Int,
 ) -> Int {
   cascade_stylesheet_into(
+    result,
+    stylesheet,
+    element,
+    media_env,
+    source_order_offset,
+    @selector.matches_complex,
+    fn(_property, _value) { true },
+  )
+}
+
+///|
+fn cascade_validated_stylesheet_matches_into(
+  result : CascadedValues,
+  stylesheet : Stylesheet,
+  element : @selector.Element,
+  media_env : @media.MediaEnvironment?,
+  source_order_offset : Int,
+  declaration_is_valid : (String, PropertyValue) -> Bool,
+) -> Int {
+  cascade_stylesheet_into(
     result, stylesheet, element, media_env, source_order_offset, @selector.matches_complex,
+    declaration_is_valid,
   )
 }
 
@@ -453,6 +480,34 @@ pub fn cascade_element_with_media(
 
   for decl in inline_style {
     accumulate_inline_declaration(result, decl, source_order_offset)
+  }
+  result
+}
+
+///|
+/// Cascade styles while allowing an embedding language to reject declarations
+/// for extension properties before they can win the cascade.
+pub fn cascade_element_with_media_and_validator(
+  element : @selector.Element,
+  stylesheets : Array[Stylesheet],
+  inline_style : Array[Declaration],
+  media_env : @media.MediaEnvironment?,
+  declaration_is_valid : (String, PropertyValue) -> Bool,
+) -> CascadedValues {
+  let result = CascadedValues::new()
+  let mut source_order_offset = 0
+  for stylesheet in stylesheets {
+    let max_source_order_in_sheet = cascade_validated_stylesheet_matches_into(
+      result, stylesheet, element, media_env, source_order_offset, declaration_is_valid,
+    )
+    if max_source_order_in_sheet >= source_order_offset {
+      source_order_offset = max_source_order_in_sheet + 1
+    }
+  }
+  for decl in inline_style {
+    if declaration_is_valid(decl.property, decl.value) {
+      accumulate_inline_declaration(result, decl, source_order_offset)
+    }
   }
   result
 }

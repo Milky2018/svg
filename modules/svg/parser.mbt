@@ -59,6 +59,7 @@ fn SVGParseContext::new(
 priv struct InheritedStyle {
   fill : Paint
   fill_rule : FillRule
+  clip_rule : FillRule
   fill_opacity : Double
   stroke : StrokeStyle
   stroke_opacity : Double
@@ -79,6 +80,7 @@ fn InheritedStyle::default() -> InheritedStyle {
   {
     fill: SolidColor(Color::black()),
     fill_rule: NonZero,
+    clip_rule: NonZero,
     fill_opacity: 1.0,
     stroke: StrokeStyle::default(),
     stroke_opacity: 1.0,
@@ -222,6 +224,7 @@ fn inherited_style_from_node(
   {
     fill: node.fill,
     fill_rule: node.fill_rule,
+    clip_rule: node.clip_rule,
     fill_opacity: node.fill_opacity,
     stroke: node.stroke,
     stroke_opacity: node.stroke_opacity,
@@ -1390,7 +1393,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
       }
     // Fill rule
     "fill-rule" => node.fill_rule = parse_fill_rule(value)
-    "clip-rule" => node.fill_rule = parse_fill_rule(value)
+    "clip-rule" => node.clip_rule = parse_fill_rule(value)
     _ => () // Ignore unknown attributes
   }
 }
@@ -2344,10 +2347,7 @@ fn parse_clip_path(
   if id.length() == 0 {
     return
   }
-  let clip_rule = match get_attr(attrs, "clip-rule") {
-    Some(v) => parse_fill_rule(v)
-    None => NonZero
-  }
+  let clip_rule = temp.clip_rule
   let transform = match get_attr(attrs, "transform") {
     Some(v) => parse_transform(v)
     None => Transform::identity()
@@ -4014,199 +4014,18 @@ fn parse_paint_order(value : String) -> PaintOrder {
 
 ///|
 fn parse_color(value : String) -> Color {
-  let value = trim_string(value).to_lower()
-  if value.length() == 0 {
-    return Color::black()
+  match @css_computed.parse_color(value) {
+    @css_computed.Resolved(color) =>
+      Color::rgba(
+        color.r,
+        color.g,
+        color.b,
+        clamp_int((color.a * 255.0).round().to_int(), 0, 255),
+      )
+    @css_computed.CurrentColor
+    | @css_computed.Inherit
+    | @css_computed.Invalid => Color::black()
   }
-  // Named colors
-  match value {
-    "black" => return Color::black()
-    "white" => return Color::white()
-    "red" => return Color::rgb(255, 0, 0)
-    "green" => return Color::rgb(0, 128, 0)
-    "blue" => return Color::rgb(0, 0, 255)
-    "yellow" => return Color::rgb(255, 255, 0)
-    "cyan" => return Color::rgb(0, 255, 255)
-    "magenta" => return Color::rgb(255, 0, 255)
-    "gray" | "grey" => return Color::rgb(128, 128, 128)
-    "orange" => return Color::rgb(255, 165, 0)
-    "purple" => return Color::rgb(128, 0, 128)
-    "pink" => return Color::rgb(255, 192, 203)
-    "brown" => return Color::rgb(165, 42, 42)
-    "transparent" => return Color::transparent()
-    _ => ()
-  }
-  // Hex color
-  if value.length() > 0 && Int::unsafe_to_char(value[0].to_int()) == '#' {
-    return parse_hex_color(value)
-  }
-  // rgb(r, g, b)
-  if string_starts_with(value, "rgb") {
-    return parse_rgb_color(value)
-  }
-  if string_starts_with(value, "hsl") {
-    return parse_hsl_color(value)
-  }
-  Color::black()
-}
-
-///|
-fn parse_hex_color(value : String) -> Color {
-  // #RGB or #RRGGBB
-  fn hex_digit(c : Char) -> Int {
-    if c >= '0' && c <= '9' {
-      c.to_int() - 48
-    } else if c >= 'a' && c <= 'f' {
-      c.to_int() - 87
-    } else if c >= 'A' && c <= 'F' {
-      c.to_int() - 55
-    } else {
-      0
-    }
-  }
-
-  fn char_at(s : String, i : Int) -> Char {
-    Int::unsafe_to_char(s[i].to_int())
-  }
-
-  if value.length() == 4 || value.length() == 5 {
-    // #RGB
-    let r = hex_digit(char_at(value, 1))
-    let g = hex_digit(char_at(value, 2))
-    let b = hex_digit(char_at(value, 3))
-    let a = if value.length() == 5 {
-      hex_digit(char_at(value, 4)) * 17
-    } else {
-      255
-    }
-    Color::rgba(r * 17, g * 17, b * 17, a)
-  } else if value.length() == 7 || value.length() == 9 {
-    // #RRGGBB
-    let r = hex_digit(char_at(value, 1)) * 16 + hex_digit(char_at(value, 2))
-    let g = hex_digit(char_at(value, 3)) * 16 + hex_digit(char_at(value, 4))
-    let b = hex_digit(char_at(value, 5)) * 16 + hex_digit(char_at(value, 6))
-    let a = if value.length() == 9 {
-      hex_digit(char_at(value, 7)) * 16 + hex_digit(char_at(value, 8))
-    } else {
-      255
-    }
-    Color::rgba(r, g, b, a)
-  } else {
-    Color::black()
-  }
-}
-
-///|
-fn parse_rgb_color(value : String) -> Color {
-  let args = parse_color_function_args(value)
-  if args.length() < 3 {
-    return Color::black()
-  }
-  fn channel(arg : String) -> Int {
-    let v = trim_string(arg)
-    if string_ends_with(v, "%") {
-      let number = parse_number(build_substring(v, 0, v.length() - 1))
-      clamp_int((number * 2.55).round().to_int(), 0, 255)
-    } else {
-      clamp_int(parse_number(v).round().to_int(), 0, 255)
-    }
-  }
-  let alpha = if args.length() >= 4 { parse_color_alpha(args[3]) } else { 255 }
-  Color::rgba(channel(args[0]), channel(args[1]), channel(args[2]), alpha)
-}
-
-///|
-fn parse_color_function_args(value : String) -> Array[String] {
-  let mut start = 0
-  while start < value.length() &&
-        Int::unsafe_to_char(value[start].to_int()) != '(' {
-    start = start + 1
-  }
-  start = start + 1
-  let mut end = start
-  while end < value.length() && Int::unsafe_to_char(value[end].to_int()) != ')' {
-    end = end + 1
-  }
-  if start >= end {
-    return []
-  }
-  let args : Array[String] = []
-  let mut num_start = start
-  for i = start; i <= end; i = i + 1 {
-    let c = if i < value.length() {
-      Int::unsafe_to_char(value[i].to_int())
-    } else {
-      ')'
-    }
-    if c == ',' || c == ')' {
-      if num_start < i {
-        args.push(trim_string(build_substring(value, num_start, i)))
-      }
-      num_start = i + 1
-    }
-  }
-  args
-}
-
-///|
-fn parse_color_alpha(value : String) -> Int {
-  let value = trim_string(value)
-  let alpha = if string_ends_with(value, "%") {
-    parse_number(build_substring(value, 0, value.length() - 1)) / 100.0
-  } else {
-    parse_number(value)
-  }
-  clamp_int((alpha * 255.0).round().to_int(), 0, 255)
-}
-
-///|
-fn parse_hsl_color(value : String) -> Color {
-  let args = parse_color_function_args(value)
-  if args.length() < 3 {
-    return Color::black()
-  }
-  let raw_hue = parse_number(args[0])
-  let hue = raw_hue - (raw_hue / 360.0).floor() * 360.0
-  fn percentage(arg : String) -> Double {
-    let value = trim_string(arg)
-    let number = if string_ends_with(value, "%") {
-      parse_number(build_substring(value, 0, value.length() - 1)) / 100.0
-    } else {
-      parse_number(value)
-    }
-    if number < 0.0 {
-      0.0
-    } else if number > 1.0 {
-      1.0
-    } else {
-      number
-    }
-  }
-  let saturation = percentage(args[1])
-  let lightness = percentage(args[2])
-  let chroma = (1.0 - (2.0 * lightness - 1.0).abs()) * saturation
-  let hue_segment = hue / 60.0
-  let segment_mod = hue_segment - (hue_segment / 2.0).floor() * 2.0
-  let x = chroma * (1.0 - (segment_mod - 1.0).abs())
-  let (r1, g1, b1) = if hue_segment < 1.0 {
-    (chroma, x, 0.0)
-  } else if hue_segment < 2.0 {
-    (x, chroma, 0.0)
-  } else if hue_segment < 3.0 {
-    (0.0, chroma, x)
-  } else if hue_segment < 4.0 {
-    (0.0, x, chroma)
-  } else if hue_segment < 5.0 {
-    (x, 0.0, chroma)
-  } else {
-    (chroma, 0.0, x)
-  }
-  let m = lightness - chroma / 2.0
-  let r = clamp_int(((r1 + m) * 255.0).round().to_int(), 0, 255)
-  let g = clamp_int(((g1 + m) * 255.0).round().to_int(), 0, 255)
-  let b = clamp_int(((b1 + m) * 255.0).round().to_int(), 0, 255)
-  let a = if args.length() >= 4 { parse_color_alpha(args[3]) } else { 255 }
-  Color::rgba(r, g, b, a)
 }
 
 ///|

@@ -87,6 +87,25 @@ test "cascade_element_indexed delegates to indexed stylesheet" {
 }
 
 ///|
+test "validated cascade skips invalid winning extension declarations" {
+  let element = Element::new("rect")
+  let sheet = parse_stylesheet("rect { fill: red; fill: not-a-color; }")
+  let result = cascade_element_with_media_and_validator(
+    element,
+    [sheet],
+    [],
+    None,
+    fn(property, value) {
+      match (property, value) {
+        ("fill", Value("not-a-color")) => false
+        _ => true
+      }
+    },
+  )
+  debug_inspect(result.get_value("fill"), content="Some(\"red\")")
+}
+
+///|
 test "compute_inline_style and compute_inline_raw" {
   let ctx = ComputeContext::new()
   let s1 = compute_inline_style("display: flex; flex-grow: 2;", ctx)
@@ -103,6 +122,19 @@ test "compute_style_with_vars exposes custom property map" {
   let cascaded = cascade_element(element, [sheet], [])
   let (_style, vars) = compute_style_with_vars(cascaded, ComputeContext::new())
   inspect(vars.contains("--brand"), content="true")
+}
+
+///|
+test "empty custom properties remain present for var substitution" {
+  let element = Element::new("div")
+  let sheet = parse_stylesheet("div { --empty: ; --value: var(--empty) red; }")
+  let cascaded = cascade_element(element, [sheet], [])
+  let (_style, vars) = compute_style_with_vars(cascaded, ComputeContext::new())
+  debug_inspect(vars.get("--empty"), content="Some(\"\")")
+  debug_inspect(
+    resolve_custom_property_value("var(--value, blue)", vars),
+    content="Some(\" red\")",
+  )
 }
 
 ///|

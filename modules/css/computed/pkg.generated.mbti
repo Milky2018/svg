@@ -129,6 +129,8 @@ pub fn parse_writing_mode(String) -> @style.WritingMode
 
 pub fn resolve_current_color(CssColorValue, @values.Color) -> @values.Color
 
+pub fn resolve_custom_property_value(String, Map[String, String]) -> String?
+
 pub fn resolve_grid_line_placement(@values.GridPlacement, @values.GridPlacement, Array[Array[String]]) -> (Int?, Int?)
 
 // Errors
@@ -151,6 +153,7 @@ pub(all) enum CssColorValue {
   Resolved(@values.Color)
   CurrentColor
   Inherit
+  Invalid
 }
 pub fn CssColorValue::get_color(Self) -> @values.Color?
 pub fn CssColorValue::is_resolved(Self) -> Bool

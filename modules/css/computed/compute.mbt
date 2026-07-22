@@ -97,7 +97,7 @@ pub fn ComputeContext::with_parent(parent : @style.Style) -> ComputeContext {
   {
     parent_style: Some(parent),
     root_font_size: 16.0,
-    font_size: 16.0,
+    font_size: parent.font_size,
     viewport_width: 1920.0,
     viewport_height: 1080.0,
     custom_properties: Map([]),
@@ -118,7 +118,7 @@ pub fn ComputeContext::with_parent_and_vars(
   {
     parent_style: Some(parent),
     root_font_size: 16.0,
-    font_size: 16.0,
+    font_size: parent.font_size,
     viewport_width: 1920.0,
     viewport_height: 1080.0,
     custom_properties: vars,
@@ -762,11 +762,21 @@ fn resolve_keyword(
         initial_value(property)
       }
     @cascade.PropertyValue::Revert =>
-      // Revert to user-agent stylesheet (we use initial as fallback)
-      initial_value(property)
+      // This engine has author styles only. With no lower origin available,
+      // use the same inherited/initial boundary as `unset`.
+      if is_inherited(property) {
+        get_inherited_value(property, ctx)
+      } else {
+        initial_value(property)
+      }
     @cascade.PropertyValue::RevertLayer =>
-      // Revert to previous cascade layer (we use initial as fallback)
-      initial_value(property)
+      // Cascade layers are not represented, so fall back to the author-origin
+      // boundary documented for `revert` above.
+      if is_inherited(property) {
+        get_inherited_value(property, ctx)
+      } else {
+        initial_value(property)
+      }
   }
 }
 
@@ -1335,37 +1345,41 @@ fn seed_font_metrics(
       Some(decl) => decl
       None => break
     }
-    let value = resolve_keyword(next_prop, decl.value, ctx)
-    match next_prop {
-      "font" => {
-        let parsed = parse_font_shorthand(value, ctx)
-        seeded_font_size = parsed.font_size
-        seeded_line_height = parsed.line_height
-        seeded_font_weight = parsed.font_weight
-        seeded_font_family = parsed.font_family
-        font_decl = None
-      }
-      "font-size" => {
-        seeded_font_size = parse_font_size(value, ctx)
-        font_size_decl = None
-      }
-      "line-height" => {
-        seeded_line_height = parse_line_height(
-          value,
-          seeded_font_size,
-          root_font_size=ctx.root_font_size,
-        )
-        line_height_decl = None
-      }
-      "font-weight" => {
-        seeded_font_weight = parse_font_weight(value)
-        font_weight_decl = None
-      }
-      "font-family" => {
-        seeded_font_family = parse_font_family(value)
-        font_family_decl = None
-      }
-      _ => ()
+    let unresolved = resolve_keyword(next_prop, decl.value, ctx)
+    match resolve_custom_property_value(unresolved, ctx.custom_properties) {
+      Some(value) =>
+        match next_prop {
+          "font" => {
+            let parsed = parse_font_shorthand(value, ctx)
+            seeded_font_size = parsed.font_size
+            seeded_line_height = parsed.line_height
+            seeded_font_weight = parsed.font_weight
+            seeded_font_family = parsed.font_family
+            font_decl = None
+          }
+          "font-size" => {
+            seeded_font_size = parse_font_size(value, ctx)
+            font_size_decl = None
+          }
+          "line-height" => {
+            seeded_line_height = parse_line_height(
+              value,
+              seeded_font_size,
+              root_font_size=ctx.root_font_size,
+            )
+            line_height_decl = None
+          }
+          "font-weight" => {
+            seeded_font_weight = parse_font_weight(value)
+            font_weight_decl = None
+          }
+          "font-family" => {
+            seeded_font_family = parse_font_family(value)
+            font_family_decl = None
+          }
+          _ => ()
+        }
+      None => ()
     }
   }
 
@@ -2496,6 +2510,7 @@ fn apply_property(
             Some(parent) => builder.color = parent.color
             None => ()
           }
+        Invalid => ()
       }
     }
     "background-color" | "background" => {
@@ -2517,6 +2532,7 @@ fn apply_property(
               Some(parent) => builder.background_color = parent.background_color
               None => ()
             }
+          Invalid => ()
         }
       }
     }
@@ -2807,6 +2823,7 @@ fn parse_box_shadow(
           continue
         }
         Inherit => return None
+        Invalid => return None
       }
     }
     return None
@@ -4033,128 +4050,149 @@ fn resolve_dimension_with_mixed_calc_fallback(
 }
 
 ///|
-/// Resolve CSS var() function with context lookup
-/// Looks up variable in context, falls back to provided fallback value if not found
-fn resolve_var(value : String, ctx : ComputeContext) -> String {
-  let v = value.trim().to_owned()
-  if !v.has_prefix("var(") || !v.has_suffix(")") {
-    return v
+/// Resolve custom properties in an arbitrary CSS property value.
+///
+/// Returns `None` when the value contains malformed `var()` syntax, refers to
+/// a missing property without a fallback, or reaches a custom-property cycle.
+pub fn resolve_custom_property_value(
+  value : String,
+  custom_properties : Map[String, String],
+) -> String? {
+  resolve_custom_property_value_inner(value, custom_properties, [], 0)
+}
+
+///|
+fn resolve_custom_property_value_inner(
+  value : String,
+  custom_properties : Map[String, String],
+  stack : Array[String],
+  depth : Int,
+) -> String? {
+  if depth > 32 {
+    return None
   }
-  // Extract content inside var(...) - skip "var(" (4 chars) and ")" (1 char)
-  let inner : String = view_to_string(
-    v.view(start_offset=4, end_offset=v.length() - 1),
-  )
-  // Find the comma separating variable name from fallback
-  // Need to handle nested var() and other functions
+  let start = match value.find("var(") {
+    Some(start) => start
+    None => return Some(value)
+  }
+  let open = start + 3
+  let mut close = -1
   let mut paren_depth = 0
-  let mut comma_pos = -1
-  for i = 0; i < inner.length(); i = i + 1 {
+  for i in open..<value.length() {
+    let c = value[i].to_int().unsafe_to_char()
+    if c == '(' {
+      paren_depth += 1
+    } else if c == ')' {
+      paren_depth -= 1
+      if paren_depth == 0 {
+        close = i
+        break
+      }
+    }
+  }
+  if close < 0 {
+    return None
+  }
+  let inner = view_to_string(
+    value.view(start_offset=open + 1, end_offset=close),
+  )
+  let mut comma = -1
+  paren_depth = 0
+  for i in 0..<inner.length() {
     let c = inner[i].to_int().unsafe_to_char()
     if c == '(' {
       paren_depth += 1
     } else if c == ')' {
       paren_depth -= 1
     } else if c == ',' && paren_depth == 0 {
-      comma_pos = i
+      comma = i
       break
     }
   }
-  // Extract variable name as String
-  let var_name : String = if comma_pos > 0 {
-    let slice = inner.unsafe_substring(start=0, end=comma_pos)
-    slice.trim().to_owned()
-  } else {
-    inner.trim().to_owned()
+  let name = view_to_string(
+      inner.view(end_offset=if comma < 0 { inner.length() } else { comma }),
+    )
+    .trim()
+    .to_owned()
+  if !starts_with(name, "--") {
+    return None
   }
-  // Look up variable in context
-  match ctx.custom_properties.get(var_name) {
-    Some(var_value) =>
-      // Variable found - recursively resolve if it contains var()
-      if var_value.contains("var(") {
-        resolve_all_vars(var_value, ctx)
-      } else {
-        var_value
-      }
-    None =>
-      // Variable not found - use fallback if available
-      if comma_pos > 0 {
-        let fallback_slice = inner.unsafe_substring(
-          start=comma_pos + 1,
-          end=inner.length(),
+  let fallback = if comma < 0 {
+    None
+  } else {
+    Some(view_to_string(inner.view(start_offset=comma + 1)).trim().to_owned())
+  }
+  let replacement = if stack.contains(name) {
+    match fallback {
+      Some(fallback) =>
+        resolve_custom_property_value_inner(
+          fallback,
+          custom_properties,
+          stack,
+          depth + 1,
         )
-        let fallback = fallback_slice.trim().to_owned()
-        // Recursively resolve fallback (it may also contain var())
-        resolve_all_vars(fallback, ctx)
-      } else {
-        // No fallback and no variable - return empty (invalid value)
-        ""
+      None => None
+    }
+  } else {
+    match custom_properties.get(name) {
+      Some(custom_value) => {
+        let next_stack = stack.copy()
+        next_stack.push(name)
+        match
+          resolve_custom_property_value_inner(
+            custom_value,
+            custom_properties,
+            next_stack,
+            depth + 1,
+          ) {
+          Some(value) => Some(value)
+          None =>
+            match fallback {
+              Some(fallback) =>
+                resolve_custom_property_value_inner(
+                  fallback,
+                  custom_properties,
+                  stack,
+                  depth + 1,
+                )
+              None => None
+            }
+        }
       }
+      None =>
+        match fallback {
+          Some(fallback) =>
+            resolve_custom_property_value_inner(
+              fallback,
+              custom_properties,
+              stack,
+              depth + 1,
+            )
+          None => None
+        }
+    }
+  }
+  match replacement {
+    Some(replacement) => {
+      let before = view_to_string(value.view(end_offset=start))
+      let after = view_to_string(value.view(start_offset=close + 1))
+      resolve_custom_property_value_inner(
+        before + replacement + after,
+        custom_properties,
+        stack,
+        depth + 1,
+      )
+    }
+    None => None
   }
 }
 
 ///|
-/// Resolve all var() references in a value string
 fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
-  let v = value.trim()
-  // If no var() in value, return as-is
-  if !v.contains("var(") {
-    return v.to_owned()
+  match resolve_custom_property_value(value, ctx.custom_properties) {
+    Some(value) => value
+    None => ""
   }
-  // Simple case: entire value is a var()
-  if v.has_prefix("var(") && v.has_suffix(")") {
-    // Check if there's only one var() (no content after)
-    let mut depth = 0
-    let mut end_pos = 0
-    for i = 0; i < v.length(); i = i + 1 {
-      let c = v[i].to_int().unsafe_to_char()
-      if c == '(' {
-        depth += 1
-      } else if c == ')' {
-        depth -= 1
-        if depth == 0 {
-          end_pos = i
-          break
-        }
-      }
-    }
-    if end_pos == v.length() - 1 {
-      // Entire value is a single var()
-      return resolve_var(v.to_owned(), ctx)
-    }
-  }
-  // Complex case: var() embedded in value like "10px var(--gap) 20px"
-  // Need to replace each var() with its resolved value
-  let result = StringBuilder::new()
-  let mut i = 0
-  while i < v.length() {
-    // Look for "var("
-    if i + 4 <= v.length() {
-      let substr = view_to_string(v.view(start_offset=i, end_offset=i + 4))
-      if substr == "var(" {
-        // Find matching closing paren
-        let mut depth = 1
-        let mut j = i + 4
-        while j < v.length() && depth > 0 {
-          let c = v[j].to_int().unsafe_to_char()
-          if c == '(' {
-            depth += 1
-          } else if c == ')' {
-            depth -= 1
-          }
-          j += 1
-        }
-        // Extract and resolve the var()
-        let var_expr = view_to_string(v.view(start_offset=i, end_offset=j))
-        let resolved = resolve_var(var_expr, ctx)
-        result.write_string(resolved)
-        i = j
-        continue
-      }
-    }
-    result.write_char(v[i].to_int().unsafe_to_char())
-    i += 1
-  }
-  result.to_string()
 }
 
 ///|
@@ -4879,7 +4917,8 @@ pub fn compute_inline_raw(
     if colon_pos > 0 {
       let prop = view_to_string(pair_str.view(end_offset=colon_pos)).trim()
       let val = view_to_string(pair_str.view(start_offset=colon_pos + 1)).trim()
-      if !prop.is_empty() && !val.is_empty() {
+      if !prop.is_empty() &&
+        (!val.is_empty() || starts_with(prop.to_owned(), "--")) {
         let (value, importance) = strip_inline_important_marker(val.to_owned())
         decls.push(
           @cascade.Declaration::with_metadata(
