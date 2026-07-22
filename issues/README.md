@@ -54,6 +54,20 @@ graph TD
   ISS_033["ISS-033: Rebuild paint servers and raster images"]
   ISS_034["ISS-034: Migrate clipping masks filters and blending"]
   ISS_035["ISS-035: Cut over the rendering facade and remove the old rasterizer"]
+  ISS_036["ISS-036: Normalize the combined SVG and CSS repository"]
+  ISS_037["ISS-037: Define the supported SVG public surface"]
+  ISS_038["ISS-038: Remove or relocate non-SVG public utilities"]
+  ISS_039["ISS-039: Canonicalize repository and module documentation"]
+  ISS_040["ISS-040: Clean workspace manifests and build-only configuration"]
+  ISS_041["ISS-041: Enforce the full repository gate in CI"]
+  ISS_042["ISS-042: Split oversized SVG implementation and test files"]
+  ISS_043["ISS-043: Define the maintained CSS core boundary"]
+  ISS_044["ISS-044: Prune the CSS implementation to its accepted scope"]
+  ISS_045["ISS-045: Split oversized CSS implementation and test files"]
+  ISS_046["ISS-046: Remove stale source-origin naming from live code"]
+  ISS_047["ISS-047: Align module provenance and attribution files"]
+  ISS_048["ISS-048: Align versions tags changelog and release order"]
+  ISS_049["ISS-049: Replace handwritten XML parsing with Milky2018/xml"]
   ISS_002 --> ISS_001
   ISS_003 --> ISS_001
   ISS_004 --> ISS_001
@@ -95,6 +109,40 @@ graph TD
   ISS_032 --> ISS_033
   ISS_033 --> ISS_034
   ISS_034 --> ISS_035
+  ISS_037 --> ISS_036
+  ISS_038 --> ISS_036
+  ISS_039 --> ISS_036
+  ISS_040 --> ISS_036
+  ISS_041 --> ISS_036
+  ISS_042 --> ISS_036
+  ISS_043 --> ISS_036
+  ISS_044 --> ISS_036
+  ISS_045 --> ISS_036
+  ISS_046 --> ISS_036
+  ISS_047 --> ISS_036
+  ISS_048 --> ISS_036
+  ISS_049 --> ISS_036
+  ISS_037 --> ISS_038
+  ISS_038 --> ISS_039
+  ISS_044 --> ISS_039
+  ISS_040 --> ISS_041
+  ISS_038 --> ISS_042
+  ISS_049 --> ISS_042
+  ISS_043 --> ISS_044
+  ISS_044 --> ISS_045
+  ISS_044 --> ISS_046
+  ISS_043 --> ISS_047
+  ISS_038 --> ISS_048
+  ISS_039 --> ISS_048
+  ISS_040 --> ISS_048
+  ISS_041 --> ISS_048
+  ISS_042 --> ISS_048
+  ISS_044 --> ISS_048
+  ISS_045 --> ISS_048
+  ISS_046 --> ISS_048
+  ISS_047 --> ISS_048
+  ISS_049 --> ISS_048
+  ISS_037 --> ISS_049
 ```
 
 ## Warnings

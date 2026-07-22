@@ -2,20 +2,53 @@
 /// Public rendering helpers
 
 ///|
-test "render_svg_node_to_image_basic" {
-  let node = rect("r", 0.0, 0.0, 10.0, 10.0)
+fn public_test_rect(
+  id : String,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+) -> SVGNode {
+  let node = SVGNode::new(Rect(x~, y~, width~, height~, rx=0.0, ry=0.0))
+  node.id = id
+  node
+}
+
+///|
+fn public_test_group(id : String, children : Array[SVGNode]) -> SVGNode {
+  let node = SVGNode::new(Group)
+  node.id = id
+  for child in children {
+    node.children.push(child)
+  }
+  node
+}
+
+///|
+fn render_public_test_node(node : SVGNode, width : Int, height : Int) -> Image {
+  render_svg_document(
+    SVGDocument::new(node),
+    width,
+    height,
+    RenderOptions::default(),
+  ).image
+}
+
+///|
+test "render_svg_document_basic" {
+  let node = public_test_rect("r", 0.0, 0.0, 10.0, 10.0)
   node.fill = SolidColor(Color::black())
-  let image = render_svg_node_to_image(node, 20, 20)
+  let image = render_public_test_node(node, 20, 20)
   let pixel = image.get_pixel(5, 5)
   inspect(pixel.is_transparent(), content="false")
 }
 
 ///|
-test "render_svg_document_to_image_basic" {
-  let node = rect("r", 2.0, 2.0, 6.0, 6.0)
+test "render_svg_document_with_options_basic" {
+  let node = public_test_rect("r", 2.0, 2.0, 6.0, 6.0)
   node.fill = SolidColor(Color::black())
   let doc = SVGDocument::new(node)
-  let image = render_svg_document_to_image(doc, 16, 16)
+  let image = render_svg_document(doc, 16, 16, RenderOptions::default()).image
   let pixel = image.get_pixel(4, 4)
   inspect(pixel.is_transparent(), content="false")
 }
@@ -127,11 +160,11 @@ test "group opacity is applied after its container mask" {
 
 ///|
 test "container filters process the isolated group result" {
-  let child = rect("child", 0.0, 0.0, 8.0, 8.0)
+  let child = public_test_rect("child", 0.0, 0.0, 8.0, 8.0)
   child.fill = SolidColor(Color::rgb(255, 0, 0))
-  let root = group("filtered", [child])
+  let root = public_test_group("filtered", [child])
   root.add_filter(Invert(1.0))
-  let pixel = render_svg_node_to_image(root, 8, 8).get_pixel(4, 4)
+  let pixel = render_public_test_node(root, 8, 8).get_pixel(4, 4)
   inspect(pixel.r, content="0")
   inspect(pixel.g, content="255")
   inspect(pixel.b, content="255")
@@ -289,8 +322,8 @@ test "filter graph offset samples outside the image as transparent" {
 ///|
 fn image_difference_count(a : Image, b : Image) -> Int {
   let mut count = 0
-  for y in 0..<a.height {
-    for x in 0..<a.width {
+  for y in 0..<a.height() {
+    for x in 0..<a.width() {
       let left = a.get_pixel(x, y)
       let right = b.get_pixel(x, y)
       if left.r != right.r ||
@@ -306,9 +339,9 @@ fn image_difference_count(a : Image, b : Image) -> Int {
 
 ///|
 fn render_rect_at(x : Double) -> Image {
-  let node = rect("probe", x, 1.0, 8.0, 8.0)
+  let node = public_test_rect("probe", x, 1.0, 8.0, 8.0)
   node.fill = SolidColor(Color::black())
-  render_svg_node_to_image(node, 16, 16)
+  render_public_test_node(node, 16, 16)
 }
 
 ///|
@@ -367,10 +400,13 @@ test "path facade preserves fractional coverage" {
 
 ///|
 fn render_scene_path_at(x : Double) -> Image {
-  let node = path("probe", "M 0 0 L 8 0 L 8 8 L 0 8 Z")
+  let node = SVGNode::new(
+    Path(commands=parse_path("M 0 0 L 8 0 L 8 8 L 0 8 Z")),
+  )
+  node.id = "probe"
   node.fill = SolidColor(Color::black())
   node.transform = Transform::translate(x, 1.0)
-  render_svg_node_to_image(node, 16, 16)
+  render_public_test_node(node, 16, 16)
 }
 
 ///|

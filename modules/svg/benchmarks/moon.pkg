@@ -1,0 +1,4 @@
+import {
+  "Milky2018/svg",
+  "moonbitlang/core/bench",
+}

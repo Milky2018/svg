@@ -3,20 +3,7 @@
 // =============================================================================
 //
 // This package groups parser / selector / cascade / computed-style APIs behind
-// a single import so it can be consumed independently from crater integrations.
-
-///|
-pub using @animation {
-  type AnimationPhase,
-  type CompositeOperation,
-  type ComputedEffectTiming,
-  type EffectTiming,
-  type FillMode,
-  type IterationCompositeOperation,
-  type NumericKeyframe,
-  type NumericKeyframeEffect,
-  type PlaybackDirection,
-}
+// a single import so it can be consumed independently from SVG integrations.
 
 ///|
 pub using @cascade {
@@ -36,15 +23,6 @@ pub using @cascade {
 pub using @computed {type ComputeContext, type CssColorValue}
 
 ///|
-pub using @diagnostics {
-  type Diagnostic,
-  type DiagnosticSummary,
-  type DiagnosticsCollector,
-  type Severity,
-  type SupportLevel,
-}
-
-///|
 pub using @media {
   type ColorScheme,
   type MediaEnvironment,
@@ -55,9 +33,6 @@ pub using @media {
   type MediaValue,
   type RangeOp,
 }
-
-///|
-pub using @parser {type ParseResult}
 
 ///|
 pub using @selector {
@@ -83,11 +58,6 @@ pub using @selector {
 ///|
 pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
   @parser.parse_stylesheet(css)
-}
-
-///|
-pub fn parse_stylesheet_with_diagnostics(css : String) -> @parser.ParseResult {
-  @parser.parse_stylesheet_with_diagnostics(css)
 }
 
 ///|
@@ -252,9 +222,4 @@ pub fn apply_property_direct(
 ///|
 pub fn parse_color(value : String) -> @computed.CssColorValue {
   @computed.parse_color(value)
-}
-
-///|
-pub fn affects_layout(level : @diagnostics.SupportLevel) -> Bool {
-  @diagnostics.affects_layout(level)
 }

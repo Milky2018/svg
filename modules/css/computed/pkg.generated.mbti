@@ -2,7 +2,6 @@
 package "Milky2018/css/computed"
 
 import {
-  "Milky2018/css/animation",
   "Milky2018/css/cascade",
   "Milky2018/css/style",
   "Milky2018/css/values",
@@ -10,8 +9,6 @@ import {
 
 // Values
 pub fn apply_property_direct(@style.Style, String, String, ComputeContext) -> @style.Style
-
-pub fn build_keyframe_track(@cascade.KeyframesRule, String, String, ComputeContext) -> Array[@animation.AnimatableKeyframe]
 
 pub fn compute(@cascade.CascadedValues, ComputeContext) -> @style.Style
 
@@ -25,8 +22,6 @@ pub fn default_background_color() -> @values.Color
 
 pub fn default_color() -> @values.Color
 
-pub fn effect_timing_from_style(@style.Style, Int) -> @animation.EffectTiming
-
 pub fn extract_border_width(String) -> @values.Dimension
 
 pub fn find_grid_named_line(String, Array[Array[String]]) -> Int?
@@ -38,8 +33,6 @@ pub fn initial_value(String) -> String
 pub fn is_grid_area_name(String) -> Bool
 
 pub fn is_inherited(String) -> Bool
-
-pub fn keyframe_value_to_animatable(String, ComputeContext) -> @animation.AnimatableValue
 
 pub fn parse_align_self(String) -> @values.AlignSelf
 

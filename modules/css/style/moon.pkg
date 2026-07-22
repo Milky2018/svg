@@ -1,6 +1,3 @@
 import {
   "Milky2018/css/values" @types,
 }
-
-import {
-} for "wbtest"

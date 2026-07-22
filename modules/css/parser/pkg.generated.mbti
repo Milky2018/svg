@@ -3,7 +3,6 @@ package "Milky2018/css/parser"
 
 import {
   "Milky2018/css/cascade",
-  "Milky2018/css/diagnostics",
   "Milky2018/css/style",
   "Milky2018/css/token",
   "Milky2018/css/values",
@@ -50,8 +49,6 @@ pub fn parse_scale_property_from_string(String) -> @style.Transform
 
 pub fn parse_stylesheet(String) -> @cascade.Stylesheet
 
-pub fn parse_stylesheet_with_diagnostics(String) -> ParseResult
-
 pub fn parse_time_list_from_string(String) -> Array[Double]
 
 pub fn parse_transition_shorthand(ArrayView[@token.Token]) -> TransitionShorthand
@@ -72,11 +69,6 @@ pub struct AnimationShorthand {
   directions : Array[@values.AnimationDirection]
   fill_modes : Array[@values.AnimationFillMode]
   play_states : Array[@values.AnimationPlayState]
-}
-
-pub(all) struct ParseResult {
-  stylesheet : @cascade.Stylesheet
-  diagnostics : @diagnostics.DiagnosticsCollector
 }
 
 pub struct TransitionShorthand {

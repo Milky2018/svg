@@ -4,91 +4,36 @@ fn css_is_whitespace(c : Char) -> Bool {
 }
 
 ///|
-fn find_substring_from(haystack : String, needle : String, start : Int) -> Int {
-  if needle.length() == 0 || start < 0 || haystack.length() < needle.length() {
-    return -1
-  }
-  for i in start..<=(haystack.length() - needle.length()) {
-    let mut matches = true
-    for j in 0..<needle.length() {
-      if haystack[i + j] != needle[j] {
-        matches = false
-        break
-      }
-    }
-    if matches {
-      return i
-    }
-  }
-  -1
-}
-
-///|
-fn substring_starts_at(value : String, expected : String, start : Int) -> Bool {
-  if start < 0 || start + expected.length() > value.length() {
-    return false
-  }
-  for i in 0..<expected.length() {
-    if value[start + i] != expected[i] {
-      return false
-    }
-  }
-  true
-}
-
-///|
-fn parse_embedded_stylesheets(svg : String) -> Array[@css_cascade.Stylesheet] {
+fn parse_embedded_stylesheets(
+  events : Array[@xml.Event],
+) -> Array[@css_cascade.Stylesheet] {
   let stylesheets : Array[@css_cascade.Stylesheet] = []
-  let mut pos = 0
-  while pos < svg.length() {
-    let open = find_substring_from(svg, "<", pos)
-    if open < 0 {
-      break
+  let content = StringBuilder::new()
+  let mut in_style = false
+  for event in events {
+    match event {
+      @xml.Event::Start(element) =>
+        if local_xml_name(element.name) == "style" {
+          content.reset()
+          in_style = true
+        }
+      @xml.Event::Empty(element) =>
+        if local_xml_name(element.name) == "style" {
+          stylesheets.push(@css.parse_stylesheet(""))
+        }
+      @xml.Event::Text(text) | @xml.Event::CData(text) =>
+        if in_style {
+          content.write_string(text)
+        }
+      @xml.Event::End(name) =>
+        if in_style && local_xml_name(name) == "style" {
+          stylesheets.push(
+            @css.parse_stylesheet(trim_string(content.to_string())),
+          )
+          in_style = false
+        }
+      _ => ()
     }
-    if substring_starts_at(svg, "<!--", open) {
-      let comment_close = find_substring_from(svg, "-->", open + 4)
-      if comment_close < 0 {
-        break
-      }
-      pos = comment_close + 3
-      continue
-    }
-    if !substring_starts_at(svg, "<style", open) {
-      pos = open + 1
-      continue
-    }
-    let name_end = open + 6
-    if name_end >= svg.length() ||
-      (
-        !css_is_whitespace(Int::unsafe_to_char(svg[name_end].to_int())) &&
-        svg[name_end] != '>'
-      ) {
-      pos = name_end
-      continue
-    }
-    let content_start_tag = find_substring_from(svg, ">", name_end)
-    if content_start_tag < 0 {
-      break
-    }
-    let close = find_substring_from(svg, "</style", content_start_tag + 1)
-    if close < 0 {
-      break
-    }
-    let raw_css = trim_string(
-      build_substring(svg, content_start_tag + 1, close),
-    )
-    let css = if substring_starts_at(raw_css, "<![CDATA[", 0) &&
-      string_ends_with(raw_css, "]]>") {
-      build_substring(raw_css, 9, raw_css.length() - 3)
-    } else {
-      raw_css
-    }
-    stylesheets.push(@css.parse_stylesheet(css))
-    let close_end = find_substring_from(svg, ">", close + 7)
-    if close_end < 0 {
-      break
-    }
-    pos = close_end + 1
   }
   stylesheets
 }

@@ -2,19 +2,14 @@
 package "Milky2018/css"
 
 import {
-  "Milky2018/css/animation",
   "Milky2018/css/cascade",
   "Milky2018/css/computed",
-  "Milky2018/css/diagnostics",
   "Milky2018/css/media",
-  "Milky2018/css/parser",
   "Milky2018/css/selector",
   "Milky2018/css/style",
 }
 
 // Values
-pub fn affects_layout(@diagnostics.SupportLevel) -> Bool
-
 pub fn apply_property_direct(@style.Style, String, String, @computed.ComputeContext) -> @style.Style
 
 pub fn cascade_declarations(Array[@cascade.Declaration]) -> @cascade.CascadedValues
@@ -55,8 +50,6 @@ pub fn parse_selector_list(String) -> @selector.SelectorList?
 
 pub fn parse_stylesheet(String) -> @cascade.Stylesheet
 
-pub fn parse_stylesheet_with_diagnostics(String) -> @parser.ParseResult
-
 pub fn resolve_custom_property_value(String, Map[String, String]) -> String?
 
 // Errors
@@ -64,8 +57,6 @@ pub fn resolve_custom_property_value(String, Map[String, String]) -> String?
 // Types and methods
 
 // Type aliases
-pub using @animation {type AnimationPhase}
-
 pub using @selector {type Attribute}
 
 pub using @selector {type AttributeMatch}
@@ -84,37 +75,21 @@ pub using @selector {type ComplexSelector}
 
 pub using @selector {type ComplexSelectorStep}
 
-pub using @animation {type CompositeOperation}
-
 pub using @selector {type CompoundSelector}
 
 pub using @computed {type ComputeContext}
-
-pub using @animation {type ComputedEffectTiming}
 
 pub using @computed {type CssColorValue}
 
 pub using @cascade {type Declaration}
 
-pub using @diagnostics {type Diagnostic}
-
-pub using @diagnostics {type DiagnosticSummary}
-
-pub using @diagnostics {type DiagnosticsCollector}
-
-pub using @animation {type EffectTiming}
-
 pub using @selector {type Element}
-
-pub using @animation {type FillMode}
 
 pub using @selector {type ForcedPseudoStates}
 
 pub using @cascade {type Importance}
 
 pub using @cascade {type IndexedStylesheet}
-
-pub using @animation {type IterationCompositeOperation}
 
 pub using @media {type MediaEnvironment}
 
@@ -130,15 +105,7 @@ pub using @media {type MediaValue}
 
 pub using @selector {type NthExpr}
 
-pub using @animation {type NumericKeyframe}
-
-pub using @animation {type NumericKeyframeEffect}
-
 pub using @cascade {type Origin}
-
-pub using @parser {type ParseResult}
-
-pub using @animation {type PlaybackDirection}
 
 pub using @cascade {type PropertyValue}
 
@@ -156,8 +123,6 @@ pub using @cascade {type SelectorIndex}
 
 pub using @selector {type SelectorList}
 
-pub using @diagnostics {type Severity}
-
 pub using @selector {type ShadowContext}
 
 pub using @selector {type SimpleSelector}
@@ -165,8 +130,6 @@ pub using @selector {type SimpleSelector}
 pub using @selector {type Specificity}
 
 pub using @cascade {type Stylesheet}
-
-pub using @diagnostics {type SupportLevel}
 
 // Traits
 

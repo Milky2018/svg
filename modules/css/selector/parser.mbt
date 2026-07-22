@@ -226,7 +226,7 @@ priv enum NamespacePrefix {
   AnyNs // `*|` — any namespace
   EmptyNs // `|`  — explicit no namespace (canonically dropped)
   NamedNs // `name|` — named namespace (the name itself isn't kept;
-  // mizchi/css doesn't track @namespace declarations)
+  // this parser doesn't model @namespace declarations)
 }
 
 ///|

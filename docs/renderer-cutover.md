@@ -30,7 +30,7 @@ JavaScript, and native.
 Command:
 
 ```sh
-moon bench --target native --release modules/svg/svg_bench.mbt --no-parallelize
+moon bench --target native --release modules/svg/benchmarks/svg_bench.mbt --no-parallelize
 ```
 
 The table compares ten-sample means with the pre-refactor baseline recorded in

@@ -1,7 +1,7 @@
-Milky2018/svg
+Milky2018/css
 Copyright 2026 Milky2018
 
-This product includes software derived from mizchi/css 0.7.3
+This module includes software derived from mizchi/css 0.7.3
 (https://github.com/mizchi/css), licensed under the Apache License 2.0.
 
-The vendored and locally maintained sources are under modules/css.
+The derived sources are maintained as Milky2018/css in this distribution.

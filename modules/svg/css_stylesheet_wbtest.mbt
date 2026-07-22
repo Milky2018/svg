@@ -46,9 +46,11 @@ test "gradient stop parser keeps the shared cascade" {
   let ctx = SVGParseContext::new(stylesheets)
   let parent_attrs = [("id", "paint")]
   let _ = ctx.record_selector_element("linearGradient", parent_attrs)
-  let parser = SVGParser::new(
-    "<stop id=\"target\" offset=\"0\" style=\"stop-color: blue\"/></linearGradient>",
-  )
+  let events = read_xml_events(
+    "<linearGradient><stop id=\"target\" offset=\"0\" style=\"stop-color: blue\"/></linearGradient>",
+  ).unwrap()
+  let parser = SVGParser::new(events)
+  let _ = parser.advance_event()
   let stops = parse_gradient_stops(
     parser,
     "linearGradient",
@@ -64,17 +66,10 @@ test "gradient stop parser keeps the shared cascade" {
 
 ///|
 test "embedded styles cascade into parsed gradient stops" {
-  let svg = "<svg><style>#target { stop-color: red !important; }</style><defs><linearGradient id=\"paint\"><stop id=\"target\" offset=\"0\" style=\"stop-color: blue\"/></linearGradient></defs></svg>"
-  match parse_svg_document(svg) {
-    Some(document) =>
-      match document.gradients.get("paint") {
-        Some(Linear(gradient)) => {
-          assert_eq(gradient.stops[0].color.r, 255)
-          assert_eq(gradient.stops[0].color.g, 0)
-          assert_eq(gradient.stops[0].color.b, 0)
-        }
-        _ => fail("expected gradient")
-      }
-    None => fail("expected document")
-  }
+  let svg = "<svg width=\"2\" height=\"2\"><style>#target { stop-color: red !important; }</style><defs><linearGradient id=\"paint\"><stop id=\"target\" offset=\"0\" style=\"stop-color: blue\"/></linearGradient></defs><rect width=\"2\" height=\"2\" fill=\"url(#paint)\"/></svg>"
+  let image = render_svg(svg, 2, 2, RenderOptions::default()).image
+  let color = image.get_pixel(0, 0)
+  assert_eq(color.r, 255)
+  assert_eq(color.g, 0)
+  assert_eq(color.b, 0)
 }

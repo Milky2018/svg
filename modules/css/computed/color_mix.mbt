@@ -1,8 +1,8 @@
 ///|
 /// `color-mix()` (CSS Color 5) evaluation. Parses
 /// `color-mix(in <space>, <color> <p>?, <color> <p>?)` and mixes the two colors
-/// in the requested interpolation color space using the animation package's
-/// color interpolation. Hue interpolation method (shorter/longer/...) is not
+/// in the requested interpolation color space. Hue interpolation method
+/// (shorter/longer/...) is not
 /// yet honored; the shortest arc is always used.
 
 ///|
@@ -33,7 +33,7 @@ fn split_depth0(s : String, sep : Char) -> Array[String] {
 ///|
 /// Map a `color-mix` interpolation-space spec (`in <space> [<hue> hue]`) to a
 /// ColorSpace. Returns None when the spec is malformed or the space is unknown.
-fn parse_interpolation_space(spec : String) -> @animation.ColorSpace? {
+fn parse_interpolation_space(spec : String) -> ColorInterpolationSpace? {
   let s = spec.trim().to_lower()
   if !s.has_prefix("in ") {
     return None
@@ -45,11 +45,11 @@ fn parse_interpolation_space(spec : String) -> @animation.ColorSpace? {
     return None
   }
   match tokens[0].trim().to_owned() {
-    "srgb" => Some(@animation.ColorSpace::Srgb)
-    "oklab" => Some(@animation.ColorSpace::Oklab)
-    "oklch" => Some(@animation.ColorSpace::Oklch)
-    "lab" => Some(@animation.ColorSpace::Lab)
-    "lch" => Some(@animation.ColorSpace::Lch)
+    "srgb" => Some(ColorInterpolationSpace::Srgb)
+    "oklab" => Some(ColorInterpolationSpace::Oklab)
+    "oklch" => Some(ColorInterpolationSpace::Oklch)
+    "lab" => Some(ColorInterpolationSpace::Lab)
+    "lch" => Some(ColorInterpolationSpace::Lch)
     _ => None
   }
 }
@@ -121,7 +121,7 @@ fn parse_color_mix(v : String) -> CssColorValue? {
         return None
       }
       let t = w2 / total
-      Some(Resolved(@animation.interpolate_color_in(space, col1, col2, t)))
+      Some(Resolved(interpolate_color_in(space, col1, col2, t)))
     }
     _ => None
   }

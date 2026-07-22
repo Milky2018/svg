@@ -1,48 +1,39 @@
 # Milky2018/svg
 
-SVG パーサー/レンダラーの [MoonBit](https://www.moonbitlang.com/) 実装。サードパーティ依存なし。
+A MoonBit workspace for parsing and rendering static SVG documents with a
+deterministic CPU renderer.
 
-MoonBit workspace として構成され、`modules/svg` に公開モジュール
-`Milky2018/svg`、`modules/css` にローカルで保守する CSS コア
-`Milky2018/css` を配置しています。
+## Workspace
 
-## Features
+| Directory | Published module | Responsibility |
+| --- | --- | --- |
+| `modules/svg` | `Milky2018/svg` | SVG parsing, scene data, rendering, effects, and host image resolution |
+| `modules/css` | `Milky2018/css` | Static CSS parsing, selectors, cascade, computed values, colors, and custom properties |
 
-- SVG マークアップのパース (`parse_svg()`)
-- CPU ソフトウェアラスタライズ
-- シーングラフ操作 (ノードの追加/削除/更新、z-ordering)
-- 基本図形: Rect, Circle, Ellipse, Line, Polyline, Polygon, Path, Text
-- スタイリング: グラデーション、フィルタ、マスク、クリッピング、ブレンドモード
-- 2D アフィン変換 (translate, scale, rotate, skew)
-- SVG パスコマンド (`PathCommand` enum, SVG 1.1 仕様準拠)
-- テキストレンダリング (最小ビットマップフォントフォールバック)
-- 画像処理フィルタ (blur, brightness, contrast, grayscale, etc.)
-- ヒットテスト・衝突判定
-- スプライトアニメーション、パーティクルシステム
+Start with the [SVG module guide](modules/svg/README.mbt.md). The
+[CSS module guide](modules/css/README.md) documents the reusable static CSS
+boundary and intentional exclusions.
 
-## Usage
+## Scope
 
-```moonbit
-// SVG 文字列からピクセル画像を生成
-let image = @svg.render_svg_to_image(svg_string, 800, 600)
+The renderer targets coherent SVG and CSS semantics with deterministic software
+output. It does not promise pixel-for-pixel Chromium parity. Network and file
+access, external SVG documents, and PNG/JPEG decoding are host responsibilities;
+raster images can be supplied through `RenderOptions::with_image_resolver`.
 
-// PNG/JPEG などはホスト側でデコードし、RGBA Image として渡す
-let image = @svg.render_svg_to_image_with_resolver(
-  svg_string,
-  800,
-  600,
-  fn(href) { host_decode_image(href) },
-)
+## Development
 
-// パスコマンドの直接操作
-let cmds = @svg.parse_path("M10 10 L90 90 Z")
+Run the repository gate from the workspace root:
+
+```sh
+moon fmt --check
+moon info
+moon check --target all --deny-warn
+moon test --target all
 ```
 
-image resolver は SVG に記述された `href` をそのまま受け取ります。ファイル・
-ネットワークアクセス、PNG/JPEG のデコード、キャッシュはホスト側の責務です。
-ライブラリ側は返された RGBA 画像の `preserveAspectRatio`、アフィン変換、クリップ、
-アルファ合成を処理します。解決できない参照には `None` を返してください。
+## License and Attribution
 
-## License
-
-Apache-2.0
+The workspace is distributed under Apache-2.0. The locally maintained CSS module
+began from `mizchi/css` 0.7.3; see [NOTICE](NOTICE) and
+[modules/css/NOTICE](modules/css/NOTICE) for attribution.

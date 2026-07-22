@@ -1,0 +1,628 @@
+///|
+test "flex-flow row wrap" {
+  let style = parse_inline_style("flex-flow: row wrap")
+  inspect(style.flex_direction, content="Row")
+  inspect(style.flex_wrap, content="Wrap")
+}
+
+///|
+test "flex-flow column nowrap" {
+  let style = parse_inline_style("flex-flow: column nowrap")
+  inspect(style.flex_direction, content="Column")
+  inspect(style.flex_wrap, content="NoWrap")
+}
+
+///|
+test "flex-flow wrap-reverse only" {
+  let style = parse_inline_style("flex-flow: wrap-reverse")
+  inspect(style.flex_direction, content="Row") // default
+  inspect(style.flex_wrap, content="WrapReverse")
+}
+
+///|
+test "flex: 1 0% 1 (basis in middle - invalid)" {
+  // CSS spec: flex shorthand must be <grow> [<shrink>] [<basis>]
+  // Basis in middle like "1 0% 1" is invalid, so defaults are used
+  let style = parse_inline_style("flex: 1 0% 1")
+  inspect(style.flex_grow, content="0")
+  inspect(style.flex_shrink, content="1")
+  inspect(style.flex_basis, content="Auto")
+}
+
+///|
+test "flex: 1 auto 1 (basis in middle - invalid)" {
+  // CSS spec: flex shorthand must be <grow> [<shrink>] [<basis>]
+  // Basis in middle like "1 auto 1" is invalid, so defaults are used
+  let style = parse_inline_style("flex: 1 auto 1")
+  inspect(style.flex_grow, content="0")
+  inspect(style.flex_shrink, content="1")
+  inspect(style.flex_basis, content="Auto")
+}
+
+///|
+test "contain: none" {
+  let style = parse_inline_style("contain: none")
+  inspect(style.contain.size, content="false")
+  inspect(style.contain.layout, content="false")
+  inspect(style.contain.paint, content="false")
+  inspect(style.contain.style, content="false")
+}
+
+///|
+test "contain: strict" {
+  let style = parse_inline_style("contain: strict")
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.layout, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "contain: content" {
+  let style = parse_inline_style("contain: content")
+  inspect(style.contain.size, content="false")
+  inspect(style.contain.layout, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "contain: layout" {
+  let style = parse_inline_style("contain: layout")
+  inspect(style.contain.size, content="false")
+  inspect(style.contain.layout, content="true")
+  inspect(style.contain.paint, content="false")
+}
+
+///|
+test "contain: layout paint" {
+  let style = parse_inline_style("contain: layout paint")
+  inspect(style.contain.layout, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.size, content="false")
+}
+
+///|
+test "contain: size layout paint style" {
+  let style = parse_inline_style("contain: size layout paint style")
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.layout, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "contain: inline-size" {
+  let style = parse_inline_style("contain: inline-size")
+  inspect(style.contain.inline_size, content="true")
+  inspect(style.contain.size, content="false")
+}
+
+///|
+test "container-type: size implies contain size and style" {
+  let style = parse_inline_style("container-type: size")
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.inline_size, content="false")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "container-type: inline-size implies contain inline-size and style" {
+  let style = parse_inline_style("container-type: inline-size")
+  inspect(style.contain.size, content="false")
+  inspect(style.contain.inline_size, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "container-type merges with contain flags" {
+  let style = parse_inline_style("contain: paint; container-type: size")
+  inspect(style.contain.size, content="true")
+  inspect(style.contain.paint, content="true")
+  inspect(style.contain.style, content="true")
+}
+
+///|
+test "contain-intrinsic-inline-size parses length" {
+  let style = parse_inline_style("contain-intrinsic-inline-size: 100px")
+  debug_inspect(style.contain_intrinsic_inline_size, content="Some(100)")
+}
+
+///|
+test "contain-intrinsic-size shorthand sets inline and block" {
+  let style = parse_inline_style("contain-intrinsic-size: 80px 40px")
+  debug_inspect(style.contain_intrinsic_inline_size, content="Some(80)")
+  debug_inspect(style.contain_intrinsic_block_size, content="Some(40)")
+}
+
+///|
+test "parse width fit-content" {
+  let style = parse_inline_style("width: fit-content")
+  inspect(style.width, content="FitContent(10000000000)")
+}
+
+///|
+test "parse width min-content" {
+  let style = parse_inline_style("width: min-content")
+  inspect(style.width, content="MinContent")
+}
+
+///|
+test "parse width max-content" {
+  let style = parse_inline_style("width: max-content")
+  inspect(style.width, content="MaxContent")
+}
+
+///|
+test "parse calc addition" {
+  let style = parse_inline_style("width: calc(100px + 50px)")
+  inspect(style.width, content="Length(150)")
+}
+
+///|
+test "parse calc subtraction" {
+  let style = parse_inline_style("width: calc(200px - 50px)")
+  inspect(style.width, content="Length(150)")
+}
+
+///|
+test "parse calc percentage" {
+  let style = parse_inline_style("width: calc(50% + 50%)")
+  inspect(style.width, content="Percent(1)")
+}
+
+///|
+test "parse display none" {
+  let style = parse_inline_style("display: none")
+  inspect(style.display, content="None")
+}
+
+///|
+test "parse display inline-flex" {
+  let style = parse_inline_style("display: inline-flex")
+  inspect(style.display, content="InlineFlex")
+}
+
+///|
+test "parse display inline-grid" {
+  let style = parse_inline_style("display: inline-grid")
+  inspect(style.display, content="InlineGrid")
+}
+
+///|
+test "parse position relative" {
+  let style = parse_inline_style("position: relative")
+  inspect(style.position, content="Relative")
+}
+
+///|
+test "parse position fixed" {
+  let style = parse_inline_style("position: fixed")
+  inspect(style.position, content="Fixed")
+}
+
+///|
+test "parse float left" {
+  let style = parse_inline_style("float: left")
+  inspect(style.float, content="Left")
+}
+
+///|
+test "parse float right" {
+  let style = parse_inline_style("float: right")
+  inspect(style.float, content="Right")
+}
+
+///|
+test "parse float inline-start uses final direction" {
+  let rtl_first = parse_inline_style("direction: rtl; float: inline-start")
+  inspect(rtl_first.float, content="Right")
+  let rtl_last = parse_inline_style("float: inline-start; direction: rtl")
+  inspect(rtl_last.float, content="Right")
+}
+
+///|
+test "parse clear both" {
+  let style = parse_inline_style("clear: both")
+  inspect(style.clear, content="Both")
+}
+
+///|
+test "parse clear left" {
+  let style = parse_inline_style("clear: left")
+  inspect(style.clear, content="Left")
+}
+
+///|
+test "parse clear inline-end uses final direction" {
+  let rtl_first = parse_inline_style("direction: rtl; clear: inline-end")
+  inspect(rtl_first.clear, content="Left")
+  let rtl_last = parse_inline_style("clear: inline-end; direction: rtl")
+  inspect(rtl_last.clear, content="Left")
+}
+
+///|
+test "parse align-items stretch" {
+  let style = parse_inline_style("align-items: stretch")
+  inspect(style.align_items, content="Stretch")
+}
+
+///|
+test "parse align-items baseline" {
+  let style = parse_inline_style("align-items: baseline")
+  inspect(style.align_items, content="Baseline")
+}
+
+///|
+test "parse justify-content space-evenly" {
+  let style = parse_inline_style("justify-content: space-evenly")
+  inspect(style.justify_content, content="SpaceEvenly")
+}
+
+///|
+test "parse justify-content space-around" {
+  let style = parse_inline_style("justify-content: space-around")
+  inspect(style.justify_content, content="SpaceAround")
+}
+
+///|
+test "parse overflow visible" {
+  let style = parse_inline_style("overflow: visible")
+  inspect(style.overflow_x, content="Visible")
+  inspect(style.overflow_y, content="Visible")
+}
+
+///|
+test "parse overflow hidden" {
+  let style = parse_inline_style("overflow: hidden")
+  inspect(style.overflow_x, content="Hidden")
+  inspect(style.overflow_y, content="Hidden")
+}
+
+///|
+test "parse overflow scroll" {
+  let style = parse_inline_style("overflow: scroll")
+  inspect(style.overflow_x, content="Scroll")
+  inspect(style.overflow_y, content="Scroll")
+}
+
+///|
+test "parse overflow-x and overflow-y separately" {
+  let style = parse_inline_style("overflow-x: hidden; overflow-y: scroll")
+  inspect(style.overflow_x, content="Hidden")
+  inspect(style.overflow_y, content="Scroll")
+}
+
+///|
+test "parse row-gap and column-gap separately" {
+  let style = parse_inline_style("row-gap: 10px; column-gap: 20px")
+  inspect(style.row_gap, content="Length(10)")
+  inspect(style.column_gap, content="Length(20)")
+}
+
+///|
+test "parse min-width and max-width" {
+  let style = parse_inline_style("min-width: 100px; max-width: 500px")
+  inspect(style.min_width, content="Length(100)")
+  inspect(style.max_width, content="Length(500)")
+}
+
+///|
+test "parse min-height and max-height" {
+  let style = parse_inline_style("min-height: 50px; max-height: 300px")
+  inspect(style.min_height, content="Length(50)")
+  inspect(style.max_height, content="Length(300)")
+}
+
+///|
+test "parse inset shorthand" {
+  let style = parse_inline_style("position: absolute; inset: 10px")
+  inspect(style.inset.top, content="Length(10)")
+  inspect(style.inset.right, content="Length(10)")
+  inspect(style.inset.bottom, content="Length(10)")
+  inspect(style.inset.left, content="Length(10)")
+}
+
+///|
+test "parse inset shorthand with 4 values including auto" {
+  let style = parse_inline_style(
+    "position: absolute; inset: 50px auto 50px 50px",
+  )
+  inspect(style.inset.top, content="Length(50)")
+  inspect(style.inset.right, content="Auto")
+  inspect(style.inset.bottom, content="Length(50)")
+  inspect(style.inset.left, content="Length(50)")
+}
+
+///|
+test "parse margin with 2 values" {
+  let style = parse_inline_style("margin: 10px 20px")
+  inspect(style.margin.top, content="Length(10)")
+  inspect(style.margin.right, content="Length(20)")
+  inspect(style.margin.bottom, content="Length(10)")
+  inspect(style.margin.left, content="Length(20)")
+}
+
+///|
+test "parse margin with 3 values" {
+  let style = parse_inline_style("margin: 10px 20px 30px")
+  inspect(style.margin.top, content="Length(10)")
+  inspect(style.margin.right, content="Length(20)")
+  inspect(style.margin.bottom, content="Length(30)")
+  inspect(style.margin.left, content="Length(20)")
+}
+
+///|
+test "parse margin with 4 values" {
+  let style = parse_inline_style("margin: 10px 20px 30px 40px")
+  inspect(style.margin.top, content="Length(10)")
+  inspect(style.margin.right, content="Length(20)")
+  inspect(style.margin.bottom, content="Length(30)")
+  inspect(style.margin.left, content="Length(40)")
+}
+
+///|
+test "parse margin auto" {
+  let style = parse_inline_style("margin: auto")
+  inspect(style.margin.top, content="Auto")
+  inspect(style.margin.right, content="Auto")
+  inspect(style.margin.bottom, content="Auto")
+  inspect(style.margin.left, content="Auto")
+}
+
+///|
+test "parse padding with 2 values" {
+  let style = parse_inline_style("padding: 5px 15px")
+  inspect(style.padding.top, content="Length(5)")
+  inspect(style.padding.right, content="Length(15)")
+  inspect(style.padding.bottom, content="Length(5)")
+  inspect(style.padding.left, content="Length(15)")
+}
+
+///|
+test "parse individual margin properties" {
+  let style = parse_inline_style(
+    "margin-top: 10px; margin-right: 20px; margin-bottom: 30px; margin-left: 40px",
+  )
+  inspect(style.margin.top, content="Length(10)")
+  inspect(style.margin.right, content="Length(20)")
+  inspect(style.margin.bottom, content="Length(30)")
+  inspect(style.margin.left, content="Length(40)")
+}
+
+///|
+test "parse individual padding properties" {
+  let style = parse_inline_style(
+    "padding-top: 5px; padding-right: 10px; padding-bottom: 15px; padding-left: 20px",
+  )
+  inspect(style.padding.top, content="Length(5)")
+  inspect(style.padding.right, content="Length(10)")
+  inspect(style.padding.bottom, content="Length(15)")
+  inspect(style.padding.left, content="Length(20)")
+}
+
+///|
+test "parse border individual widths" {
+  let style = parse_inline_style(
+    "border-top-width: 1px; border-right-width: 2px; border-bottom-width: 3px; border-left-width: 4px",
+  )
+  inspect(style.border.top, content="Length(1)")
+  inspect(style.border.right, content="Length(2)")
+  inspect(style.border.bottom, content="Length(3)")
+  inspect(style.border.left, content="Length(4)")
+}
+
+///|
+test "parse flex-direction row-reverse" {
+  let style = parse_inline_style("flex-direction: row-reverse")
+  inspect(style.flex_direction, content="RowReverse")
+}
+
+///|
+test "parse flex-direction column-reverse" {
+  let style = parse_inline_style("flex-direction: column-reverse")
+  inspect(style.flex_direction, content="ColumnReverse")
+}
+
+///|
+test "parse flex: none" {
+  let style = parse_inline_style("flex: none")
+  inspect(style.flex_grow, content="0")
+  inspect(style.flex_shrink, content="0")
+  inspect(style.flex_basis, content="Auto")
+}
+
+///|
+test "parse flex: auto" {
+  let style = parse_inline_style("flex: auto")
+  inspect(style.flex_grow, content="1")
+  inspect(style.flex_shrink, content="1")
+  inspect(style.flex_basis, content="Auto")
+}
+
+///|
+test "parse flex: 2 1 100px" {
+  let style = parse_inline_style("flex: 2 1 100px")
+  inspect(style.flex_grow, content="2")
+  inspect(style.flex_shrink, content="1")
+  inspect(style.flex_basis, content="Length(100)")
+}
+
+///|
+test "parse grid-auto-flow row" {
+  let style = parse_inline_style("grid-auto-flow: row")
+  inspect(style.grid_auto_flow, content="Row")
+}
+
+///|
+test "parse vh and vw units" {
+  let style = parse_inline_style("width: 50vw; height: 100vh")
+  // 50vw = 50% of 1000px = 500px
+  inspect(style.width, content="Length(500)")
+  // 100vh = 100% of 1000px = 1000px
+  inspect(style.height, content="Length(1000)")
+}
+
+///|
+test "parse dynamic viewport units" {
+  let style = parse_inline_style(
+    "width: 50dvw; min-width: 25svw; max-width: 10lvw; height: 100dvh; min-height: 50svh; max-height: 25lvh",
+  )
+  inspect(style.width, content="Length(500)")
+  inspect(style.min_width, content="Length(250)")
+  inspect(style.max_width, content="Length(100)")
+  inspect(style.height, content="Length(1000)")
+  inspect(style.min_height, content="Length(500)")
+  inspect(style.max_height, content="Length(250)")
+}
+
+///|
+test "parse em and rem units" {
+  let style = parse_inline_style("width: 2em; height: 1.5rem")
+  // 2em = 2 * 16px = 32px
+  inspect(style.width, content="Length(32)")
+  // 1.5rem = 1.5 * 16px = 24px
+  inspect(style.height, content="Length(24)")
+}
+
+///|
+test "parse unitless zero" {
+  let style = parse_inline_style("margin: 0; padding: 0")
+  inspect(style.margin.top, content="Length(0)")
+  inspect(style.padding.top, content="Length(0)")
+}
+
+///|
+test "parse box-sizing content-box" {
+  let style = parse_inline_style(
+    "box-sizing: content-box; width: 100px; padding: 10px",
+  )
+  // content-box should adjust width to include padding
+  // 100px content + 10px left + 10px right = 120px
+  inspect(style.width, content="Length(120)")
+}
+
+///|
+test "parse box-sizing border-box" {
+  let style = parse_inline_style(
+    "box-sizing: border-box; width: 100px; padding: 10px",
+  )
+  // border-box keeps width as-is
+  inspect(style.width, content="Length(100)")
+}
+
+///|
+test "parse align-content center" {
+  let style = parse_inline_style("align-content: center")
+  inspect(style.align_content, content="Center")
+}
+
+///|
+test "parse align-content space-between" {
+  let style = parse_inline_style("align-content: space-between")
+  inspect(style.align_content, content="SpaceBetween")
+}
+
+///|
+test "parse place-content safe center" {
+  let style = parse_inline_style("place-content: safe center")
+  inspect(style.align_content, content="Start")
+  inspect(style.justify_content, content="Start")
+  inspect(style.align_content_unsafe, content="false")
+  inspect(style.justify_content_unsafe, content="false")
+}
+
+///|
+test "parse place-content end center" {
+  let style = parse_inline_style("place-content: end center")
+  inspect(style.align_content, content="End")
+  inspect(style.justify_content, content="Center")
+  inspect(style.align_content_unsafe, content="false")
+  inspect(style.justify_content_unsafe, content="false")
+}
+
+///|
+test "parse place-content unsafe end" {
+  let style = parse_inline_style("place-content: unsafe end")
+  inspect(style.align_content, content="End")
+  inspect(style.justify_content, content="End")
+  inspect(style.align_content_unsafe, content="true")
+  inspect(style.justify_content_unsafe, content="true")
+}
+
+///|
+test "parse place-content start left" {
+  let style = parse_inline_style("place-content: start left")
+  inspect(style.align_content, content="Start")
+  inspect(style.justify_content, content="Left")
+  inspect(style.align_content_unsafe, content="false")
+  inspect(style.justify_content_unsafe, content="false")
+}
+
+///|
+test "parse logical property padding-block" {
+  let style = parse_inline_style("padding-block: 20px")
+  inspect(style.padding.top, content="Length(20)")
+  inspect(style.padding.bottom, content="Length(20)")
+}
+
+///|
+test "parse logical property padding-inline" {
+  let style = parse_inline_style("padding-inline: 15px")
+  inspect(style.padding.left, content="Length(15)")
+  inspect(style.padding.right, content="Length(15)")
+}
+
+///|
+test "parse logical property border-block" {
+  let style = parse_inline_style("border-block: 2px")
+  inspect(style.border.top, content="Length(2)")
+  inspect(style.border.bottom, content="Length(2)")
+}
+
+///|
+test "parse logical property border-inline" {
+  let style = parse_inline_style("border-inline: 3px")
+  inspect(style.border.left, content="Length(3)")
+  inspect(style.border.right, content="Length(3)")
+}
+
+///|
+test "parse grid-template-columns with auto-fill" {
+  let style = parse_inline_style(
+    "grid-template-columns: repeat(auto-fill, 100px)",
+  )
+  inspect(style.grid_template_columns.length(), content="1")
+  inspect(
+    style.grid_template_columns[0],
+    content="Repeat(AutoFill, [Length(100)])",
+  )
+}
+
+///|
+test "parse grid-template-columns with minmax in repeat" {
+  let style = parse_inline_style(
+    "grid-template-columns: repeat(3, minmax(100px, 1fr))",
+  )
+  inspect(style.grid_template_columns.length(), content="1")
+  inspect(
+    style.grid_template_columns[0],
+    content="Repeat(Count(3), [MinMax(Length(100), Fr(1))])",
+  )
+}
+
+///|
+test "parse alignment start and end" {
+  let style = parse_inline_style("justify-content: start; align-items: end")
+  inspect(style.justify_content, content="Start")
+  inspect(style.align_items, content="End")
+}
+
+///|
+test "parse alignment flex-start and flex-end" {
+  let style = parse_inline_style(
+    "justify-content: flex-start; align-items: flex-end",
+  )
+  inspect(style.justify_content, content="FlexStart")
+  inspect(style.align_items, content="FlexEnd")
+}

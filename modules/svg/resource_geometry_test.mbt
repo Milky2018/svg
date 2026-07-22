@@ -16,15 +16,18 @@ test "use placement is transformed with the instance" {
 
 ///|
 test "use transform preserves the referenced node transform order" {
-  let registry = SymbolRegistry::new()
-  let content = rect("source", 0.0, 0.0, 1.0, 1.0)
+  let content = SVGNode::new(
+    Rect(x=0.0, y=0.0, width=1.0, height=1.0, rx=0.0, ry=0.0),
+  )
+  content.id = "source"
   content.transform = Transform::translate(1.0, 0.0)
-  registry.add(Symbol::new("source", content))
+  let document = SVGDocument::new(SVGNode::new(Group))
+  document.add_symbol(Symbol::new("source", content))
   let instance = {
     ..UseElement::new("#source", 5.0, 0.0),
     transform: Transform::scale(2.0, 2.0),
   }
-  match instance.instantiate(registry) {
+  match document.instantiate_use(instance) {
     Some(node) => {
       let (x, _) = node.transform.apply(0.0, 0.0)
       inspect(x, content="12")

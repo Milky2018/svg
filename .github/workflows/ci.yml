@@ -2,9 +2,6 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - "codex/**"
   pull_request:
 
 jobs:
@@ -19,13 +16,17 @@ jobs:
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Moon update
         run: moon update
-      - name: Moon check
-        run: moon check --deny-warn
+      - name: Moon format check
+        run: moon fmt --check
       - name: Moon info check
         run: |
           moon info
           git --no-pager diff --no-ext-diff --exit-code
-      - name: Moon format
-        run: moon fmt
+          if git status --porcelain=v1 --untracked-files=all | grep -q .; then
+            git status --short
+            exit 1
+          fi
+      - name: Moon check
+        run: moon check --target all --deny-warn
       - name: Moon test
-        run: moon test
+        run: moon test --target all

@@ -958,64 +958,6 @@ test "parse pseudo rule selector text with is selector list" {
 }
 
 ///|
-test "parse_stylesheet_with_diagnostics collects mixed properties" {
-  let css =
-    #|.card {
-    #|  display: flex;
-    #|  font-size: 14px;
-    #|  box-shadow: 0 0 4px red;
-    #|  contain: strict;
-    #|  mystery-prop: 1;
-    #|}
-  let result = @parser.parse_stylesheet_with_diagnostics(css)
-  inspect(result.stylesheet.rules.length(), content="1")
-  let summary = result.diagnostics.get_summary()
-  inspect(summary.supported, content="1")
-  inspect(summary.partial, content="1")
-  inspect(summary.unsupported_visual, content="1")
-  inspect(summary.unsupported_layout, content="1")
-  inspect(summary.unknown, content="1")
-}
-
-///|
-test "parse_stylesheet_with_diagnostics inside @media" {
-  let css =
-    #|@media (min-width: 768px) {
-    #|  .responsive { display: grid; unknown-thing: 0; }
-    #|}
-  let result = @parser.parse_stylesheet_with_diagnostics(css)
-  inspect(result.stylesheet.rules.length(), content="1")
-  let summary = result.diagnostics.get_summary()
-  inspect(summary.supported, content="1")
-  inspect(summary.unknown, content="1")
-}
-
-///|
-test "parse_stylesheet_with_diagnostics inside @supports" {
-  let css =
-    #|@supports (display: flex) {
-    #|  .modern { display: flex; weird-prop: x; }
-    #|}
-  let result = @parser.parse_stylesheet_with_diagnostics(css)
-  inspect(result.stylesheet.rules.length(), content="1")
-  let summary = result.diagnostics.get_summary()
-  inspect(summary.supported, content="1")
-  inspect(summary.unknown, content="1")
-}
-
-///|
-test "parse_stylesheet_with_diagnostics skips unknown at-rules" {
-  let css =
-    #|@charset "UTF-8";
-    #|@import url("base.css");
-    #|@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    #|.main { display: block; }
-  let result = @parser.parse_stylesheet_with_diagnostics(css)
-  inspect(result.stylesheet.rules.length(), content="1")
-  inspect(result.stylesheet.rules[0].selector_text, content=".main")
-}
-
-///|
 test "parse handles inline comments between rules" {
   let css =
     #|/* file header */

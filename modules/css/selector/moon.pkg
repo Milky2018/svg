@@ -2,6 +2,3 @@ import {
   "moonbitlang/core/string",
   "Milky2018/css/token",
 }
-
-import {
-} for "wbtest"

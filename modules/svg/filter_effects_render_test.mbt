@@ -116,13 +116,18 @@ test "filter primitive object bounding box units scale offsets" {
 ///|
 test "filter image uses the host image resolver" {
   let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"6\" height=\"6\"><defs><filter id=\"f\" filterUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"6\" height=\"6\"><feImage href=\"asset.png\" x=\"2\" y=\"2\" width=\"2\" height=\"2\"/></filter></defs><rect width=\"6\" height=\"6\" filter=\"url(#f)\"/></svg>"
-  let image = render_svg_to_image_with_resolver(svg, 6, 6, fn(href) {
-    if href == "asset.png" {
-      Some(Image::filled(1, 1, Color::rgb(0, 255, 0)))
-    } else {
-      None
-    }
-  }).unwrap_or(Image::new(6, 6))
+  let image = render_svg(
+      svg,
+      6,
+      6,
+      RenderOptions::with_image_resolver(fn(href) {
+        if href == "asset.png" {
+          Some(Image::filled(1, 1, Color::rgb(0, 255, 0)))
+        } else {
+          None
+        }
+      }),
+    ).image
   inspect(image.get_pixel(2, 2).g, content="255")
   inspect(image.get_pixel(1, 2).a, content="0")
 }

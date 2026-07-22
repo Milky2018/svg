@@ -6,8 +6,8 @@ fn render_geometry_fixture(svg : String, width : Int, height : Int) -> Image {
 ///|
 fn visible_geometry_pixels(image : Image) -> Int {
   let mut count = 0
-  for y in 0..<image.height {
-    for x in 0..<image.width {
+  for y in 0..<image.height() {
+    for x in 0..<image.width() {
       if !image.get_pixel(x, y).is_transparent() {
         count = count + 1
       }

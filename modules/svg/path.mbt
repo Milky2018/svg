@@ -465,7 +465,7 @@ fn PathContext::new() -> PathContext {
 ///|
 /// Convert path commands to an array of polylines (for rendering)
 /// Returns array of point arrays, each representing a subpath
-pub fn path_to_polylines(
+fn path_to_polylines(
   commands : Array[PathCommand],
   flatness : Double,
 ) -> Array[Array[(Double, Double)]] {

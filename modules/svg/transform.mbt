@@ -199,12 +199,6 @@ pub fn Transform::apply_bbox(
 
 ///|
 /// Convert degrees to radians
-pub fn degrees_to_radians(degrees : Double) -> Double {
+fn degrees_to_radians(degrees : Double) -> Double {
   degrees * 3.14159265358979323846 / 180.0
-}
-
-///|
-/// Convert radians to degrees
-pub fn radians_to_degrees(radians : Double) -> Double {
-  radians * 180.0 / 3.14159265358979323846
 }

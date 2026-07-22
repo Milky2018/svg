@@ -1,9 +1,23 @@
 ///|
 fn css_test_node(svg : String, id : String) -> SVGNode? {
   match parse_svg_document(svg) {
-    Some(document) => Scene::new(document.root).find_node(id)
+    Some(document) => css_find_node(document.root(), id)
     None => None
   }
+}
+
+///|
+fn css_find_node(node : SVGNode, id : String) -> SVGNode? {
+  if node.id == id {
+    return Some(node)
+  }
+  for child in node.children {
+    match css_find_node(child, id) {
+      Some(found) => return Some(found)
+      None => continue
+    }
+  }
+  None
 }
 
 ///|
@@ -307,7 +321,7 @@ test "stylesheet source order wins and commented styles are ignored" {
 }
 
 ///|
-test "upstream attribute selectors and screen media rules are applied" {
+test "attribute selectors and screen media rules are applied" {
   let svg = "<svg><style>@media print { #target { fill: red; } } @media screen and (min-width: 100px) { g[data-theme~='hot'] > rect:first-child { fill: blue; } }</style><g data-theme=\"cold hot\"><rect id=\"target\" width=\"8\" height=\"8\"/></g></svg>"
   match css_test_node(svg, "target") {
     Some(node) => assert_solid_color(node.fill, 0, 0, 255, 255)
@@ -325,7 +339,7 @@ test "media queries use the active SVG viewport" {
 }
 
 ///|
-test "upstream child indexes distinguish first and second children" {
+test "child indexes distinguish first and second children" {
   let svg = "<svg><style>rect:first-child { fill: red; } rect:nth-child(2) { fill: blue; }</style><g><rect id=\"first\" width=\"8\" height=\"8\"/><rect id=\"second\" width=\"8\" height=\"8\"/></g></svg>"
   match css_test_node(svg, "first") {
     Some(node) => assert_solid_color(node.fill, 255, 0, 0, 255)
@@ -338,7 +352,7 @@ test "upstream child indexes distinguish first and second children" {
 }
 
 ///|
-test "upstream last-child selectors use the direct SVG child count" {
+test "last-child selectors use the direct SVG child count" {
   let svg = "<svg><style>rect:last-child { fill: blue; } rect:nth-last-child(2) { stroke: red; }</style><g><rect id=\"first\" width=\"8\" height=\"8\"/><rect id=\"last\" width=\"8\" height=\"8\"/></g></svg>"
   match css_test_node(svg, "first") {
     Some(node) => assert_solid_color(node.stroke.paint, 255, 0, 0, 255)
@@ -351,7 +365,7 @@ test "upstream last-child selectors use the direct SVG child count" {
 }
 
 ///|
-test "upstream adjacent and subsequent sibling selectors use SVG order" {
+test "adjacent and subsequent sibling selectors use SVG order" {
   let svg = "<svg><style>rect.lead + rect { fill: blue; } rect.lead ~ circle { stroke: red; }</style><g><rect class=\"lead\" width=\"8\" height=\"8\"/><rect id=\"adjacent\" width=\"8\" height=\"8\"/><circle id=\"later\" r=\"4\"/></g></svg>"
   match css_test_node(svg, "adjacent") {
     Some(node) => assert_solid_color(node.fill, 0, 0, 255, 255)
@@ -364,7 +378,7 @@ test "upstream adjacent and subsequent sibling selectors use SVG order" {
 }
 
 ///|
-test "upstream stylesheet recovery preserves later valid rules" {
+test "stylesheet recovery preserves later valid rules" {
   let svg = "<svg><style>??? { fill: red; } rect.valid { fill: blue; }</style><rect id=\"target\" class=\"valid\" width=\"8\" height=\"8\"/></svg>"
   match css_test_node(svg, "target") {
     Some(node) => assert_solid_color(node.fill, 0, 0, 255, 255)
@@ -374,46 +388,23 @@ test "upstream stylesheet recovery preserves later valid rules" {
 
 ///|
 test "linear gradient stops use the shared CSS cascade" {
-  let svg = "<svg><style>linearGradient { --accent: hsl(120, 100%, 25%); color: blue; stop-color: red; } #current { stop-color: currentColor !important; } stop.clamped { stop-opacity: 2; }</style><defs><linearGradient id=\"paint\"><stop offset=\"0\" style=\"stop-color: var(--accent); stop-opacity: -1\"/><stop id=\"current\" offset=\"0.5\" style=\"stop-color: yellow\"/><stop class=\"clamped\" offset=\"1\" stop-color=\"inherit\"/></linearGradient></defs></svg>"
-  match parse_svg_document(svg) {
-    Some(document) =>
-      match document.gradients.get("paint") {
-        Some(Linear(gradient)) => {
-          assert_eq(gradient.stops.length(), 3)
-          assert_eq(gradient.stops[0].color.r, 0)
-          assert_eq(gradient.stops[0].color.g, 128)
-          assert_eq(gradient.stops[0].color.b, 0)
-          assert_eq(gradient.stops[0].color.a, 0)
-          assert_eq(gradient.stops[1].color.r, 0)
-          assert_eq(gradient.stops[1].color.g, 0)
-          assert_eq(gradient.stops[1].color.b, 255)
-          assert_eq(gradient.stops[2].color.r, 255)
-          assert_eq(gradient.stops[2].color.g, 0)
-          assert_eq(gradient.stops[2].color.b, 0)
-        }
-        _ => fail("expected linear gradient")
-      }
-    None => fail("expected SVG document")
-  }
+  let svg = "<svg width=\"100\" height=\"1\"><style>linearGradient { --accent: hsl(120, 100%, 25%); color: blue; stop-color: red; } #current { stop-color: currentColor !important; } stop.clamped { stop-opacity: 2; }</style><defs><linearGradient id=\"paint\"><stop offset=\"0\" style=\"stop-color: var(--accent); stop-opacity: -1\"/><stop id=\"current\" offset=\"0.5\" style=\"stop-color: yellow\"/><stop class=\"clamped\" offset=\"1\" stop-color=\"inherit\"/></linearGradient></defs><rect width=\"100\" height=\"1\" fill=\"url(#paint)\"/></svg>"
+  let image = render_svg(svg, 100, 1, RenderOptions::default()).image
+  assert_true(image.get_pixel(0, 0).a < 10)
+  assert_true(image.get_pixel(50, 0).b > 200)
+  assert_true(image.get_pixel(99, 0).r > 200)
 }
 
 ///|
 test "radial gradient stop selectors receive structural context" {
-  let svg = "<svg><style>radialGradient > stop:last-child { stop-color: hsl(300, 100%, 25%); stop-opacity: 0.5; }</style><defs><radialGradient id=\"paint\"><stop offset=\"0\" stop-color=\"white\"/><stop offset=\"1\" stop-color=\"black\"/></radialGradient></defs></svg>"
-  match parse_svg_document(svg) {
-    Some(document) =>
-      match document.gradients.get("paint") {
-        Some(Radial(gradient)) => {
-          assert_eq(gradient.stops.length(), 2)
-          assert_eq(gradient.stops[1].color.r, 128)
-          assert_eq(gradient.stops[1].color.g, 0)
-          assert_eq(gradient.stops[1].color.b, 128)
-          assert_eq(gradient.stops[1].color.a, 128)
-        }
-        _ => fail("expected radial gradient")
-      }
-    None => fail("expected SVG document")
-  }
+  let svg = "<svg width=\"20\" height=\"20\"><style>radialGradient > stop:last-child { stop-color: hsl(300, 100%, 25%); stop-opacity: 0.5; }</style><defs><radialGradient id=\"paint\"><stop offset=\"0\" stop-color=\"white\"/><stop offset=\"1\" stop-color=\"black\"/></radialGradient></defs><rect width=\"20\" height=\"20\" fill=\"url(#paint)\"/></svg>"
+  let color = render_svg(svg, 20, 20, RenderOptions::default()).image.get_pixel(
+    0, 0,
+  )
+  assert_eq(color.r, 128)
+  assert_eq(color.g, 0)
+  assert_eq(color.b, 128)
+  assert_eq(color.a, 128)
 }
 
 ///|

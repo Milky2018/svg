@@ -1,7 +1,7 @@
 # Milky2018/svg
 
-Standalone SVG scene graph, parser, and deterministic CPU renderer for MoonBit.
-It renders SVG markup or an external SVGNode tree into an Image.
+A standalone SVG parser and deterministic CPU renderer for MoonBit. It renders
+SVG markup or an `SVGDocument` into an owned RGBA `Image`.
 
 ## Install
 
@@ -9,86 +9,114 @@ It renders SVG markup or an external SVGNode tree into an Image.
 moon add Milky2018/svg
 ```
 
-## Quick Start (SVG string -> Image)
+## Parse and Render
 
-```mbt nocheck
-let svg = "<svg width=\"10\" height=\"10\"><rect x=\"1\" y=\"1\" width=\"8\" height=\"8\" fill=\"red\"/></svg>"
-match render_svg_to_image(svg, 16, 16) {
-  Some(image) => image
-  None => panic("parse failed")
+```mbt check
+///|
+test "README: render SVG markup" {
+  let source = "<svg width=\"10\" height=\"10\"><rect x=\"1\" y=\"1\" width=\"8\" height=\"8\" fill=\"red\"/></svg>"
+  let image = render_svg_to_image(source, 16, 16)
+  assert_true(image is Some(_))
 }
 ```
 
-## DOM Integration (external tree -> Image)
+Use the document API when the parsed resource tables or root node are needed:
 
-Build an SVGNode tree from your DOM, then render:
-
-```mbt nocheck
-let node = rect("r", 2.0, 2.0, 6.0, 6.0)
-node.fill = SolidColor(Color::black())
-let doc = SVGDocument::new(node)
-let image = render_svg_document_to_image(doc, 16, 16)
+```mbt check
+///|
+test "README: parse and render a document" {
+  let source = "<svg width=\"4\" height=\"4\"><circle cx=\"2\" cy=\"2\" r=\"2\"/></svg>"
+  match parse_svg_document(source) {
+    Some(document) => {
+      let result = render_svg_document(document, 4, 4, RenderOptions::default())
+      assert_eq(result.image.width(), 4)
+    }
+    None => fail("expected a valid SVG document")
+  }
+}
 ```
 
-If you already have a scene graph:
+## Structured Results
 
-```mbt nocheck
-///|
-let scene = Scene::new(node)
+`render_svg` always returns an image and typed diagnostics. A malformed
+document produces a transparent image plus a `ParseFailed` diagnostic instead
+of requiring a separate error channel.
 
+```mbt check
 ///|
-let image = render_svg_scene_to_image(scene, 16, 16)
+test "README: inspect structured diagnostics" {
+  let result = render_svg("<svg><broken></svg>", 8, 8, RenderOptions::default())
+  assert_eq(result.image.width(), 8)
+  assert_true(result.diagnostics.length() > 0)
+  assert_eq(result.diagnostics[0].kind, RenderDiagnosticKind::ParseFailed)
+}
 ```
 
-## Structured Rendering
+## Host-Provided Raster Images
 
-Use `render_svg` when the host needs typed diagnostics and an image resolver:
+The renderer passes each `<image href>` string to the resolver. The host owns
+file or network access, decoding, caching, and policy; return `None` when a
+resource cannot be resolved.
 
-```mbt nocheck
+```mbt check
 ///|
-let result = render_svg(
-  svg,
-  64,
-  64,
-  RenderOptions::with_image_resolver(fn(href) { host_decode_image(href) }),
-)
-
-///|
-let image = result.image
-
-///|
-let diagnostics = result.diagnostics
+test "README: resolve a raster image" {
+  let options = RenderOptions::with_image_resolver(fn(href) {
+    if href == "asset.png" {
+      Some(Image::filled(2, 2, Color::rgba(255, 0, 0, 128)))
+    } else {
+      None
+    }
+  })
+  let result = render_svg(
+    "<svg width=\"2\" height=\"2\"><image href=\"asset.png\" width=\"2\" height=\"2\"/></svg>",
+    2, 2, options,
+  )
+  assert_eq(result.image.width(), 2)
+  assert_eq(result.diagnostics.length(), 0)
+}
 ```
 
-The renderer owns its pixel target and returns an `Image`. The former
-`PixelSetter`, `RenderContext`, context-driven scene methods, and public
-`raster_*` functions were low-level implementation APIs and are no longer
-public. Use `render_path_commands_to_image` for direct path rendering.
+Resolved images participate in `preserveAspectRatio`, affine transforms,
+clipping, opacity, and compositing. External SVG resource documents are not
+resolved by this callback.
 
 ## Main API
 
-- Parsing: `parse_svg`, `parse_svg_document`
-- Scene graph: `SVGNode`, `Scene`, `SVGDocument`
-- Rendering: `render_svg`, `RenderResult`, `RenderOptions`, `render_svg_*_to_image`
-- Geometry: `PathCommand`, `Transform`, `ViewBox`, `BoundingBox`
+- Parsing: `parse_svg_document`, `parse_path`, `parse_transform`
+- Rendering: `render_svg`, `render_svg_document`, `render_svg_to_image`
+- Results: `RenderResult`, `RenderDiagnostic`, `RenderOptions`
+- Data: `SVGDocument`, `SVGNode`, `Shape`, `Image`, `Color`
 - Direct paths: `render_path_commands_to_image`
+
+The renderer owns its pixel target. Former low-level context and raster
+functions are implementation details and are not public APIs.
 
 ## Static CSS Support
 
-The parser computes author styles from presentation attributes, embedded
-`<style>` rules, and inline `style` declarations through the shared
-`Milky2018/css` cascade. Supported static behavior includes selector
+Presentation attributes, embedded `<style>` rules, and inline declarations use
+the shared `Milky2018/css` cascade. Supported behavior includes selector
 specificity and source order, `!important`, inheritance, CSS-wide keywords,
-inherited custom properties with nested `var()` fallbacks, `currentColor`, and
-CSS Color 3 solid colors including named colors, RGB/RGBA, HSL/HSLA, and hex.
-The same computed path covers SVG paint and stroke properties, marker
-references, paint order, fill and clip rules, geometry properties, transforms,
-gradient stops, and the renderer's basic text `font-size`.
+inherited custom properties and nested `var()` fallbacks, `currentColor`,
+and CSS Color 3 named, RGB/RGBA, HSL/HSLA, and hex colors.
 
-This is a static-document model rather than a browser DOM. External
-stylesheets, scripting, dynamic restyling, interaction-dependent pseudo
-classes, cascade layers, and animations driven by browser state are not
-evaluated. In the author-only, layer-free cascade, `revert` and `revert-layer`
-use the inherited value for inherited properties and the initial value for
-non-inherited properties. Nested SVG text layout remains unsupported and is
-kept as a group instead of being flattened incorrectly.
+The same computed path covers SVG paint and stroke properties, markers, paint
+order, fill and clip rules, geometry properties, transforms, gradient stops,
+and basic text `font-size`.
+
+This is a static-document model, not a browser DOM. External stylesheets,
+scripting, dynamic restyling, interaction-dependent pseudo-classes, cascade
+layers, and browser-driven animations are intentionally excluded.
+
+## Rendering Contract
+
+The implementation aims for internally consistent SVG semantics and stable
+software output. It does not guarantee pixel-for-pixel parity with Chromium,
+Skia, or platform text engines. Nested SVG text layout and external SVG resource
+documents remain outside the supported core.
+
+## License and Attribution
+
+Milky2018/svg is distributed under Apache-2.0 and depends on the separately
+published Milky2018/css module. See `NOTICE` for the CSS dependency's source
+origin and attribution.

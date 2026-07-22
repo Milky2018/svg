@@ -6,14 +6,9 @@ import {
   "Milky2018/css/cascade",
   "Milky2018/css/parser",
   "Milky2018/css/style",
-  "Milky2018/css/animation",
   "Milky2018/css/values" @types,
 }
 
 import {
   "Milky2018/css/selector",
-  "Milky2018/css/animation",
 } for "test"
-
-import {
-} for "wbtest"

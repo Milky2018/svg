@@ -32,7 +32,7 @@ Existing focused tests establish the pre-cutover numeric behavior:
 Command:
 
 ```sh
-moon bench --target native --release modules/svg/svg_bench.mbt --no-parallelize
+moon bench --target native --release modules/svg/benchmarks/svg_bench.mbt --no-parallelize
 ```
 
 The table records mean time from ten benchmark samples. It is a comparison baseline rather than a portable performance claim.

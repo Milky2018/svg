@@ -446,7 +446,7 @@ test "parse_color - light-dark() without trailing paren" {
 ///|
 test "parse_color_with_ctx - dark scheme selects second arg" {
   let ctx = @computed.ComputeContext::new()
-  ctx.custom_properties["--crater-effective-color-scheme"] = "dark"
+  ctx.custom_properties["--milky-css-effective-color-scheme"] = "dark"
   let c = @computed.parse_color_with_ctx("light-dark(#ff0000, #0000ff)", ctx)
   match c {
     Resolved(col) => inspect(col.b, content="255")

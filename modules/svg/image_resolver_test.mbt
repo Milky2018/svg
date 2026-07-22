@@ -7,15 +7,35 @@ fn resolver_test_image() -> Image {
 }
 
 ///|
-fn render_with_test_resolver(svg : String, resolved : Array[String]) -> Image {
-  render_svg_to_image_with_resolver(svg, 8, 8, fn(href) {
-    resolved.push(href)
-    if href == "asset.png" {
-      Some(resolver_test_image())
-    } else {
-      None
+test "image pixel construction validates dimensions" {
+  let pixels = [Color::rgb(255, 0, 0), Color::rgb(0, 255, 0)]
+  match Image::from_pixels(2, 1, pixels) {
+    Some(image) => {
+      inspect(image.width(), content="2")
+      inspect(image.height(), content="1")
+      inspect(image.get_pixel(1, 0).g, content="255")
     }
-  }).unwrap_or(Image::new(8, 8))
+    None => fail("expected matching pixels to construct an image")
+  }
+  inspect(Image::from_pixels(1, 1, pixels) is None, content="true")
+  inspect(Image::from_pixels(-1, 1, []) is None, content="true")
+}
+
+///|
+fn render_with_test_resolver(svg : String, resolved : Array[String]) -> Image {
+  render_svg(
+    svg,
+    8,
+    8,
+    RenderOptions::with_image_resolver(fn(href) {
+      resolved.push(href)
+      if href == "asset.png" {
+        Some(resolver_test_image())
+      } else {
+        None
+      }
+    }),
+  ).image
 }
 
 ///|

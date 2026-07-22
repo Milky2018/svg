@@ -2,6 +2,3 @@ import {
   "moonbitlang/core/math",
   "moonbitlang/core/string",
 }
-
-import {
-} for "wbtest"

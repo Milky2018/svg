@@ -5,8 +5,7 @@ test "prefers_color_scheme_dark_cascade" {
     #|@media (prefers-color-scheme: dark) { body { color: #fff; background: #1a1a1a; } }
 
   // Parse stylesheet
-  let result = @parser.parse_stylesheet_with_diagnostics(css)
-  let stylesheet = result.stylesheet
+  let stylesheet = @parser.parse_stylesheet(css)
 
   // Create a mock body element
   let element = @selector.Element::new("body")
@@ -58,8 +57,7 @@ test "prefers_color_scheme_with_css_variables" {
     #|body { color: var(--text-color); background: var(--bg-color); }
 
   // Parse stylesheet
-  let result = @parser.parse_stylesheet_with_diagnostics(css)
-  let stylesheet = result.stylesheet
+  let stylesheet = @parser.parse_stylesheet(css)
 
   // Create :root element
   let root_element = @selector.Element::new("html")
@@ -96,8 +94,7 @@ test "prefers_color_scheme_dark_text_color" {
     #|p { color: var(--text-color); }
 
   // Parse stylesheet
-  let result = @parser.parse_stylesheet_with_diagnostics(css)
-  let stylesheet = result.stylesheet
+  let stylesheet = @parser.parse_stylesheet(css)
 
   // Create :root and p elements
   let root_element = @selector.Element::new("html")
@@ -159,8 +156,7 @@ test "hamburger_width_cascade_with_media_query" {
     #|@media (max-width: 50rem) { ._hamburger { display: block; position: relative; } }
 
   // Parse stylesheet
-  let result = @parser.parse_stylesheet_with_diagnostics(css)
-  let stylesheet = result.stylesheet
+  let stylesheet = @parser.parse_stylesheet(css)
 
   // Create a mock element matching ._hamburger
   let element = @selector.Element::with_classes("div", ["_hamburger"])

@@ -5,12 +5,9 @@ import {
   "Milky2018/css/media" @css_media,
   "Milky2018/css/selector" @css_selector,
   "Milky2018/css/style" @css_style,
-  "moonbitlang/core/bench",
+  "Milky2018/xml",
   "moonbitlang/core/debug",
   "moonbitlang/core/double",
   "moonbitlang/core/math",
   "moonbitlang/core/string",
 }
-
-import {
-} for "wbtest"

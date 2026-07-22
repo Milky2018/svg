@@ -10,125 +10,36 @@ pub fn render_svg(
   height : Int,
   options : RenderOptions,
 ) -> RenderResult {
+  match parse_svg_document(svg_str) {
+    Some(document) => render_svg_document(document, width, height, options)
+    None => {
+      let diagnostics = [
+        { kind: ParseFailed, stage: Document, resource: "", node_id: "" },
+      ]
+      { image: Image::new(width, height), diagnostics }
+    }
+  }
+}
+
+///|
+/// Render a parsed SVG document with structured diagnostics.
+pub fn render_svg_document(
+  document : SVGDocument,
+  width : Int,
+  height : Int,
+  options : RenderOptions,
+) -> RenderResult {
   let image = Image::new(width, height)
   let diagnostics : Array[RenderDiagnostic] = []
-  match parse_svg_document(svg_str) {
-    Some(doc) => {
-      let setter = make_image_compositing_setter(image)
-      let ctx = {
-        ..RenderState::new(setter, width, height),
-        image_resolver: options.image_resolver,
-        target_image: Some(image),
-        diagnostics,
-      }
-      doc.render(ctx)
-    }
-    None =>
-      diagnostics.push({
-        kind: ParseFailed,
-        stage: Document,
-        resource: "",
-        node_id: "",
-      })
+  let setter = make_image_compositing_setter(image)
+  let ctx = {
+    ..RenderState::new(setter, width, height),
+    image_resolver: options.image_resolver,
+    target_image: Some(image),
+    diagnostics,
   }
+  document.render(ctx)
   { image, diagnostics }
-}
-
-///|
-/// Render an SVGDocument into an Image.
-pub fn render_svg_document_to_image(
-  doc : SVGDocument,
-  width : Int,
-  height : Int,
-) -> Image {
-  let image = Image::new(width, height)
-  let setter = make_image_compositing_setter(image)
-  let ctx = {
-    ..RenderState::new(setter, width, height),
-    target_image: Some(image),
-  }
-  doc.render(ctx)
-  image
-}
-
-///|
-/// Render an SVGDocument using a host callback for external image references.
-pub fn render_svg_document_to_image_with_resolver(
-  doc : SVGDocument,
-  width : Int,
-  height : Int,
-  image_resolver : (String) -> Image?,
-) -> Image {
-  let image = Image::new(width, height)
-  let setter = make_image_compositing_setter(image)
-  let ctx = {
-    ..RenderState::new(setter, width, height).with_image_resolver(
-      image_resolver,
-    ),
-    target_image: Some(image),
-  }
-  doc.render(ctx)
-  image
-}
-
-///|
-/// Render a Scene into an Image.
-pub fn render_svg_scene_to_image(
-  scene : Scene,
-  width : Int,
-  height : Int,
-) -> Image {
-  let image = Image::new(width, height)
-  let setter = make_image_compositing_setter(image)
-  let ctx = {
-    ..RenderState::new(setter, width, height),
-    target_image: Some(image),
-  }
-  scene.render(ctx)
-  image
-}
-
-///|
-/// Render a Scene using a host callback for external image references.
-pub fn render_svg_scene_to_image_with_resolver(
-  scene : Scene,
-  width : Int,
-  height : Int,
-  image_resolver : (String) -> Image?,
-) -> Image {
-  let image = Image::new(width, height)
-  let setter = make_image_compositing_setter(image)
-  let ctx = {
-    ..RenderState::new(setter, width, height).with_image_resolver(
-      image_resolver,
-    ),
-    target_image: Some(image),
-  }
-  scene.render(ctx)
-  image
-}
-
-///|
-/// Render a raw SVGNode tree into an Image.
-pub fn render_svg_node_to_image(
-  node : SVGNode,
-  width : Int,
-  height : Int,
-) -> Image {
-  let scene = Scene::new(node)
-  render_svg_scene_to_image(scene, width, height)
-}
-
-///|
-/// Render a raw SVGNode using a host callback for external image references.
-pub fn render_svg_node_to_image_with_resolver(
-  node : SVGNode,
-  width : Int,
-  height : Int,
-  image_resolver : (String) -> Image?,
-) -> Image {
-  let scene = Scene::new(node)
-  render_svg_scene_to_image_with_resolver(scene, width, height, image_resolver)
 }
 
 ///|
@@ -139,22 +50,7 @@ pub fn render_svg_to_image(
   height : Int,
 ) -> Image? {
   parse_svg_document(svg_str).map(fn(doc) {
-    render_svg_document_to_image(doc, width, height)
-  })
-}
-
-///|
-/// Parse and render SVG markup using a host callback for image references.
-pub fn render_svg_to_image_with_resolver(
-  svg_str : String,
-  width : Int,
-  height : Int,
-  image_resolver : (String) -> Image?,
-) -> Image? {
-  parse_svg_document(svg_str).map(fn(doc) {
-    render_svg_document_to_image_with_resolver(
-      doc, width, height, image_resolver,
-    )
+    render_svg_document(doc, width, height, RenderOptions::default()).image
   })
 }
 
