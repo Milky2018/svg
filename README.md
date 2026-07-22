@@ -14,6 +14,10 @@ Start with the [SVG module guide](modules/svg/README.mbt.md). The
 [CSS module guide](modules/css/README.md) documents the reusable static CSS
 boundary and intentional exclusions.
 
+Users upgrading from SVG 0.3.x should follow the
+[0.4.0 API migration table](modules/svg/README.mbt.md#migrating-from-03x) and
+the corresponding [changelog entry](CHANGELOG.md#milky2018svg-040---unreleased).
+
 ## Scope
 
 The renderer targets coherent SVG and CSS semantics with deterministic software

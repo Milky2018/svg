@@ -1,15 +1,23 @@
 # Software Renderer Cutover
 
+> [!NOTE]
+> This is a historical report for the 0.3.1 renderer cutover at `a05b0db`.
+> Milky2018/svg 0.4.0 subsequently replaced the compatibility surface described
+> below. See the [current module guide](../modules/svg/README.mbt.md) and the
+> [0.4.0 migration table](../CHANGELOG.md#milky2018svg-040---unreleased).
+
 The renderer replacement described by ADR-0001 through ADR-0008 is complete.
 All compatibility-sensitive `render_svg_*` functions and
 `render_path_commands_to_image` now use the continuous geometry, analytic
 coverage, and premultiplied compositing pipeline.
 
-## Public contract
+## 0.3.1 public contract
 
 - `render_svg` returns an `Image` together with typed diagnostics.
 - The existing image-returning document, scene, node, string, and resolver
-  functions retain their signatures.
+  functions retained their signatures for the 0.3.1 cutover. The breaking 0.4.0
+  interface later removed the document/node/scene combinations and moved image
+  resolution into `RenderOptions`.
 - `render_path_commands_to_image` retains its signature and now preserves
   fractional coverage instead of quantizing geometry before rasterization.
 - PNG and JPEG decoding remains a host responsibility supplied through an

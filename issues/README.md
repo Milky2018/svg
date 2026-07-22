@@ -69,6 +69,7 @@ graph TD
   ISS_048["ISS-048: Align versions tags changelog and release order"]
   ISS_049["ISS-049: Replace handwritten XML parsing with Milky2018/xml"]
   ISS_050["ISS-050: Internalize leftover transform identity helpers"]
+  ISS_051["ISS-051: Document the 0.4.0 rendering API migration"]
   ISS_002 --> ISS_001
   ISS_003 --> ISS_001
   ISS_004 --> ISS_001

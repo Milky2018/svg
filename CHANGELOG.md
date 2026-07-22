@@ -23,6 +23,22 @@ This workspace versions `Milky2018/css` and `Milky2018/svg` independently.
   unrelated game-oriented utilities. Use `render_svg`, `render_svg_document`,
   `render_svg_to_image`, or `render_path_commands_to_image` instead.
 
+### Migration from 0.3.x
+
+| Removed or retained 0.3.x API | 0.4.0 migration |
+| --- | --- |
+| `parse_svg(source)` | Use `parse_svg_document(source)` and access `document.root()` when only the root node is needed. |
+| `parse_svg_document`, `render_svg`, and `render_svg_to_image` | Retained; `render_svg` remains the structured `RenderResult` entry point. |
+| `render_svg_document_to_image*` | Use `render_svg_document(document, width, height, options).image`. |
+| `render_svg_node_to_image*` | Wrap the node with `SVGDocument::new(node)`, then call `render_svg_document`. |
+| `render_svg_scene_to_image*` and `Scene` | No direct replacement; migrate authored content to `SVGDocument` and `SVGNode`. |
+| All `*_with_resolver` rendering functions | Pass `RenderOptions::with_image_resolver(resolver)` to `render_svg` or `render_svg_document`. |
+| `PixelSetter`, `RenderContext`, context-driven `.render`, and public `raster_*` functions | No direct replacement; use the owned-image rendering facade. |
+| `render_path_commands_to_image` | Retained as the expert direct-path entry point. |
+
+The published [SVG module guide](modules/svg/README.mbt.md#migrating-from-03x)
+contains the complete function-by-function table and current usage examples.
+
 ## Milky2018/css 0.8.0 - Unreleased
 
 ### Changed

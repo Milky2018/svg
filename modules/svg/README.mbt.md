@@ -9,6 +9,26 @@ SVG markup or an `SVGDocument` into an owned RGBA `Image`.
 moon add Milky2018/svg
 ```
 
+## Migrating from 0.3.x
+
+Version 0.4.0 removes the combinatorial document, node, scene, and resolver
+rendering functions. Rendering now goes through an owned `Image` facade, and
+image resolution is configured with `RenderOptions`.
+
+| 0.3.x API | 0.4.0 replacement | Notes |
+| --- | --- | --- |
+| `parse_svg(source)` | `parse_svg_document(source).map(fn(document) { document.root() })` | Use the document result when resources are needed. |
+| `parse_svg_document(source)` | Unchanged | Returns `SVGDocument?`. |
+| `render_svg(source, width, height, options)` | Unchanged | Returns `RenderResult` with an owned image and diagnostics. |
+| `render_svg_to_image(source, width, height)` | Unchanged | Remains the simple `Image?` convenience. |
+| `render_svg_to_image_with_resolver(...)` | `render_svg(source, width, height, RenderOptions::with_image_resolver(resolver))` | Read `.image` and inspect `.diagnostics`; parse failure is reported diagnostically. |
+| `render_svg_document_to_image(...)` | `render_svg_document(document, width, height, RenderOptions::default()).image` | Use the structured result when diagnostics matter. |
+| `render_svg_document_to_image_with_resolver(...)` | `render_svg_document(document, width, height, RenderOptions::with_image_resolver(resolver)).image` | Resolver configuration is no longer a separate function family. |
+| `render_svg_node_to_image*` | `render_svg_document(SVGDocument::new(node), width, height, options).image` | Register referenced resources on the document before rendering. |
+| `render_svg_scene_to_image*` and `Scene` | No direct replacement | Migrate authored content to `SVGDocument` and `SVGNode`. |
+| `PixelSetter`, `RenderContext`, context-driven `.render`, and public `raster_*` functions | No direct replacement | The renderer owns its target image; use the rendering facade. |
+| `render_path_commands_to_image(...)` | Unchanged | Remains the expert direct-path entry point. |
+
 ## Parse and Render
 
 ```mbt check
