@@ -1,7 +1,0 @@
-import {
-  "moonbitlang/core/string",
-  "Milky2018/svg/modules/css/token",
-}
-
-import {
-} for "wbtest"

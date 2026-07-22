@@ -3,10 +3,6 @@
 Standalone SVG scene graph, parser, and deterministic CPU renderer for MoonBit.
 It renders SVG markup or an external SVGNode tree into an Image.
 
-The repository is a MoonBit workspace: `modules/svg` contains the published
-`Milky2018/svg` module and `modules/css` contains its locally maintained
-`Milky2018/css` computed-style dependency.
-
 ## Install
 
 ```sh
@@ -37,7 +33,10 @@ let image = render_svg_document_to_image(doc, 16, 16)
 If you already have a scene graph:
 
 ```mbt nocheck
+///|
 let scene = Scene::new(node)
+
+///|
 let image = render_svg_scene_to_image(scene, 16, 16)
 ```
 
@@ -46,15 +45,18 @@ let image = render_svg_scene_to_image(scene, 16, 16)
 Use `render_svg` when the host needs typed diagnostics and an image resolver:
 
 ```mbt nocheck
+///|
 let result = render_svg(
   svg,
   64,
   64,
-  RenderOptions::with_image_resolver(fn(href) {
-    host_decode_image(href)
-  }),
+  RenderOptions::with_image_resolver(fn(href) { host_decode_image(href) }),
 )
+
+///|
 let image = result.image
+
+///|
 let diagnostics = result.diagnostics
 ```
 

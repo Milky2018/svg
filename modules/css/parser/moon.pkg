@@ -1,0 +1,14 @@
+import {
+  "moonbitlang/core/math",
+  "moonbitlang/core/string",
+  "Milky2018/css/token",
+  "Milky2018/css/selector",
+  "Milky2018/css/cascade",
+  "Milky2018/css/media",
+  "Milky2018/css/diagnostics",
+  "Milky2018/css/style",
+  "Milky2018/css/values" @types,
+}
+
+import {
+} for "wbtest"

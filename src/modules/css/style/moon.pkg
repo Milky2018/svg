@@ -1,6 +1,0 @@
-import {
-  "Milky2018/svg/modules/css/values" @types,
-}
-
-import {
-} for "wbtest"

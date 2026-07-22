@@ -1,5 +1,0 @@
-import {
-  "moonbitlang/core/math",
-  "Milky2018/svg/modules/css/values",
-  "Milky2018/svg/modules/css/style",
-}

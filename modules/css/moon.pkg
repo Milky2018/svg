@@ -1,0 +1,17 @@
+import {
+  "Milky2018/css/animation",
+  "Milky2018/css/style",
+  "Milky2018/css/cascade",
+  "Milky2018/css/computed",
+  "Milky2018/css/diagnostics",
+  "Milky2018/css/media",
+  "Milky2018/css/parser",
+  "Milky2018/css/selector",
+}
+
+import {
+  "Milky2018/css/values" @types,
+  "Milky2018/css/token",
+} for "test"
+
+warnings = "-unused_package"

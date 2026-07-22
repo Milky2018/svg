@@ -2,10 +2,6 @@
 
 SVG パーサー/レンダラーの [MoonBit](https://www.moonbitlang.com/) 実装。サードパーティ依存なし。
 
-MoonBit workspace として構成され、`modules/svg` に公開モジュール
-`Milky2018/svg`、`modules/css` にローカルで保守する CSS コア
-`Milky2018/css` を配置しています。
-
 ## Features
 
 - SVG マークアップのパース (`parse_svg()`)

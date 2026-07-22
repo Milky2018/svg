@@ -1,8 +1,0 @@
-import {
-  "Milky2018/svg/modules/css/selector",
-  "Milky2018/svg/modules/css/media",
-}
-
-import {
-  "Milky2018/svg/modules/css/parser",
-} for "wbtest"

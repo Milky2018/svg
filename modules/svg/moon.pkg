@@ -1,0 +1,15 @@
+import {
+  "Milky2018/css",
+  "Milky2018/css/cascade" @css_cascade,
+  "Milky2018/css/computed" @css_computed,
+  "Milky2018/css/media" @css_media,
+  "Milky2018/css/selector" @css_selector,
+  "Milky2018/css/style" @css_style,
+  "moonbitlang/core/bench",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/double",
+  "moonbitlang/core/math",
+}
+
+import {
+} for "wbtest"
