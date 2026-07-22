@@ -87,6 +87,26 @@ test "foreignObject descendants retain their foreign namespace" {
 }
 
 ///|
+test "XLink href accepts an alias prefix on use and image" {
+  let document = parse_svg_document(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:q=\"http://www.w3.org/1999/xlink\"><defs><rect id=\"source\" width=\"1\" height=\"1\"/></defs><use id=\"alias-use\" q:href=\"#source\"/><image id=\"alias-image\" q:href=\"asset.png\" width=\"1\" height=\"1\"/></svg>",
+  ).unwrap()
+  let use_node = xml_test_find_node(document.root(), "alias-use").unwrap()
+  assert_true(use_node.shape is Rect(..))
+  let image_node = xml_test_find_node(document.root(), "alias-image").unwrap()
+  assert_true(image_node.shape is Image(href="asset.png", ..))
+}
+
+///|
+test "XLink href rejects a prefix rebound to another namespace" {
+  let document = parse_svg_document(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"https://example.test/not-xlink\"><defs><rect id=\"source\" width=\"1\" height=\"1\"/></defs><use id=\"bad-use\" xlink:href=\"#source\"/><image id=\"bad-image\" xlink:href=\"asset.png\" width=\"1\" height=\"1\"/></svg>",
+  ).unwrap()
+  assert_true(xml_test_find_node(document.root(), "bad-use") is None)
+  assert_true(xml_test_find_node(document.root(), "bad-image") is None)
+}
+
+///|
 test "XML reader preserves CDATA text and ignores comments" {
   let document = parse_svg_document(
     "<svg><!-- ignored --><text id=\"target\"><![CDATA[x<y]]></text></svg>",

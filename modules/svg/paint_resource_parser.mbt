@@ -194,13 +194,9 @@ fn parse_pattern_with_content(
   if id.length() == 0 {
     return
   }
-  let reference = match get_attr(attrs, "href") {
+  let reference = match get_href_attr(attrs) {
     Some(v) => parse_url_ref(v)
-    None =>
-      match get_attr(attrs, "xlink:href") {
-        Some(v) => parse_url_ref(v)
-        None => None
-      }
+    None => None
   }
   let mut x = 0.0
   let mut y = 0.0

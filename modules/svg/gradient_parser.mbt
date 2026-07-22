@@ -58,13 +58,9 @@ fn parse_linear_gradient_with_stops(
   if id.length() == 0 {
     return
   }
-  let reference = match get_attr(attrs, "href") {
+  let reference = match get_href_attr(attrs) {
     Some(v) => parse_url_ref(v)
-    None =>
-      match get_attr(attrs, "xlink:href") {
-        Some(v) => parse_url_ref(v)
-        None => None
-      }
+    None => None
   }
   let x1 = parse_gradient_coord(get_attr(attrs, "x1"), 0.0)
   let y1 = parse_gradient_coord(get_attr(attrs, "y1"), 0.0)
@@ -158,13 +154,9 @@ fn parse_radial_gradient_with_stops(
   if id.length() == 0 {
     return
   }
-  let reference = match get_attr(attrs, "href") {
+  let reference = match get_href_attr(attrs) {
     Some(v) => parse_url_ref(v)
-    None =>
-      match get_attr(attrs, "xlink:href") {
-        Some(v) => parse_url_ref(v)
-        None => None
-      }
+    None => None
   }
   let cx = parse_gradient_coord(get_attr(attrs, "cx"), 0.5)
   let cy = parse_gradient_coord(get_attr(attrs, "cy"), 0.5)

@@ -301,6 +301,12 @@ let svg_namespace_uri = "http://www.w3.org/2000/svg"
 let xml_namespace_uri = "http://www.w3.org/XML/1998/namespace"
 
 ///|
+let xlink_namespace_uri = "http://www.w3.org/1999/xlink"
+
+///|
+let xlink_href_attribute_name : String = "{" + xlink_namespace_uri + "}href"
+
+///|
 priv struct XmlNamespaceScope {
   default_uri : String?
   default_declared : Bool
@@ -376,6 +382,35 @@ fn XmlNamespaceScope::normalize_element_name(
 }
 
 ///|
+fn XmlNamespaceScope::normalize_attribute_name(
+  self : XmlNamespaceScope,
+  qualified_name : String,
+) -> String {
+  if qualified_name == "xmlns" || qualified_name.has_prefix("xmlns:") {
+    return qualified_name
+  }
+  match qualified_name.find(":") {
+    None => qualified_name
+    Some(index) => {
+      let prefix = qualified_name[:index].to_owned()
+      let local_name = qualified_name[index + 1:].to_owned()
+      match self.prefixes.get(prefix) {
+        Some(uri) => "{" + uri + "}" + local_name
+        None => "{unbound-prefix}" + local_name
+      }
+    }
+  }
+}
+
+///|
+fn XmlNamespaceScope::normalize_attributes(
+  self : XmlNamespaceScope,
+  attrs : Array[(String, String)],
+) -> Array[(String, String)] {
+  attrs.map(fn(attr) { (self.normalize_attribute_name(attr.0), attr.1) })
+}
+
+///|
 fn normalize_xml_namespaces(events : Array[@xml.Event]) -> Array[@xml.Event] {
   let normalized : Array[@xml.Event] = []
   let scopes : Array[XmlNamespaceScope] = [XmlNamespaceScope::root()]
@@ -388,7 +423,7 @@ fn normalize_xml_namespaces(events : Array[@xml.Event]) -> Array[@xml.Event] {
           Start(
             @xml.XmlElement::with_attrs(
               scope.normalize_element_name(element.name),
-              element.attributes,
+              scope.normalize_attributes(element.attributes),
             ),
           ),
         )
@@ -400,7 +435,7 @@ fn normalize_xml_namespaces(events : Array[@xml.Event]) -> Array[@xml.Event] {
           Empty(
             @xml.XmlElement::with_attrs(
               scope.normalize_element_name(element.name),
-              element.attributes,
+              scope.normalize_attributes(element.attributes),
             ),
           ),
         )

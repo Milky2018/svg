@@ -461,7 +461,7 @@ fn apply_presentation_attributes(
       name == "width" ||
       name == "height" ||
       name == "href" ||
-      name == "xlink:href" ||
+      name == xlink_href_attribute_name ||
       name == "transform" ||
       name == "style" {
       continue
@@ -491,6 +491,14 @@ fn get_attr(attrs : Array[(String, String)], name : String) -> String? {
     }
   }
   None
+}
+
+///|
+fn get_href_attr(attrs : Array[(String, String)]) -> String? {
+  match get_attr(attrs, "href") {
+    Some(value) => Some(value)
+    None => get_attr(attrs, xlink_href_attribute_name)
+  }
 }
 
 ///|

@@ -434,10 +434,7 @@ fn parse_filter_primitive(
       Some(
         GraphImage(
           result~,
-          href=match get_attr(attrs, "href") {
-            Some(value) => value
-            None => get_attr(attrs, "xlink:href").unwrap_or("")
-          },
+          href=get_href_attr(attrs).unwrap_or(""),
           x=get_attr(attrs, "x").map(parse_number).unwrap_or(0.0),
           y=get_attr(attrs, "y").map(parse_number).unwrap_or(0.0),
           width=get_attr(attrs, "width").map(parse_number).unwrap_or(0.0),

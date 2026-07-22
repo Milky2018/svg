@@ -3,10 +3,7 @@ fn parse_use(
   attrs : Array[(String, String)],
   ctx : SVGParseContext,
 ) -> SVGNode? {
-  let href = match get_attr(attrs, "href") {
-    Some(v) => Some(v)
-    None => get_attr(attrs, "xlink:href")
-  }
+  let href = get_href_attr(attrs)
   let href = match href {
     Some(v) => v
     None => return None
@@ -473,10 +470,7 @@ fn parse_image(
   attrs : Array[(String, String)],
   ctx : SVGParseContext,
 ) -> SVGNode? {
-  let href = match get_attr(attrs, "href") {
-    Some(v) => Some(v)
-    None => get_attr(attrs, "xlink:href")
-  }
+  let href = get_href_attr(attrs)
   let href = match href {
     Some(v) => v
     None => return None
