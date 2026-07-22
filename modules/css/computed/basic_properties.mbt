@@ -88,18 +88,8 @@ pub fn parse_float_with_direction(
   direction : @style.Direction,
 ) -> @types.Float {
   match value.trim().to_lower() {
-    "inline-start" =>
-      if direction.is_rtl() {
-        Right
-      } else {
-        Left
-      }
-    "inline-end" =>
-      if direction.is_rtl() {
-        Left
-      } else {
-        Right
-      }
+    "inline-start" => if direction.is_rtl() { Right } else { Left }
+    "inline-end" => if direction.is_rtl() { Left } else { Right }
     _ => parse_float(value)
   }
 }
@@ -122,18 +112,8 @@ pub fn parse_clear_with_direction(
   direction : @style.Direction,
 ) -> @types.Clear {
   match value.trim().to_lower() {
-    "inline-start" =>
-      if direction.is_rtl() {
-        Right
-      } else {
-        Left
-      }
-    "inline-end" =>
-      if direction.is_rtl() {
-        Left
-      } else {
-        Right
-      }
+    "inline-start" => if direction.is_rtl() { Right } else { Left }
+    "inline-end" => if direction.is_rtl() { Left } else { Right }
     _ => parse_clear(value)
   }
 }
@@ -247,9 +227,7 @@ pub fn parse_alignment_with_overflow(
   let parsed = parse_alignment_keyword(keyword)
   let parsed = if is_safe {
     match parsed {
-      Center
-      | End
-      | FlexEnd => @types.Alignment::Start
+      Center | End | FlexEnd => @types.Alignment::Start
       _ => parsed
     }
   } else {
@@ -413,8 +391,7 @@ pub fn parse_scroll_snap_type(value : String) -> @style.ScrollSnapType {
       _ => ()
     }
   }
-  if axis == None ||
-    strictness == None {
+  if axis == None || strictness == None {
     @style.ScrollSnapType::none()
   } else {
     { axis, strictness }

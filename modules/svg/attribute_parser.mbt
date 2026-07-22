@@ -561,12 +561,7 @@ fn parse_view_box(value : String) -> ViewBox? {
   if nums.length() < 4 {
     return None
   }
-  Some({
-    min_x: nums[0],
-    min_y: nums[1],
-    width: nums[2],
-    height: nums[3],
-  })
+  Some({ min_x: nums[0], min_y: nums[1], width: nums[2], height: nums[3] })
 }
 
 ///|

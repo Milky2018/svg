@@ -39,23 +39,9 @@ fn parse_min_track_sizing(
       } else if unit == "%" {
         Some((Percent(value / 100.0), tokens[1:]))
       } else if is_viewport_width_unit(unit) {
-        Some(
-          (
-            Length(
-              value * default_viewport_width / 100.0,
-            ),
-            tokens[1:],
-          ),
-        )
+        Some((Length(value * default_viewport_width / 100.0), tokens[1:]))
       } else if is_viewport_height_unit(unit) {
-        Some(
-          (
-            Length(
-              value * default_viewport_height / 100.0,
-            ),
-            tokens[1:],
-          ),
-        )
+        Some((Length(value * default_viewport_height / 100.0), tokens[1:]))
       } else {
         // rem/em and physical units (pt/cm/in/...) are converted to px.
         let px = match dimension_unit_to_px(value, unit.to_lower()) {
@@ -64,8 +50,7 @@ fn parse_min_track_sizing(
         }
         Some((Length(px), tokens[1:]))
       }
-    Percentage(value) =>
-      Some((Percent(value / 100.0), tokens[1:]))
+    Percentage(value) => Some((Percent(value / 100.0), tokens[1:]))
     Number(value, _) =>
       if value == 0.0 {
         Some((Length(0.0), tokens[1:]))
@@ -104,23 +89,9 @@ fn parse_max_track_sizing(
       } else if unit == "fr" {
         Some((Fr(value), tokens[1:]))
       } else if is_viewport_width_unit(unit) {
-        Some(
-          (
-            Length(
-              value * default_viewport_width / 100.0,
-            ),
-            tokens[1:],
-          ),
-        )
+        Some((Length(value * default_viewport_width / 100.0), tokens[1:]))
       } else if is_viewport_height_unit(unit) {
-        Some(
-          (
-            Length(
-              value * default_viewport_height / 100.0,
-            ),
-            tokens[1:],
-          ),
-        )
+        Some((Length(value * default_viewport_height / 100.0), tokens[1:]))
       } else {
         // rem/em and physical units (pt/cm/in/...) are converted to px.
         let px = match dimension_unit_to_px(value, unit.to_lower()) {
@@ -129,8 +100,7 @@ fn parse_max_track_sizing(
         }
         Some((Length(px), tokens[1:]))
       }
-    Percentage(value) =>
-      Some((Percent(value / 100.0), tokens[1:]))
+    Percentage(value) => Some((Percent(value / 100.0), tokens[1:]))
     Number(value, _) =>
       if value == 0.0 {
         Some((Length(0.0), tokens[1:]))
@@ -178,12 +148,7 @@ fn parse_fit_content_arg(
       }
     }
     Percentage(v) => (v / 100.0, true, rest[1:])
-    Number(v, _) =>
-      if v == 0.0 {
-        (0.0, false, rest[1:])
-      } else {
-        return None
-      }
+    Number(v, _) => if v == 0.0 { (0.0, false, rest[1:]) } else { return None }
     _ => return None
   }
   let rest3 = skip_whitespace(rest2)
@@ -221,8 +186,7 @@ fn parse_single_track_sizing(
         }
         Some((Length(px), tokens[1:]))
       }
-    Percentage(value) =>
-      Some((Percent(value / 100.0), tokens[1:]))
+    Percentage(value) => Some((Percent(value / 100.0), tokens[1:]))
     Number(value, _) =>
       if value == 0.0 {
         Some((Length(0.0), tokens[1:]))
@@ -262,12 +226,7 @@ fn parse_single_track_sizing(
                   match rest6[0] {
                     RightParen => {
                       let next_tokens = rest6[1:]
-                      Some(
-                        (
-                          MinMax(min_val, max_val),
-                          next_tokens,
-                        ),
-                      )
+                      Some((MinMax(min_val, max_val), next_tokens))
                     }
                     _ => None
                   }
@@ -282,10 +241,8 @@ fn parse_single_track_sizing(
         }
       } else if name == "fit-content" {
         match parse_fit_content_arg(tokens[1:]) {
-          Some((v, true, rest)) =>
-            Some((FitContentPercent(v), rest))
-          Some((v, false, rest)) =>
-            Some((FitContentLength(v), rest))
+          Some((v, true, rest)) => Some((FitContentPercent(v), rest))
+          Some((v, false, rest)) => Some((FitContentLength(v), rest))
           None => None
         }
       } else if name == "calc" {
@@ -342,8 +299,7 @@ fn parse_track_sizing_function(
         // Parse repeat count
         let (count, rest2) : (@types.RepeatCount, ArrayView[@token.Token]) = match
           rest[0] {
-          Number(value, _) =>
-            (Count(value.to_int()), rest[1:])
+          Number(value, _) => (Count(value.to_int()), rest[1:])
           Ident(s) =>
             if s == "auto-fill" {
               (AutoFill, rest[1:])
@@ -398,12 +354,7 @@ fn parse_track_sizing_function(
           }
         }
         if tracks.length() > 0 {
-          Some(
-            (
-              Repeat(count, tracks, line_names),
-              remaining,
-            ),
-          )
+          Some((Repeat(count, tracks, line_names), remaining))
         } else {
           None
         }
@@ -416,10 +367,8 @@ fn parse_track_sizing_function(
         }
       } else if name == "fit-content" {
         match parse_fit_content_arg(tokens[1:]) {
-          Some((v, true, rest)) =>
-            Some((FitContentPercent(v), rest))
-          Some((v, false, rest)) =>
-            Some((FitContentLength(v), rest))
+          Some((v, true, rest)) => Some((FitContentPercent(v), rest))
+          Some((v, false, rest)) => Some((FitContentLength(v), rest))
           None => None
         }
       } else if name == "calc" {
@@ -466,8 +415,7 @@ fn parse_track_sizing_function(
         }
         Some((Length(px), tokens[1:]))
       }
-    Percentage(value) =>
-      Some((Percent(value / 100.0), tokens[1:]))
+    Percentage(value) => Some((Percent(value / 100.0), tokens[1:]))
     Number(value, _) =>
       if value == 0.0 {
         Some((Length(0.0), tokens[1:]))
@@ -766,8 +714,7 @@ fn parse_grid_autoflow_side(
   let mut consuming = true
   while consuming && remaining.length() > 0 {
     match remaining[0] {
-      Ident("auto-flow") =>
-        remaining = skip_whitespace(remaining[1:])
+      Ident("auto-flow") => remaining = skip_whitespace(remaining[1:])
       Ident("dense") => {
         dense = true
         remaining = skip_whitespace(remaining[1:])
@@ -895,18 +842,8 @@ fn classify_grid_line(tokens : ArrayView[@token.Token]) -> @types.GridPlacement 
     Auto
   } else {
     match name {
-      Some(nm) =>
-        if line != 0 {
-          NamedLine(line, nm)
-        } else {
-          Named(nm)
-        }
-      None =>
-        if line != 0 {
-          Line(line)
-        } else {
-          Auto
-        }
+      Some(nm) => if line != 0 { NamedLine(line, nm) } else { Named(nm) }
+      None => if line != 0 { Line(line) } else { Auto }
     }
   }
 }

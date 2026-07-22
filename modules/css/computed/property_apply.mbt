@@ -572,10 +572,7 @@ fn apply_property(
       match dim {
         Length(v) => if v >= 0.0 { builder.flex_basis = dim }
         Percent(v) => if v >= 0.0 { builder.flex_basis = dim }
-        Calc(px, pct) =>
-          if px > 0.0 || pct > 0.0 {
-            builder.flex_basis = dim
-          }
+        Calc(px, pct) => if px > 0.0 || pct > 0.0 { builder.flex_basis = dim }
         MathFn(_, _) => builder.flex_basis = dim
         Auto => builder.flex_basis = dim
         MinContent => builder.flex_basis = dim

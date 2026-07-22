@@ -1514,13 +1514,8 @@ pub fn parse_selector_list_from_tokens(
   while i < end {
     match tokens[i] {
       EOF => break
-      Function(_)
-      | LeftParen
-      | LeftBracket => depth = depth + 1
-      RightParen | RightBracket =>
-        if depth > 0 {
-          depth = depth - 1
-        }
+      Function(_) | LeftParen | LeftBracket => depth = depth + 1
+      RightParen | RightBracket => if depth > 0 { depth = depth - 1 }
       Comma =>
         if depth == 0 {
           match parse_selector_slice(tokens, segment_start, i) {

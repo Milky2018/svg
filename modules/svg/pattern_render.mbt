@@ -129,8 +129,7 @@ fn build_pattern_tile(
   let bbox_width = bbox.width()
   let bbox_height = bbox.height()
   let (tile_x, tile_y, tile_width, tile_height) = match pattern.pattern_units {
-    UserSpaceOnUse =>
-      (pattern.x, pattern.y, pattern.width, pattern.height)
+    UserSpaceOnUse => (pattern.x, pattern.y, pattern.width, pattern.height)
     ObjectBoundingBox =>
       (
         bbox.min_x + pattern.x * bbox_width,

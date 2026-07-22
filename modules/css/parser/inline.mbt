@@ -313,9 +313,7 @@ fn parse_math_function(
   let dim = if all_px {
     @types.Dimension::Length(@types.apply_math_op(op, lps.map(fn(lp) { lp.0 })))
   } else if all_pct {
-    Percent(
-      @types.apply_math_op(op, lps.map(fn(lp) { lp.1 })),
-    )
+    Percent(@types.apply_math_op(op, lps.map(fn(lp) { lp.1 })))
   } else {
     MathFn(op, lps)
   }
@@ -579,21 +577,9 @@ fn parse_float(
       } else if s == "right" {
         Some(Right)
       } else if s == "inline-start" {
-        Some(
-          if direction.is_rtl() {
-            Right
-          } else {
-            Left
-          },
-        )
+        Some(if direction.is_rtl() { Right } else { Left })
       } else if s == "inline-end" {
-        Some(
-          if direction.is_rtl() {
-            Left
-          } else {
-            Right
-          },
-        )
+        Some(if direction.is_rtl() { Left } else { Right })
       } else if s == "none" {
         Some(None)
       } else {
@@ -619,21 +605,9 @@ fn parse_clear(
       } else if s == "right" {
         Some(Right)
       } else if s == "inline-start" {
-        Some(
-          if direction.is_rtl() {
-            Right
-          } else {
-            Left
-          },
-        )
+        Some(if direction.is_rtl() { Right } else { Left })
       } else if s == "inline-end" {
-        Some(
-          if direction.is_rtl() {
-            Left
-          } else {
-            Right
-          },
-        )
+        Some(if direction.is_rtl() { Left } else { Right })
       } else if s == "both" {
         Some(Both)
       } else if s == "none" {
@@ -772,9 +746,7 @@ fn parse_alignment_segment_with_overflow(
     Some(parsed) => {
       let alignment = if is_safe {
         match parsed {
-          Center
-          | End
-          | FlexEnd => @types.Alignment::Start
+          Center | End | FlexEnd => @types.Alignment::Start
           _ => parsed
         }
       } else {
@@ -1051,12 +1023,7 @@ fn parse_flex_flow_shorthand(
 
   // If we found at least one value, return with defaults for the other
   if direction is Some(_) || wrap is Some(_) {
-    Some(
-      (
-        direction.unwrap_or(Row),
-        wrap.unwrap_or(NoWrap),
-      ),
-    )
+    Some((direction.unwrap_or(Row), wrap.unwrap_or(NoWrap)))
   } else {
     None
   }

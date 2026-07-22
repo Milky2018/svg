@@ -114,10 +114,8 @@ fn evaluate_feature(feature : MediaFeature, env : MediaEnvironment) -> Bool {
         Some(v) => compare_value(v, env.viewport_width, Eq, env)
         None => true // Boolean context: width exists
       }
-    MinWidth(value) =>
-      compare_value(value, env.viewport_width, Ge, env)
-    MaxWidth(value) =>
-      compare_value(value, env.viewport_width, Le, env)
+    MinWidth(value) => compare_value(value, env.viewport_width, Ge, env)
+    MaxWidth(value) => compare_value(value, env.viewport_width, Le, env)
     WidthRange(op, value) =>
       compare_value_with_op(value, env.viewport_width, op, env)
     // Height features
@@ -126,38 +124,21 @@ fn evaluate_feature(feature : MediaFeature, env : MediaEnvironment) -> Bool {
         Some(v) => compare_value(v, env.viewport_height, Eq, env)
         None => true
       }
-    MinHeight(value) =>
-      compare_value(value, env.viewport_height, Ge, env)
-    MaxHeight(value) =>
-      compare_value(value, env.viewport_height, Le, env)
+    MinHeight(value) => compare_value(value, env.viewport_height, Ge, env)
+    MaxHeight(value) => compare_value(value, env.viewport_height, Le, env)
     HeightRange(op, value) =>
       compare_value_with_op(value, env.viewport_height, op, env)
     // Aspect ratio
     AspectRatio(value) =>
       match value {
         Some(v) =>
-          compare_aspect_ratio(
-            v,
-            env.viewport_width,
-            env.viewport_height,
-            Eq,
-          )
+          compare_aspect_ratio(v, env.viewport_width, env.viewport_height, Eq)
         None => true
       }
     MinAspectRatio(value) =>
-      compare_aspect_ratio(
-        value,
-        env.viewport_width,
-        env.viewport_height,
-        Ge,
-      )
+      compare_aspect_ratio(value, env.viewport_width, env.viewport_height, Ge)
     MaxAspectRatio(value) =>
-      compare_aspect_ratio(
-        value,
-        env.viewport_width,
-        env.viewport_height,
-        Le,
-      )
+      compare_aspect_ratio(value, env.viewport_width, env.viewport_height, Le)
     // Orientation
     Orientation(value) =>
       match value.to_lower() {
@@ -286,12 +267,7 @@ fn compare_aspect_ratio(
   }
   let actual_ratio = width / height
   let query_ratio = match query_value {
-    Ratio(w, h) =>
-      if h == 0 {
-        0.0
-      } else {
-        w.to_double() / h.to_double()
-      }
+    Ratio(w, h) => if h == 0 { 0.0 } else { w.to_double() / h.to_double() }
     Number(n) => n
     _ => 1.0
   }

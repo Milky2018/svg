@@ -352,8 +352,7 @@ fn sample_steps(count : Int, position : StepPosition, t : Double) -> Double {
   let steps = count.to_double()
   let mut current_step = (t * steps).floor()
   match position {
-    Start | JumpBoth =>
-      current_step = current_step + 1.0
+    Start | JumpBoth => current_step = current_step + 1.0
     End | JumpNone => ()
   }
   if current_step < 0.0 {

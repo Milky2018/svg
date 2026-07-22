@@ -47,12 +47,7 @@ test "Inherit - display variants" {
 
 ///|
 test "Inherit - position variants" {
-  for
-    p in [
-      @types.Position::Relative,
-      Absolute,
-      Fixed,
-    ] {
+  for p in [@types.Position::Relative, Absolute, Fixed] {
     let parent : @style.Style = { ..@style.Style::default(), position: p }
     let s = compute_inheriting("position", parent)
     inspect(s.position, content=p.to_string())
@@ -61,8 +56,7 @@ test "Inherit - position variants" {
 
 ///|
 test "Inherit - flex-direction variants" {
-  for
-    d in [@types.RowReverse, Column, ColumnReverse] {
+  for d in [@types.RowReverse, Column, ColumnReverse] {
     let parent : @style.Style = { ..@style.Style::default(), flex_direction: d }
     let s = compute_inheriting("flex-direction", parent)
     inspect(s.flex_direction, content=d.to_string())
@@ -362,10 +356,7 @@ test "Unset keyword on inherited property uses parent" {
 
 ///|
 test "Unset keyword on non-inherited property uses initial" {
-  let parent : @style.Style = {
-    ..@style.Style::default(),
-    display: Flex,
-  }
+  let parent : @style.Style = { ..@style.Style::default(), display: Flex }
   let ctx = @computed.ComputeContext::with_parent(parent)
   let decl : @cascade.Declaration = {
     property: "display",

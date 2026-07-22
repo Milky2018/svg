@@ -113,19 +113,15 @@ pub fn resolve_grid_line_placement(
 ) -> (Int?, Int?) {
   let start_line = match start {
     Line(n) => Some(n)
-    Named(name) =>
-      resolve_named_grid_side(name, true, line_names)
-    NamedLine(n, name) =>
-      find_grid_named_line_nth(name, n, line_names)
+    Named(name) => resolve_named_grid_side(name, true, line_names)
+    NamedLine(n, name) => find_grid_named_line_nth(name, n, line_names)
     // Auto / Span / SpanNamed are relative and resolved by the layout engine.
     _ => None
   }
   let end_line = match end {
     Line(n) => Some(n)
-    Named(name) =>
-      resolve_named_grid_side(name, false, line_names)
-    NamedLine(n, name) =>
-      find_grid_named_line_nth(name, n, line_names)
+    Named(name) => resolve_named_grid_side(name, false, line_names)
+    NamedLine(n, name) => find_grid_named_line_nth(name, n, line_names)
     _ => None
   }
   (start_line, end_line)

@@ -151,8 +151,7 @@ fn parse_iteration_count_list(
     let s = skip_whitespace(seg)
     if s.length() > 0 {
       match s[0] {
-        Number(v, _) =>
-          result.push(Count(v))
+        Number(v, _) => result.push(Count(v))
         Ident(name) =>
           if name.to_lower() == "infinite" {
             result.push(Infinite)
@@ -305,8 +304,7 @@ fn try_parse_easing_at(
       let mut depth = 1
       while j < seg.length() && depth > 0 {
         match seg[j] {
-          Function(_) | LeftParen =>
-            depth = depth + 1
+          Function(_) | LeftParen => depth = depth + 1
           RightParen => depth = depth - 1
           _ => ()
         }

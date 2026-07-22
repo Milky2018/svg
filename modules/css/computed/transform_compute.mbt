@@ -270,9 +270,7 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
     Length(n * 16.0)
   } else {
     // Try parsing as plain number (assumed px)
-    let n = @string.parse_double(v) catch {
-      _ => return Length(0.0)
-    }
+    let n = @string.parse_double(v) catch { _ => return Length(0.0) }
     Length(n)
   }
 }

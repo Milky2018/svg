@@ -64,12 +64,7 @@ fn parse_clip(tokens : ArrayView[@token.Token]) -> @types.ClipRect {
           }
         }
         if values.length() >= 4 {
-          Rect(
-            top=values[0],
-            right=values[1],
-            bottom=values[2],
-            left=values[3],
-          )
+          Rect(top=values[0], right=values[1], bottom=values[2], left=values[3])
         } else {
           Auto
         }
@@ -135,8 +130,7 @@ fn parse_clip_path_inset(tokens : ArrayView[@token.Token]) -> @style.ClipPath {
       Percentage(v) => values.push(-(v / 100.0))
       Number(v, _) => values.push(v)
       Ident(s) => if s == "round" { break }
-      RightParen | Semicolon | EOF =>
-        break
+      RightParen | Semicolon | EOF => break
       _ => ()
     }
     if values.length() >= 4 {
@@ -164,8 +158,7 @@ fn parse_clip_path_rect(tokens : ArrayView[@token.Token]) -> @style.ClipPath {
   let values : Array[Double] = []
   for token in tokens {
     match token {
-      RightParen | Semicolon | EOF =>
-        break
+      RightParen | Semicolon | EOF => break
       Whitespace => ()
       _ =>
         match parse_clip_path_shape_token(token) {
@@ -190,8 +183,7 @@ fn parse_clip_path_xywh(tokens : ArrayView[@token.Token]) -> @style.ClipPath {
   for token in tokens {
     match token {
       Ident(s) => if s == "round" { break }
-      RightParen | Semicolon | EOF =>
-        break
+      RightParen | Semicolon | EOF => break
       Whitespace => ()
       _ =>
         match parse_clip_path_shape_token(token) {
@@ -220,14 +212,8 @@ fn parse_clip_path_circle(tokens : ArrayView[@token.Token]) -> @style.ClipPath {
   let mut radius_set = false
   for token in tokens {
     match token {
-      Ident(s) =>
-        if s == "at" {
-          seen_at = true
-        } else {
-          return None
-        }
-      RightParen | Semicolon | EOF =>
-        break
+      Ident(s) => if s == "at" { seen_at = true } else { return None }
+      RightParen | Semicolon | EOF => break
       Whitespace => ()
       _ =>
         match parse_clip_path_shape_token(token) {
@@ -263,14 +249,8 @@ fn parse_clip_path_ellipse(tokens : ArrayView[@token.Token]) -> @style.ClipPath 
   let mut seen_at = false
   for token in tokens {
     match token {
-      Ident(s) =>
-        if s == "at" {
-          seen_at = true
-        } else {
-          return None
-        }
-      RightParen | Semicolon | EOF =>
-        break
+      Ident(s) => if s == "at" { seen_at = true } else { return None }
+      RightParen | Semicolon | EOF => break
       Whitespace => ()
       _ =>
         match parse_clip_path_shape_token(token) {
@@ -308,8 +288,7 @@ fn parse_clip_path_polygon(tokens : ArrayView[@token.Token]) -> @style.ClipPath 
         } else {
           return None
         }
-      RightParen | Semicolon | EOF =>
-        break
+      RightParen | Semicolon | EOF => break
       Whitespace => ()
       _ =>
         match parse_clip_path_shape_token(token) {
@@ -334,10 +313,8 @@ fn parse_clip_path_polygon(tokens : ArrayView[@token.Token]) -> @style.ClipPath 
 fn parse_clip_path_path(tokens : ArrayView[@token.Token]) -> @style.ClipPath {
   for token in tokens {
     match token {
-      String(path_data) =>
-        return parse_clip_path_path_data(path_data)
-      RightParen | Semicolon | EOF =>
-        break
+      String(path_data) => return parse_clip_path_path_data(path_data)
+      RightParen | Semicolon | EOF => break
       _ => ()
     }
   }

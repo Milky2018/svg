@@ -70,9 +70,7 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
     match (min_px, val_px, max_px) {
       (Some(min_v), Some(val_v), Some(max_v)) =>
         // clamp(min, val, max) == max(min, min(val, max))
-        return Some(
-          @types.apply_math_op(Clamp, [min_v, val_v, max_v]),
-        )
+        return Some(@types.apply_math_op(Clamp, [min_v, val_v, max_v]))
       _ => return None
     }
   }

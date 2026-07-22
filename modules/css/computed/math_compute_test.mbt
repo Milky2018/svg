@@ -130,10 +130,7 @@ test "compute_inline units are case-insensitive" {
     @computed.compute_inline("width: 5q", ctx).width,
     @computed.compute_inline("width: 5Q", ctx).width,
   )
-  assert_eq(
-    @computed.compute_inline("width: 10VW", ctx).width,
-    Length(192.0),
-  )
+  assert_eq(@computed.compute_inline("width: 10VW", ctx).width, Length(192.0))
 }
 
 ///|

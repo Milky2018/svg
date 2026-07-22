@@ -166,9 +166,7 @@ fn render_path(
             )
           }
         }
-      LinearGrad(_)
-      | RadialGrad(_)
-      | Pattern(_) =>
+      LinearGrad(_) | RadialGrad(_) | Pattern(_) =>
         if node.stroke_opacity > 0.0 && node.stroke.width > 0.0 {
           match
             make_paint_server_setter(
@@ -229,9 +227,7 @@ fn render_text(
   // Fill color for text
   let fill_paint = resolve_paint_for_render(node.fill, node_color, resources)
   let paint_server_setter = match fill_paint {
-    LinearGrad(_)
-    | RadialGrad(_)
-    | Pattern(_) =>
+    LinearGrad(_) | RadialGrad(_) | Pattern(_) =>
       if node.fill_opacity > 0.0 {
         make_paint_server_setter(
           fill_paint,
@@ -257,9 +253,7 @@ fn render_text(
           } else {
             None
           }
-        LinearGrad(_)
-        | RadialGrad(_)
-        | Pattern(_) =>
+        LinearGrad(_) | RadialGrad(_) | Pattern(_) =>
           match paint_server_setter {
             Some(_) => Some(Color::white())
             None => None
@@ -309,9 +303,7 @@ fn render_text(
               ctx.setter,
             )
           }
-        LinearGrad(_)
-        | RadialGrad(_)
-        | Pattern(_) =>
+        LinearGrad(_) | RadialGrad(_) | Pattern(_) =>
           if node.fill_opacity > 0.0 {
             match paint_server_setter {
               Some(setter) =>

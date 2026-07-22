@@ -113,34 +113,28 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
 
       // Adjust width and height to include padding+border
       let adjusted_width = match style.width {
-        Length(w) =>
-          @types.Dimension::Length(w + padding_h + border_h)
+        Length(w) => @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_height = match style.height {
-        Length(h) =>
-          @types.Dimension::Length(h + padding_v + border_v)
+        Length(h) => @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       // Adjust min/max constraints too
       let adjusted_min_width = match style.min_width {
-        Length(w) =>
-          @types.Dimension::Length(w + padding_h + border_h)
+        Length(w) => @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_min_height = match style.min_height {
-        Length(h) =>
-          @types.Dimension::Length(h + padding_v + border_v)
+        Length(h) => @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       let adjusted_max_width = match style.max_width {
-        Length(w) =>
-          @types.Dimension::Length(w + padding_h + border_h)
+        Length(w) => @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_max_height = match style.max_height {
-        Length(h) =>
-          @types.Dimension::Length(h + padding_v + border_v)
+        Length(h) => @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       {

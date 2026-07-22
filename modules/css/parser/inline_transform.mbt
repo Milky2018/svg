@@ -232,12 +232,7 @@ fn parse_pointer_events(
     return Auto
   }
   match remaining[0] {
-    Ident(s) =>
-      if s == "none" {
-        None
-      } else {
-        Auto
-      }
+    Ident(s) => if s == "none" { None } else { Auto }
     _ => Auto
   }
 }

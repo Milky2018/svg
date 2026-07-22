@@ -137,10 +137,7 @@ test "parse_float_with_direction - inline-start respects direction" {
     @computed.parse_float_with_direction("inline-end", Rtl),
     content="Left",
   )
-  inspect(
-    @computed.parse_float_with_direction("left", Rtl),
-    content="Left",
-  )
+  inspect(@computed.parse_float_with_direction("left", Rtl), content="Left")
 }
 
 ///|
@@ -567,10 +564,7 @@ test "parse_clear_with_direction - inline-start/end" {
     @computed.parse_clear_with_direction("inline-end", Rtl),
     content="Left",
   )
-  inspect(
-    @computed.parse_clear_with_direction("both", Ltr),
-    content="Both",
-  )
+  inspect(@computed.parse_clear_with_direction("both", Ltr), content="Both")
 }
 
 ///|

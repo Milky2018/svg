@@ -318,9 +318,7 @@ fn parse_color(value : String) -> Color {
         color.b,
         clamp_int((color.a * 255.0).round().to_int(), 0, 255),
       )
-    CurrentColor
-    | Inherit
-    | Invalid => Color::black()
+    CurrentColor | Inherit | Invalid => Color::black()
   }
 }
 

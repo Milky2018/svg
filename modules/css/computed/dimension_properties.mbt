@@ -62,9 +62,7 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
     None => ()
   }
   // Try to parse as plain number (treated as px)
-  let n = @string.parse_double(v.to_owned()) catch {
-    _ => return Auto
-  }
+  let n = @string.parse_double(v.to_owned()) catch { _ => return Auto }
   Length(n)
 }
 

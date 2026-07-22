@@ -787,8 +787,7 @@ fn parse_plain_text_content(parser : SVGParser, tag_name : String) -> String? {
   let mut has_nested_element = false
   while !parser.is_end() {
     match parser.advance_event() {
-      Text(text) | CData(text) =>
-        content.write_string(text)
+      Text(text) | CData(text) => content.write_string(text)
       Start(element) => {
         has_nested_element = true
         skip_to_end_tag(parser, element.name)

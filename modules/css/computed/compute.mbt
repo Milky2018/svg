@@ -985,12 +985,7 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
 fn dimension_to_string(dim : @types.Dimension) -> String {
   match dim {
     Auto => "auto"
-    Length(n) =>
-      if n == 0.0 {
-        "0"
-      } else {
-        n.to_string() + "px"
-      }
+    Length(n) => if n == 0.0 { "0" } else { n.to_string() + "px" }
     Percent(n) => (n * 100.0).to_string() + "%"
     MinContent => "min-content"
     MaxContent => "max-content"

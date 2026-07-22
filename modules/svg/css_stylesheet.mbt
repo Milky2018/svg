@@ -21,10 +21,7 @@ fn parse_embedded_stylesheets(
         if element.name == "style" {
           stylesheets.push(@css.parse_stylesheet(""))
         }
-      Text(text) | CData(text) =>
-        if in_style {
-          content.write_string(text)
-        }
+      Text(text) | CData(text) => if in_style { content.write_string(text) }
       End(name) =>
         if in_style && name == "style" {
           stylesheets.push(

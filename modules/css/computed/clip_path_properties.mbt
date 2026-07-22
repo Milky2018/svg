@@ -73,24 +73,10 @@ pub fn parse_clip_path(value : String) -> @style.ClipPath {
         2 => {
           let vertical = values[0]
           let horizontal = values[1]
-          return Inset(
-            vertical, horizontal, vertical, horizontal,
-          )
+          return Inset(vertical, horizontal, vertical, horizontal)
         }
-        3 =>
-          return Inset(
-            values[0],
-            values[1],
-            values[2],
-            values[1],
-          )
-        _ =>
-          return Inset(
-            values[0],
-            values[1],
-            values[2],
-            values[3],
-          )
+        3 => return Inset(values[0], values[1], values[2], values[1])
+        _ => return Inset(values[0], values[1], values[2], values[3])
       }
     }
   }
@@ -156,18 +142,10 @@ fn parse_clip_path_rect(content : String) -> @style.ClipPath {
   if parts.length() < 4 {
     return None
   }
-  let top = parse_clip_path_shape_value(parts[0]) catch {
-    _ => return None
-  }
-  let right = parse_clip_path_shape_value(parts[1]) catch {
-    _ => return None
-  }
-  let bottom = parse_clip_path_shape_value(parts[2]) catch {
-    _ => return None
-  }
-  let left = parse_clip_path_shape_value(parts[3]) catch {
-    _ => return None
-  }
+  let top = parse_clip_path_shape_value(parts[0]) catch { _ => return None }
+  let right = parse_clip_path_shape_value(parts[1]) catch { _ => return None }
+  let bottom = parse_clip_path_shape_value(parts[2]) catch { _ => return None }
+  let left = parse_clip_path_shape_value(parts[3]) catch { _ => return None }
   Rect(top, right, bottom, left)
 }
 
@@ -177,18 +155,10 @@ fn parse_clip_path_xywh(content : String) -> @style.ClipPath {
   if parts.length() < 4 {
     return None
   }
-  let x = parse_clip_path_shape_value(parts[0]) catch {
-    _ => return None
-  }
-  let y = parse_clip_path_shape_value(parts[1]) catch {
-    _ => return None
-  }
-  let width = parse_clip_path_shape_value(parts[2]) catch {
-    _ => return None
-  }
-  let height = parse_clip_path_shape_value(parts[3]) catch {
-    _ => return None
-  }
+  let x = parse_clip_path_shape_value(parts[0]) catch { _ => return None }
+  let y = parse_clip_path_shape_value(parts[1]) catch { _ => return None }
+  let width = parse_clip_path_shape_value(parts[2]) catch { _ => return None }
+  let height = parse_clip_path_shape_value(parts[3]) catch { _ => return None }
   Xywh(x, y, width, height)
 }
 
@@ -212,16 +182,10 @@ fn parse_clip_path_circle(content : String) -> @style.ClipPath {
     if parts.length() < 3 {
       return None
     }
-    center_x = parse_clip_path_shape_value(parts[1]) catch {
-      _ => return None
-    }
-    center_y = parse_clip_path_shape_value(parts[2]) catch {
-      _ => return None
-    }
+    center_x = parse_clip_path_shape_value(parts[1]) catch { _ => return None }
+    center_y = parse_clip_path_shape_value(parts[2]) catch { _ => return None }
   } else if at_index > 0 {
-    radius = parse_clip_path_shape_value(parts[0]) catch {
-      _ => return None
-    }
+    radius = parse_clip_path_shape_value(parts[0]) catch { _ => return None }
     if parts.length() <= at_index + 2 {
       return None
     }
@@ -232,9 +196,7 @@ fn parse_clip_path_circle(content : String) -> @style.ClipPath {
       _ => return None
     }
   } else {
-    radius = parse_clip_path_shape_value(parts[0]) catch {
-      _ => return None
-    }
+    radius = parse_clip_path_shape_value(parts[0]) catch { _ => return None }
   }
   Circle(radius, center_x, center_y)
 }
@@ -260,22 +222,14 @@ fn parse_clip_path_ellipse(content : String) -> @style.ClipPath {
     if parts.length() < 3 {
       return None
     }
-    center_x = parse_clip_path_shape_value(parts[1]) catch {
-      _ => return None
-    }
-    center_y = parse_clip_path_shape_value(parts[2]) catch {
-      _ => return None
-    }
+    center_x = parse_clip_path_shape_value(parts[1]) catch { _ => return None }
+    center_y = parse_clip_path_shape_value(parts[2]) catch { _ => return None }
   } else if at_index > 0 {
     if at_index < 2 || parts.length() <= at_index + 2 {
       return None
     }
-    radius_x = parse_clip_path_shape_value(parts[0]) catch {
-      _ => return None
-    }
-    radius_y = parse_clip_path_shape_value(parts[1]) catch {
-      _ => return None
-    }
+    radius_x = parse_clip_path_shape_value(parts[0]) catch { _ => return None }
+    radius_y = parse_clip_path_shape_value(parts[1]) catch { _ => return None }
     center_x = parse_clip_path_shape_value(parts[at_index + 1]) catch {
       _ => return None
     }
@@ -286,12 +240,8 @@ fn parse_clip_path_ellipse(content : String) -> @style.ClipPath {
     if parts.length() < 2 {
       return None
     }
-    radius_x = parse_clip_path_shape_value(parts[0]) catch {
-      _ => return None
-    }
-    radius_y = parse_clip_path_shape_value(parts[1]) catch {
-      _ => return None
-    }
+    radius_x = parse_clip_path_shape_value(parts[0]) catch { _ => return None }
+    radius_y = parse_clip_path_shape_value(parts[1]) catch { _ => return None }
   }
   Ellipse(radius_x, radius_y, center_x, center_y)
 }
@@ -304,9 +254,7 @@ fn parse_clip_path_polygon(content : String) -> @style.ClipPath {
     if part == "evenodd" || part == "nonzero" {
       continue
     }
-    let v = parse_clip_path_shape_value(part) catch {
-      _ => return None
-    }
+    let v = parse_clip_path_shape_value(part) catch { _ => return None }
     values.push(v)
   }
   if values.length() < 6 || values.length() % 2 != 0 {

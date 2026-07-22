@@ -81,17 +81,11 @@ test "ScrollSnapType none/mandatory/axis helpers" {
   assert_false(none.is_mandatory())
   assert_false(none.snaps_x())
   assert_false(none.snaps_y())
-  let mandatory_x : ScrollSnapType = {
-    axis: X,
-    strictness: Mandatory,
-  }
+  let mandatory_x : ScrollSnapType = { axis: X, strictness: Mandatory }
   assert_true(mandatory_x.is_mandatory())
   assert_true(mandatory_x.snaps_x())
   assert_false(mandatory_x.snaps_y())
-  let both : ScrollSnapType = {
-    axis: Both,
-    strictness: Proximity,
-  }
+  let both : ScrollSnapType = { axis: Both, strictness: Proximity }
   assert_false(both.is_mandatory())
   assert_true(both.snaps_x())
   assert_true(both.snaps_y())
@@ -239,10 +233,7 @@ test "Style::has_multicol with column-width set" {
   assert_true(s.has_multicol())
   let s_zero : Style = { ..Style::default(), column_width: Length(0.0) }
   assert_false(s_zero.has_multicol())
-  let s_calc : Style = {
-    ..Style::default(),
-    column_width: Calc(-10.0, 0.5),
-  }
+  let s_calc : Style = { ..Style::default(), column_width: Calc(-10.0, 0.5) }
   assert_true(s_calc.has_multicol())
   let s_negative_calc : Style = {
     ..Style::default(),
@@ -291,10 +282,7 @@ test "Show impls for style enums" {
 
 ///|
 test "ScrollSnapType Show" {
-  let snap : ScrollSnapType = {
-    axis: Y,
-    strictness: Proximity,
-  }
+  let snap : ScrollSnapType = { axis: Y, strictness: Proximity }
   inspect(snap, content="{axis: Y, strictness: Proximity}")
 }
 
@@ -383,10 +371,7 @@ test "Transform::quarter_turns - negative angle" {
 
 ///|
 test "Transform::compute_translate_x with Percent" {
-  let t : Transform = {
-    ..Transform::none(),
-    translate_x: Percent(0.5),
-  }
+  let t : Transform = { ..Transform::none(), translate_x: Percent(0.5) }
   inspect(t.compute_translate_x(100.0), content="50")
 }
 
@@ -434,10 +419,7 @@ test "Style::contained_intrinsic_*_fallback Some(0) in horizontal mode" {
 
 ///|
 test "Transform::is_none not-zero translate falls through" {
-  let t : Transform = {
-    ..Transform::none(),
-    translate_x: Length(5.0),
-  }
+  let t : Transform = { ..Transform::none(), translate_x: Length(5.0) }
   assert_false(t.is_none())
 }
 
@@ -464,10 +446,7 @@ test "Style::has_multicol with MinContent/MaxContent/FitContent column-width" {
   assert_false(s_min.has_multicol())
   let s_max : Style = { ..Style::default(), column_width: MaxContent }
   assert_false(s_max.has_multicol())
-  let s_fit : Style = {
-    ..Style::default(),
-    column_width: FitContent(100.0),
-  }
+  let s_fit : Style = { ..Style::default(), column_width: FitContent(100.0) }
   assert_false(s_fit.has_multicol())
 }
 

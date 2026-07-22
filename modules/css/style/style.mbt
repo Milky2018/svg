@@ -146,10 +146,7 @@ pub(all) struct ScrollSnapType {
 } derive(Debug, Eq)
 
 ///|
-let scroll_snap_type_none : ScrollSnapType = {
-  axis: None,
-  strictness: None,
-}
+let scroll_snap_type_none : ScrollSnapType = { axis: None, strictness: None }
 
 ///|
 pub fn ScrollSnapType::none() -> ScrollSnapType {
@@ -555,10 +552,7 @@ pub fn Style::has_multicol(self : Style) -> Bool {
         Percent(v) => v > 0.0
         Calc(px, pct) => px > 0.0 || pct > 0.0
         MathFn(_, _) => true
-        Auto
-        | MinContent
-        | MaxContent
-        | FitContent(_) => false
+        Auto | MinContent | MaxContent | FitContent(_) => false
       }
   }
 }
@@ -1223,12 +1217,7 @@ pub fn Style::default() -> Style {
     column_width: Auto,
     column_fill: Balance,
     aspect_ratio: None,
-    inset: {
-      left: Auto,
-      right: Auto,
-      top: Auto,
-      bottom: Auto,
-    },
+    inset: { left: Auto, right: Auto, top: Auto, bottom: Auto },
     grid_template_rows: [],
     grid_template_columns: [],
     grid_auto_rows: [],

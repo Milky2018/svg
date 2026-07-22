@@ -492,11 +492,7 @@ test "compute inline border longhand overrides stylesheet shorthand" {
     "div { color: red; } .box { border: 10px solid transparent; }",
   )
   let inline : Array[@cascade.Declaration] = [
-    @cascade.Declaration::from_inline(
-      "border-top-width",
-      "100px",
-      Normal,
-    ),
+    @cascade.Declaration::from_inline("border-top-width", "100px", Normal),
   ]
   let style = @computed.compute(
     @cascade.cascade_element(element, [sheet], inline),

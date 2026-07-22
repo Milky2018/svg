@@ -672,11 +672,7 @@ fn parse_rule_declaration(
       _ => ()
     }
   }
-  let importance = if has_important {
-    @cascade.Important
-  } else {
-    Normal
-  }
+  let importance = if has_important { @cascade.Important } else { Normal }
   Some((property, value, importance, pos))
 }
 
@@ -785,9 +781,7 @@ fn extract_ampersand_nested_rules(
         let nested_selector_start = pos
         while pos < rule_end - 1 {
           match tokens[pos] {
-            LeftBrace
-            | RightBrace
-            | EOF => break
+            LeftBrace | RightBrace | EOF => break
             _ => pos = pos + 1
           }
         }
@@ -940,13 +934,8 @@ fn parse_selector_list_from_tokens(
   while i < end {
     match tokens[i] {
       EOF => break
-      Function(_)
-      | LeftParen
-      | LeftBracket => depth = depth + 1
-      RightParen | RightBracket =>
-        if depth > 0 {
-          depth = depth - 1
-        }
+      Function(_) | LeftParen | LeftBracket => depth = depth + 1
+      RightParen | RightBracket => if depth > 0 { depth = depth - 1 }
       Comma =>
         if depth == 0 {
           push_selector(result, tokens, seg_start, i)

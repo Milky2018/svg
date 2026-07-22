@@ -28,29 +28,11 @@ fn parse_column_width(value : String, ctx : ComputeContext) -> @types.Dimension 
   }
   let dim = resolve_dimension_with_calc_percent_fallback(trimmed, ctx)
   match dim {
-    Length(v) =>
-      if v > 0.0 {
-        Length(v)
-      } else {
-        Auto
-      }
-    Percent(v) =>
-      if v > 0.0 {
-        Percent(v)
-      } else {
-        Auto
-      }
-    Calc(px, pct) =>
-      if px > 0.0 || pct > 0.0 {
-        Calc(px, pct)
-      } else {
-        Auto
-      }
+    Length(v) => if v > 0.0 { Length(v) } else { Auto }
+    Percent(v) => if v > 0.0 { Percent(v) } else { Auto }
+    Calc(px, pct) => if px > 0.0 || pct > 0.0 { Calc(px, pct) } else { Auto }
     MathFn(op, args) => MathFn(op, args)
-    Auto
-    | MinContent
-    | MaxContent
-    | FitContent(_) => Auto
+    Auto | MinContent | MaxContent | FitContent(_) => Auto
   }
 }
 

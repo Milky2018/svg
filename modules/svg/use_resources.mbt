@@ -191,20 +191,12 @@ fn UseElement::instantiate_definition(
         None =>
           match (node.viewport_width, node.viewport_height) {
             (Some(w), Some(h)) =>
-              (
-                Some({ min_x: 0.0, min_y: 0.0, width: w, height: h }),
-                true,
-              )
+              (Some({ min_x: 0.0, min_y: 0.0, width: w, height: h }), true)
             _ =>
               match viewport_fallback {
                 Some((vw, vh)) =>
                   (
-                    Some({
-                      min_x: 0.0,
-                      min_y: 0.0,
-                      width: vw,
-                      height: vh,
-                    }),
+                    Some({ min_x: 0.0, min_y: 0.0, width: vw, height: vh }),
                     true,
                   )
                 None => (None, false)
@@ -212,10 +204,7 @@ fn UseElement::instantiate_definition(
           }
       }
       if force_non_uniform {
-        node.preserve_aspect_ratio = {
-          align: None,
-          meet_or_slice: Meet,
-        }
+        node.preserve_aspect_ratio = { align: None, meet_or_slice: Meet }
       }
       let vw = match self.width {
         Some(w) => Some(w)
@@ -272,10 +261,7 @@ fn UseElement::instantiate(
         None =>
           match (symbol.width, symbol.height) {
             (Some(w), Some(h)) =>
-              (
-                Some({ min_x: 0.0, min_y: 0.0, width: w, height: h }),
-                true,
-              )
+              (Some({ min_x: 0.0, min_y: 0.0, width: w, height: h }), true)
             _ => (None, false)
           }
       }
@@ -290,10 +276,7 @@ fn UseElement::instantiate(
       // Apply viewBox scaling (if viewport is known)
       node.view_box = vb
       if force_non_uniform {
-        node.preserve_aspect_ratio = {
-          align: None,
-          meet_or_slice: Meet,
-        }
+        node.preserve_aspect_ratio = { align: None, meet_or_slice: Meet }
       }
       node.viewport_width = vw
       node.viewport_height = vh
