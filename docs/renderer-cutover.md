@@ -4,7 +4,7 @@
 > This is a historical report for the 0.3.1 renderer cutover at `a05b0db`.
 > Milky2018/svg 0.4.0 subsequently replaced the compatibility surface described
 > below. See the [current module guide](../modules/svg/README.mbt.md) and the
-> [0.4.0 migration table](../CHANGELOG.md#milky2018svg-040---unreleased).
+> [0.4.0 migration table](../CHANGELOG.md#milky2018svg-040---2026-07-22).
 
 The renderer replacement described by ADR-0001 through ADR-0008 is complete.
 All compatibility-sensitive `render_svg_*` functions and

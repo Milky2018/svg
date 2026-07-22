@@ -1,8 +1,36 @@
 # Changelog
 
-This workspace versions `Milky2018/css` and `Milky2018/svg` independently.
+This workspace releases `Milky2018/css` and `Milky2018/svg` with matching
+versions.
 
-## Milky2018/svg 0.4.0 - Unreleased
+## Milky2018/svg 0.4.1 - 2026-07-22
+
+### Fixed
+
+- Resolve prefixed SVG elements and attributes by namespace URI, including
+  XLink aliases and scoped prefix rebinding.
+- Allow manually constructed documents to register ordinary ID definitions for
+  `<use>` instantiation, matching parsed-document behavior.
+- Align the public transform surface and migration guide with the 0.4 API.
+
+## Milky2018/css 0.4.1 - 2026-07-22
+
+### Changed
+
+- Publish the locally maintained static CSS core for the first time, versioned
+  in lockstep with `Milky2018/svg`.
+- Retain tokenizer, stylesheet and inline parsing, selectors, media queries,
+  cascade, computed values, property metadata, colors, and custom properties.
+- Reorganize computed values, inline parsing, property families, value helpers,
+  and tests into cohesive files.
+
+### Removed
+
+- Remove the animation execution runtime and generic browser layout/support
+  diagnostics. Static animation and transition syntax remains representable,
+  but no timeline or dynamic browser behavior is executed.
+
+## Milky2018/svg 0.4.0 - 2026-07-22
 
 ### Changed
 
@@ -38,23 +66,6 @@ This workspace versions `Milky2018/css` and `Milky2018/svg` independently.
 
 The published [SVG module guide](modules/svg/README.mbt.md#migrating-from-03x)
 contains the complete function-by-function table and current usage examples.
-
-## Milky2018/css 0.8.0 - Unreleased
-
-### Changed
-
-- Establish `Milky2018/css` as an independently versioned, locally maintained
-  static CSS core derived from `mizchi/css` 0.7.3.
-- Retain tokenizer, stylesheet and inline parsing, selectors, media queries,
-  cascade, computed values, property metadata, colors, and custom properties.
-- Reorganize computed values, inline parsing, property families, value helpers,
-  and tests into cohesive files.
-
-### Removed
-
-- Remove the animation execution runtime and generic browser layout/support
-  diagnostics. Static animation and transition syntax remains representable,
-  but no timeline or dynamic browser behavior is executed.
 
 ## Milky2018/svg 0.3.1 - 2026-07-21
 
