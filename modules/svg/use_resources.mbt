@@ -177,6 +177,83 @@ fn DefsRegistry::get(self : DefsRegistry, id : String) -> SVGNode? {
 }
 
 ///|
+fn UseElement::instantiate_definition(
+  self : UseElement,
+  registry : DefsRegistry,
+  viewport_fallback : (Double, Double)?,
+) -> SVGNode? {
+  let id = self.get_id()
+  match registry.get(id) {
+    Some(target) => {
+      let node = target.clone()
+      let (vb, force_non_uniform) = match node.view_box {
+        Some(vb) => (Some(vb), false)
+        None =>
+          match (node.viewport_width, node.viewport_height) {
+            (Some(w), Some(h)) =>
+              (
+                Some(ViewBox::{ min_x: 0.0, min_y: 0.0, width: w, height: h }),
+                true,
+              )
+            _ =>
+              match viewport_fallback {
+                Some((vw, vh)) =>
+                  (
+                    Some(ViewBox::{
+                      min_x: 0.0,
+                      min_y: 0.0,
+                      width: vw,
+                      height: vh,
+                    }),
+                    true,
+                  )
+                None => (None, false)
+              }
+          }
+      }
+      if force_non_uniform {
+        node.preserve_aspect_ratio = PreserveAspectRatio::{
+          align: None,
+          meet_or_slice: Meet,
+        }
+      }
+      let vw = match self.width {
+        Some(w) => Some(w)
+        None =>
+          match node.viewport_width {
+            Some(w) => Some(w)
+            None =>
+              match viewport_fallback {
+                Some((vw, _)) => Some(vw)
+                None => None
+              }
+          }
+      }
+      let vh = match self.height {
+        Some(h) => Some(h)
+        None =>
+          match node.viewport_height {
+            Some(h) => Some(h)
+            None =>
+              match viewport_fallback {
+                Some((_, vh)) => Some(vh)
+                None => None
+              }
+          }
+      }
+      node.view_box = vb
+      node.viewport_width = vw
+      node.viewport_height = vh
+      let translate = Transform::translate(self.x, self.y)
+      let base = self.transform.multiply(translate)
+      node.transform = base.multiply(node.transform)
+      Some(node)
+    }
+    None => None
+  }
+}
+
+///|
 /// Instantiate a use element with the symbol registry
 fn UseElement::instantiate(
   self : UseElement,
@@ -236,7 +313,10 @@ pub fn SVGDocument::instantiate_use(
   self : SVGDocument,
   element : UseElement,
 ) -> SVGNode? {
-  element.instantiate(self.symbols)
+  match element.instantiate(self.symbols) {
+    Some(node) => Some(node)
+    None => element.instantiate_definition(self.definitions, None)
+  }
 }
 
 ///|

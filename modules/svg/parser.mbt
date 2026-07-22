@@ -449,6 +449,7 @@ pub fn parse_svg_document(svg_str : String) -> SVGDocument? {
       Some({
         root,
         symbols: ctx.symbols,
+        definitions: ctx.defs,
         clips: ctx.clips,
         masks: ctx.masks,
         filter_graphs: ctx.filter_graphs,

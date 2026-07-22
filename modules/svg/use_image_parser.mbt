@@ -195,77 +195,9 @@ fn parse_use(
           }
           Some(node)
         }
-        None => {
-          let id = use_elem.get_id()
-          match ctx.defs.get(id) {
-            Some(target) => {
-              let node = target.clone()
-              let (vb, force_non_uniform) = match node.view_box {
-                Some(vb) => (Some(vb), false)
-                None =>
-                  match (node.viewport_width, node.viewport_height) {
-                    (Some(w), Some(h)) =>
-                      (
-                        Some(ViewBox::{
-                          min_x: 0.0,
-                          min_y: 0.0,
-                          width: w,
-                          height: h,
-                        }),
-                        true,
-                      )
-                    _ =>
-                      match viewport_fallback {
-                        Some((vw, vh)) =>
-                          (
-                            Some(ViewBox::{
-                              min_x: 0.0,
-                              min_y: 0.0,
-                              width: vw,
-                              height: vh,
-                            }),
-                            true,
-                          )
-                        None => (None, false)
-                      }
-                  }
-              }
-              if force_non_uniform {
-                node.preserve_aspect_ratio = PreserveAspectRatio::{
-                  align: None,
-                  meet_or_slice: Meet,
-                }
-              }
-              let vw = match use_elem.width {
-                Some(w) => Some(w)
-                None =>
-                  match node.viewport_width {
-                    Some(w) => Some(w)
-                    None =>
-                      match viewport_fallback {
-                        Some((vw, _)) => Some(vw)
-                        None => None
-                      }
-                  }
-              }
-              let vh = match use_elem.height {
-                Some(h) => Some(h)
-                None =>
-                  match node.viewport_height {
-                    Some(h) => Some(h)
-                    None =>
-                      match viewport_fallback {
-                        Some((_, vh)) => Some(vh)
-                        None => None
-                      }
-                  }
-              }
-              node.view_box = vb
-              node.viewport_width = vw
-              node.viewport_height = vh
-              let translate = Transform::translate(use_elem.x, use_elem.y)
-              let base = use_elem.transform.multiply(translate)
-              node.transform = base.multiply(node.transform)
+        None =>
+          match use_elem.instantiate_definition(ctx.defs, viewport_fallback) {
+            Some(node) => {
               node.id = get_attr(attrs, "id").unwrap_or("")
               apply_presentation_attributes(node, attrs)
               let base_style = inherited_style_from_node(
@@ -287,7 +219,6 @@ fn parse_use(
             }
             None => None
           }
-        }
       }
   }
 }

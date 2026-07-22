@@ -445,6 +445,7 @@ pub struct SVGDocument {
   // private fields
 }
 pub fn SVGDocument::add_clip_path(Self, ClipPath) -> Unit
+pub fn SVGDocument::add_definition(Self, String, SVGNode) -> Unit
 pub fn SVGDocument::add_filter_graph(Self, FilterGraph) -> Unit
 pub fn SVGDocument::add_gradient(Self, String, Gradient) -> Unit
 pub fn SVGDocument::add_marker(Self, Marker) -> Unit

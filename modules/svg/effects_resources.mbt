@@ -475,6 +475,7 @@ fn resolve_mask_size(
 pub struct SVGDocument {
   priv root : SVGNode
   priv symbols : SymbolRegistry
+  priv definitions : DefsRegistry
   priv clips : ClipPathRegistry
   priv masks : MaskRegistry
   priv filter_graphs : FilterGraphRegistry
@@ -488,6 +489,7 @@ pub fn SVGDocument::new(root : SVGNode) -> SVGDocument {
   {
     root,
     symbols: SymbolRegistry::new(),
+    definitions: DefsRegistry::new(),
     clips: ClipPathRegistry::new(),
     masks: MaskRegistry::new(),
     filter_graphs: FilterGraphRegistry::new(),
@@ -506,6 +508,16 @@ pub fn SVGDocument::root(self : SVGDocument) -> SVGNode {
 ///|
 pub fn SVGDocument::add_symbol(self : SVGDocument, symbol : Symbol) -> Unit {
   self.symbols.add(symbol)
+}
+
+///|
+/// Register an ordinary SVG node for fragment references such as `<use>`.
+pub fn SVGDocument::add_definition(
+  self : SVGDocument,
+  id : String,
+  node : SVGNode,
+) -> Unit {
+  self.definitions.add(id, node)
 }
 
 ///|
