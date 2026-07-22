@@ -1,7 +1,6 @@
 ///|
 test "transform_identity" {
   let t = Transform::identity()
-  inspect(t.is_identity(), content="true")
   let (x, y) = t.apply(10.0, 20.0)
   inspect(x, content="10")
   inspect(y, content="20")

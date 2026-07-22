@@ -4,19 +4,8 @@
 
 ///|
 /// Identity transform (no transformation)
-pub fn Transform::identity() -> Transform {
+fn Transform::identity() -> Transform {
   { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: 0.0 }
-}
-
-///|
-/// Check if this is an identity transform (optimization)
-pub fn Transform::is_identity(self : Transform) -> Bool {
-  self.a == 1.0 &&
-  self.b == 0.0 &&
-  self.c == 0.0 &&
-  self.d == 1.0 &&
-  self.e == 0.0 &&
-  self.f == 0.0
 }
 
 ///|

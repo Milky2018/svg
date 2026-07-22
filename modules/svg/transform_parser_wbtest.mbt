@@ -42,7 +42,9 @@ test "parse_transform skewY" {
 ///|
 test "parse_transform names are case-sensitive" {
   let t = parse_transform("skewx(45) skewy(45)")
-  inspect(t.is_identity(), content="true")
+  let (x, y) = t.apply(2.0, 3.0)
+  inspect(x, content="2")
+  inspect(y, content="3")
 }
 
 ///|

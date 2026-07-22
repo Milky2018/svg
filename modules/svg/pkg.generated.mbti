@@ -551,9 +551,7 @@ pub fn Transform::determinant(Self) -> Double
 pub fn Transform::get_rotation(Self) -> Double
 pub fn Transform::get_scale(Self) -> (Double, Double)
 pub fn Transform::get_translate(Self) -> (Double, Double)
-pub fn Transform::identity() -> Self
 pub fn Transform::inverse(Self) -> Self
-pub fn Transform::is_identity(Self) -> Bool
 pub fn Transform::is_invertible(Self) -> Bool
 pub fn Transform::matrix(Double, Double, Double, Double, Double, Double) -> Self
 pub fn Transform::multiply(Self, Self) -> Self
