@@ -4,58 +4,58 @@ pub fn parse_display(value : String) -> @types.Display {
   let normalized = value.trim().to_lower().to_owned()
   let parts = split_whitespace(normalized)
   if parts.length() == 0 {
-    return @types.Display::Block
+    return Block
   }
   if parts.length() == 2 {
     let first = parts[0]
     let second = parts[1]
     if (first == "math" && second == "inline") ||
       (first == "inline" && second == "math") {
-      return @types.Display::Inline
+      return Inline
     }
     if (first == "math" && second == "block") ||
       (first == "block" && second == "math") {
-      return @types.Display::Block
+      return Block
     }
     if (first == "flow-root" && second == "list-item") ||
       (first == "list-item" && second == "flow-root") {
-      return @types.Display::FlowRoot
+      return FlowRoot
     }
   }
   if parts.length() > 1 {
-    return @types.Display::Block
+    return Block
   }
   match parts[0] {
-    "block" => @types.Display::Block
-    "inline" => @types.Display::Inline
-    "inline-block" => @types.Display::InlineBlock
-    "flex" => @types.Display::Flex
-    "inline-flex" => @types.Display::InlineFlex
-    "grid" => @types.Display::Grid
-    "inline-grid" => @types.Display::InlineGrid
-    "none" => @types.Display::None
-    "contents" => @types.Display::Contents
-    "flow-root" => @types.Display::FlowRoot
-    "math" => @types.Display::Inline
+    "block" => Block
+    "inline" => Inline
+    "inline-block" => InlineBlock
+    "flex" => Flex
+    "inline-flex" => InlineFlex
+    "grid" => Grid
+    "inline-grid" => InlineGrid
+    "none" => None
+    "contents" => Contents
+    "flow-root" => FlowRoot
+    "math" => Inline
     // Table display types
-    "table" => @types.Display::Table
-    "inline-table" => @types.Display::InlineTable
-    "table-row" => @types.Display::TableRow
-    "table-cell" => @types.Display::TableCell
-    "table-caption" => @types.Display::TableCaption
-    "table-row-group" => @types.Display::TableRowGroup
-    "table-header-group" => @types.Display::TableHeaderGroup
-    "table-footer-group" => @types.Display::TableFooterGroup
-    "table-column" => @types.Display::TableColumn
-    "table-column-group" => @types.Display::TableColumnGroup
+    "table" => Table
+    "inline-table" => InlineTable
+    "table-row" => TableRow
+    "table-cell" => TableCell
+    "table-caption" => TableCaption
+    "table-row-group" => TableRowGroup
+    "table-header-group" => TableHeaderGroup
+    "table-footer-group" => TableFooterGroup
+    "table-column" => TableColumn
+    "table-column-group" => TableColumnGroup
     // Ruby internal display types are inline-level for layout-tree comparison.
     // (Full ruby formatting context is not yet implemented.)
-    "ruby" => @types.Display::Inline
-    "ruby-base" => @types.Display::Inline
-    "ruby-base-container" => @types.Display::Inline
-    "ruby-text" => @types.Display::Inline
-    "ruby-text-container" => @types.Display::Inline
-    _ => @types.Display::Block
+    "ruby" => Inline
+    "ruby-base" => Inline
+    "ruby-base-container" => Inline
+    "ruby-text" => Inline
+    "ruby-text-container" => Inline
+    _ => Block
   }
 }
 
@@ -63,11 +63,11 @@ pub fn parse_display(value : String) -> @types.Display {
 /// Parse position value
 pub fn parse_position(value : String) -> @types.Position {
   match value.trim().to_lower() {
-    "static" => @types.Position::Static
-    "absolute" => @types.Position::Absolute
-    "fixed" => @types.Position::Fixed
-    "relative" | "sticky" => @types.Position::Relative
-    _ => @types.Position::Static // Default is static
+    "static" => Static
+    "absolute" => Absolute
+    "fixed" => Fixed
+    "relative" | "sticky" => Relative
+    _ => Static // Default is static
   }
 }
 
@@ -75,10 +75,10 @@ pub fn parse_position(value : String) -> @types.Position {
 /// Parse float value
 pub fn parse_float(value : String) -> @types.Float {
   match value.trim().to_lower() {
-    "left" => @types.Float::Left
-    "right" => @types.Float::Right
-    "none" => @types.Float::None
-    _ => @types.Float::None
+    "left" => Left
+    "right" => Right
+    "none" => None
+    _ => None
   }
 }
 
@@ -90,15 +90,15 @@ pub fn parse_float_with_direction(
   match value.trim().to_lower() {
     "inline-start" =>
       if direction.is_rtl() {
-        @types.Float::Right
+        Right
       } else {
-        @types.Float::Left
+        Left
       }
     "inline-end" =>
       if direction.is_rtl() {
-        @types.Float::Left
+        Left
       } else {
-        @types.Float::Right
+        Right
       }
     _ => parse_float(value)
   }
@@ -108,11 +108,11 @@ pub fn parse_float_with_direction(
 /// Parse clear value
 pub fn parse_clear(value : String) -> @types.Clear {
   match value.trim().to_lower() {
-    "left" => @types.Clear::Left
-    "right" => @types.Clear::Right
-    "both" => @types.Clear::Both
-    "none" => @types.Clear::None
-    _ => @types.Clear::None
+    "left" => Left
+    "right" => Right
+    "both" => Both
+    "none" => None
+    _ => None
   }
 }
 
@@ -124,15 +124,15 @@ pub fn parse_clear_with_direction(
   match value.trim().to_lower() {
     "inline-start" =>
       if direction.is_rtl() {
-        @types.Clear::Right
+        Right
       } else {
-        @types.Clear::Left
+        Left
       }
     "inline-end" =>
       if direction.is_rtl() {
-        @types.Clear::Left
+        Left
       } else {
-        @types.Clear::Right
+        Right
       }
     _ => parse_clear(value)
   }
@@ -142,11 +142,11 @@ pub fn parse_clear_with_direction(
 /// Parse flex-direction value
 pub fn parse_flex_direction(value : String) -> @types.FlexDirection {
   match value.trim().to_lower() {
-    "row" => @types.FlexDirection::Row
-    "row-reverse" => @types.FlexDirection::RowReverse
-    "column" => @types.FlexDirection::Column
-    "column-reverse" => @types.FlexDirection::ColumnReverse
-    _ => @types.FlexDirection::Row
+    "row" => Row
+    "row-reverse" => RowReverse
+    "column" => Column
+    "column-reverse" => ColumnReverse
+    _ => Row
   }
 }
 
@@ -154,10 +154,10 @@ pub fn parse_flex_direction(value : String) -> @types.FlexDirection {
 /// Parse flex-wrap value
 pub fn parse_flex_wrap(value : String) -> @types.FlexWrap {
   match value.trim().to_lower() {
-    "nowrap" => @types.FlexWrap::NoWrap
-    "wrap" => @types.FlexWrap::Wrap
-    "wrap-reverse" => @types.FlexWrap::WrapReverse
-    _ => @types.FlexWrap::NoWrap
+    "nowrap" => NoWrap
+    "wrap" => Wrap
+    "wrap-reverse" => WrapReverse
+    _ => NoWrap
   }
 }
 
@@ -175,21 +175,21 @@ fn tokenize_alignment_value(value : String) -> Array[String] {
 ///|
 fn parse_alignment_keyword(value : String) -> @types.Alignment {
   match value {
-    "flex-start" => @types.Alignment::FlexStart
-    "flex-end" => @types.Alignment::FlexEnd
-    "start" => @types.Alignment::Start
-    "end" => @types.Alignment::End
-    "left" => @types.Alignment::Left
-    "right" => @types.Alignment::Right
-    "center" => @types.Alignment::Center
-    "space-between" => @types.Alignment::SpaceBetween
-    "space-around" => @types.Alignment::SpaceAround
-    "space-evenly" => @types.Alignment::SpaceEvenly
-    "stretch" => @types.Alignment::Stretch
-    "baseline" | "first baseline" => @types.Alignment::Baseline
+    "flex-start" => FlexStart
+    "flex-end" => FlexEnd
+    "start" => Start
+    "end" => End
+    "left" => Left
+    "right" => Right
+    "center" => Center
+    "space-between" => SpaceBetween
+    "space-around" => SpaceAround
+    "space-evenly" => SpaceEvenly
+    "stretch" => Stretch
+    "baseline" | "first baseline" => Baseline
     // Fallback alignment for last-baseline in axis alignment.
-    "last baseline" => @types.Alignment::End
-    _ => @types.Alignment::FlexStart
+    "last baseline" => End
+    _ => FlexStart
   }
 }
 
@@ -222,7 +222,7 @@ pub fn parse_alignment_with_overflow(
 ) -> (@types.Alignment, Bool) {
   let tokens = tokenize_alignment_value(value)
   if tokens.is_empty() {
-    return (@types.Alignment::FlexStart, false)
+    return (FlexStart, false)
   }
   let mut offset = 0
   let mut is_safe = false
@@ -235,7 +235,7 @@ pub fn parse_alignment_with_overflow(
     offset = 1
   }
   if offset >= tokens.length() {
-    return (@types.Alignment::FlexStart, false)
+    return (FlexStart, false)
   }
   let keyword = if offset + 1 < tokens.length() &&
     tokens[offset + 1] == "baseline" &&
@@ -247,9 +247,9 @@ pub fn parse_alignment_with_overflow(
   let parsed = parse_alignment_keyword(keyword)
   let parsed = if is_safe {
     match parsed {
-      @types.Alignment::Center
-      | @types.Alignment::End
-      | @types.Alignment::FlexEnd => @types.Alignment::Start
+      Center
+      | End
+      | FlexEnd => @types.Alignment::Start
       _ => parsed
     }
   } else {
@@ -360,15 +360,15 @@ pub fn parse_place_self(
 /// Parse align-self value
 pub fn parse_align_self(value : String) -> @types.AlignSelf {
   match value.trim().to_lower() {
-    "auto" => @types.AlignSelf::Auto
-    "flex-start" | "start" => @types.AlignSelf::Start
-    "flex-end" | "end" => @types.AlignSelf::End
-    "center" => @types.AlignSelf::Center
-    "stretch" => @types.AlignSelf::Stretch
-    "baseline" | "first baseline" => @types.AlignSelf::Baseline
+    "auto" => Auto
+    "flex-start" | "start" => Start
+    "flex-end" | "end" => End
+    "center" => Center
+    "stretch" => Stretch
+    "baseline" | "first baseline" => Baseline
     // Fallback alignment for last-baseline in self alignment.
-    "last baseline" => @types.AlignSelf::End
-    _ => @types.AlignSelf::Auto
+    "last baseline" => End
+    _ => Auto
   }
 }
 
@@ -376,12 +376,12 @@ pub fn parse_align_self(value : String) -> @types.AlignSelf {
 /// Parse overflow value
 pub fn parse_overflow(value : String) -> @types.Overflow {
   match value.trim().to_lower() {
-    "visible" => @types.Overflow::Visible
-    "hidden" => @types.Overflow::Hidden
-    "clip" => @types.Overflow::Clip
-    "scroll" => @types.Overflow::Scroll
-    "auto" => @types.Overflow::Auto
-    _ => @types.Overflow::Visible
+    "visible" => Visible
+    "hidden" => Hidden
+    "clip" => Clip
+    "scroll" => Scroll
+    "auto" => Auto
+    _ => Visible
   }
 }
 
@@ -405,16 +405,16 @@ pub fn parse_scroll_snap_type(value : String) -> @style.ScrollSnapType {
   for token in tokens {
     match token {
       "none" => return @style.ScrollSnapType::none()
-      "x" | "inline" => axis = @style.ScrollSnapAxis::X
-      "y" | "block" => axis = @style.ScrollSnapAxis::Y
-      "both" => axis = @style.ScrollSnapAxis::Both
-      "mandatory" => strictness = @style.ScrollSnapStrictness::Mandatory
-      "proximity" => strictness = @style.ScrollSnapStrictness::Proximity
+      "x" | "inline" => axis = X
+      "y" | "block" => axis = Y
+      "both" => axis = Both
+      "mandatory" => strictness = Mandatory
+      "proximity" => strictness = Proximity
       _ => ()
     }
   }
-  if axis == @style.ScrollSnapAxis::None ||
-    strictness == @style.ScrollSnapStrictness::None {
+  if axis == None ||
+    strictness == None {
     @style.ScrollSnapType::none()
   } else {
     { axis, strictness }
@@ -435,7 +435,7 @@ pub fn parse_scroll_snap_align(
     .filter(fn(part) { !part.is_empty() })
     .collect()
   if tokens.is_empty() {
-    return (@style.ScrollSnapAlign::None, @style.ScrollSnapAlign::None)
+    return (None, None)
   }
   if tokens.length() == 1 {
     let keyword = parse_scroll_snap_align_keyword(tokens[0])
@@ -449,11 +449,11 @@ pub fn parse_scroll_snap_align(
 ///|
 fn parse_scroll_snap_align_keyword(value : String) -> @style.ScrollSnapAlign {
   match value.trim().to_lower() {
-    "none" => @style.ScrollSnapAlign::None
-    "start" => @style.ScrollSnapAlign::Start
-    "end" => @style.ScrollSnapAlign::End
-    "center" => @style.ScrollSnapAlign::Center
-    _ => @style.ScrollSnapAlign::None
+    "none" => None
+    "start" => Start
+    "end" => End
+    "center" => Center
+    _ => None
   }
 }
 
@@ -461,12 +461,12 @@ fn parse_scroll_snap_align_keyword(value : String) -> @style.ScrollSnapAlign {
 /// Parse white-space value
 pub fn parse_white_space(value : String) -> @style.WhiteSpace {
   match value.trim().to_lower() {
-    "normal" => @style.WhiteSpace::Normal
-    "nowrap" => @style.WhiteSpace::Nowrap
-    "pre" => @style.WhiteSpace::Pre
-    "pre-wrap" => @style.WhiteSpace::PreWrap
-    "pre-line" => @style.WhiteSpace::PreLine
-    _ => @style.WhiteSpace::Normal
+    "normal" => Normal
+    "nowrap" => Nowrap
+    "pre" => Pre
+    "pre-wrap" => PreWrap
+    "pre-line" => PreLine
+    _ => Normal
   }
 }
 
@@ -474,14 +474,14 @@ pub fn parse_white_space(value : String) -> @style.WhiteSpace {
 /// Parse writing-mode value
 pub fn parse_writing_mode(value : String) -> @style.WritingMode {
   match value.trim().to_lower() {
-    "horizontal-tb" => @style.WritingMode::HorizontalTb
-    "vertical-rl" => @style.WritingMode::VerticalRl
-    "vertical-lr" => @style.WritingMode::VerticalLr
+    "horizontal-tb" => HorizontalTb
+    "vertical-rl" => VerticalRl
+    "vertical-lr" => VerticalLr
     // Legacy values
-    "lr" | "lr-tb" | "rl" | "rl-tb" => @style.WritingMode::HorizontalTb
-    "tb" | "tb-rl" => @style.WritingMode::VerticalRl
-    "tb-lr" => @style.WritingMode::VerticalLr
-    _ => @style.WritingMode::HorizontalTb
+    "lr" | "lr-tb" | "rl" | "rl-tb" => HorizontalTb
+    "tb" | "tb-rl" => VerticalRl
+    "tb-lr" => VerticalLr
+    _ => HorizontalTb
   }
 }
 
@@ -489,8 +489,8 @@ pub fn parse_writing_mode(value : String) -> @style.WritingMode {
 /// Parse direction value (ltr/rtl)
 pub fn parse_direction(value : String) -> @style.Direction {
   match value.trim().to_lower() {
-    "rtl" => @style.Direction::Rtl
-    "ltr" | _ => @style.Direction::Ltr
+    "rtl" => Rtl
+    "ltr" | _ => Ltr
   }
 }
 
@@ -498,12 +498,12 @@ pub fn parse_direction(value : String) -> @style.Direction {
 /// Parse text-align value
 pub fn parse_text_align(value : String) -> @style.TextAlign {
   match value.trim().to_lower() {
-    "center" => @style.TextAlign::Center
-    "justify" => @style.TextAlign::Justify
-    "left" => @style.TextAlign::Left
-    "right" => @style.TextAlign::Right
-    "end" => @style.TextAlign::End
-    "start" | _ => @style.TextAlign::Start
+    "center" => Center
+    "justify" => Justify
+    "left" => Left
+    "right" => Right
+    "end" => End
+    "start" | _ => Start
   }
 }
 

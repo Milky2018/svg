@@ -167,7 +167,7 @@ test "matches_pseudo_class_with_forced_states falls through for non-forced" {
   // For a plain new element, :enabled depends on the matcher impl - test the routing.
   let _ = matches_pseudo_class_with_forced_states(
     element,
-    PseudoClass::Enabled,
+    Enabled,
     ForcedPseudoStates::none(),
   )
   inspect(true, content="true")

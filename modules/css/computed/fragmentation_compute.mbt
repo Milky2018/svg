@@ -24,66 +24,66 @@ fn parse_column_count(value : String) -> Int? {
 fn parse_column_width(value : String, ctx : ComputeContext) -> @types.Dimension {
   let trimmed = value.trim().to_owned()
   if trimmed.is_empty() || trimmed == "auto" {
-    return @types.Dimension::Auto
+    return Auto
   }
   let dim = resolve_dimension_with_calc_percent_fallback(trimmed, ctx)
   match dim {
-    @types.Dimension::Length(v) =>
+    Length(v) =>
       if v > 0.0 {
-        @types.Dimension::Length(v)
+        Length(v)
       } else {
-        @types.Dimension::Auto
+        Auto
       }
-    @types.Dimension::Percent(v) =>
+    Percent(v) =>
       if v > 0.0 {
-        @types.Dimension::Percent(v)
+        Percent(v)
       } else {
-        @types.Dimension::Auto
+        Auto
       }
-    @types.Dimension::Calc(px, pct) =>
+    Calc(px, pct) =>
       if px > 0.0 || pct > 0.0 {
-        @types.Dimension::Calc(px, pct)
+        Calc(px, pct)
       } else {
-        @types.Dimension::Auto
+        Auto
       }
-    @types.Dimension::MathFn(op, args) => @types.Dimension::MathFn(op, args)
-    @types.Dimension::Auto
-    | @types.Dimension::MinContent
-    | @types.Dimension::MaxContent
-    | @types.Dimension::FitContent(_) => @types.Dimension::Auto
+    MathFn(op, args) => MathFn(op, args)
+    Auto
+    | MinContent
+    | MaxContent
+    | FitContent(_) => Auto
   }
 }
 
 ///|
 fn parse_column_fill(value : String) -> @style.ColumnFill {
   match value.trim().to_owned() {
-    "auto" => @style.ColumnFill::Auto
-    _ => @style.ColumnFill::Balance
+    "auto" => Auto
+    _ => Balance
   }
 }
 
 ///|
 fn parse_break_before(value : String) -> @style.BreakBefore {
   match value.trim().to_owned() {
-    "column" => @style.BreakBefore::Column
-    "avoid" => @style.BreakBefore::Avoid
-    _ => @style.BreakBefore::Auto
+    "column" => Column
+    "avoid" => Avoid
+    _ => Auto
   }
 }
 
 ///|
 fn parse_break_inside(value : String) -> @style.BreakInside {
   match value.trim().to_owned() {
-    "avoid" => @style.BreakInside::Avoid
-    _ => @style.BreakInside::Auto
+    "avoid" => Avoid
+    _ => Auto
   }
 }
 
 ///|
 fn parse_column_span(value : String) -> @style.ColumnSpan {
   match value.trim().to_owned() {
-    "all" => @style.ColumnSpan::All
-    _ => @style.ColumnSpan::None
+    "all" => All
+    _ => None
   }
 }
 
@@ -118,7 +118,7 @@ fn parse_columns_shorthand(
     }
     let parsed_width = parse_column_width(token, ctx)
     match parsed_width {
-      @types.Dimension::Auto => ()
+      Auto => ()
       _ => width = parsed_width
     }
   }
@@ -141,7 +141,7 @@ fn parse_contain_intrinsic_axis(
     return None
   }
   match resolve_dimension(v, ctx) {
-    @types.Length(length) => if length > 0.0 { Some(length) } else { Some(0.0) }
+    Length(length) => if length > 0.0 { Some(length) } else { Some(0.0) }
     _ => None
   }
 }
@@ -255,18 +255,18 @@ fn parse_container_type(value : String) -> @style.Contain? {
 /// Parse visibility property
 fn parse_visibility(value : String) -> @style.Visibility {
   match value.trim().to_owned() {
-    "visible" => @style.Visibility::Visible
-    "hidden" => @style.Visibility::Hidden
-    "collapse" => @style.Visibility::Collapse
-    _ => @style.Visibility::Visible
+    "visible" => Visible
+    "hidden" => Hidden
+    "collapse" => Collapse
+    _ => Visible
   }
 }
 
 ///|
 fn parse_pointer_events(value : String) -> @style.PointerEvents {
   match value.trim().to_owned() {
-    "none" => @style.PointerEvents::None
-    _ => @style.PointerEvents::Auto
+    "none" => None
+    _ => Auto
   }
 }
 
@@ -274,15 +274,15 @@ fn parse_pointer_events(value : String) -> @style.PointerEvents {
 /// Parse vertical-align property
 fn parse_vertical_align(value : String) -> @style.VerticalAlign {
   match value.trim().to_owned() {
-    "baseline" => @style.VerticalAlign::Baseline
-    "top" => @style.VerticalAlign::Top
-    "middle" => @style.VerticalAlign::Middle
-    "bottom" => @style.VerticalAlign::Bottom
-    "text-top" => @style.VerticalAlign::TextTop
-    "text-bottom" => @style.VerticalAlign::TextBottom
-    "sub" => @style.VerticalAlign::Sub
-    "super" => @style.VerticalAlign::Super
-    _ => @style.VerticalAlign::Baseline
+    "baseline" => Baseline
+    "top" => Top
+    "middle" => Middle
+    "bottom" => Bottom
+    "text-top" => TextTop
+    "text-bottom" => TextBottom
+    "sub" => Sub
+    "super" => Super
+    _ => Baseline
   }
 }
 
@@ -291,13 +291,13 @@ fn parse_vertical_align(value : String) -> @style.VerticalAlign {
 fn parse_z_index(value : String) -> @style.ZIndex {
   let trimmed = value.trim().to_owned()
   if trimmed == "auto" {
-    @style.ZIndex::Auto
+    Auto
   } else {
     try {
       let v = @string.parse_int(trimmed)
-      @style.ZIndex::Value(v)
+      Value(v)
     } catch {
-      _ => @style.ZIndex::Auto
+      _ => Auto
     }
   }
 }

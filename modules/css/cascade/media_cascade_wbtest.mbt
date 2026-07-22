@@ -14,7 +14,7 @@ test "prefers_color_scheme_dark_cascade" {
   let light_env = @media.MediaEnvironment::with_color_scheme(
     375.0,
     600.0,
-    @media.ColorScheme::Light,
+    Light,
   )
   let cascaded_light = cascade_element_with_media(
     element,
@@ -32,7 +32,7 @@ test "prefers_color_scheme_dark_cascade" {
   let dark_env = @media.MediaEnvironment::with_color_scheme(
     375.0,
     600.0,
-    @media.ColorScheme::Dark,
+    Dark,
   )
   let cascaded_dark = cascade_element_with_media(
     element,
@@ -66,7 +66,7 @@ test "prefers_color_scheme_with_css_variables" {
   let dark_env = @media.MediaEnvironment::with_color_scheme(
     375.0,
     600.0,
-    @media.ColorScheme::Dark,
+    Dark,
   )
   let cascaded_root = cascade_element_with_media(
     root_element,
@@ -104,7 +104,7 @@ test "prefers_color_scheme_dark_text_color" {
   let light_env = @media.MediaEnvironment::with_color_scheme(
     375.0,
     600.0,
-    @media.ColorScheme::Light,
+    Light,
   )
   let cascaded_root_light = cascade_element_with_media(
     root_element,
@@ -121,7 +121,7 @@ test "prefers_color_scheme_dark_text_color" {
   let dark_env = @media.MediaEnvironment::with_color_scheme(
     375.0,
     600.0,
-    @media.ColorScheme::Dark,
+    Dark,
   )
   let cascaded_root_dark = cascade_element_with_media(
     root_element,

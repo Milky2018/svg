@@ -288,7 +288,7 @@ fn FilterGraph::get_filter_bounds(
   target : BoundingBox,
 ) -> BoundingBox {
   match self.units {
-    MaskUnits::ObjectBoundingBox => {
+    ObjectBoundingBox => {
       let width = target.width()
       let height = target.height()
       {
@@ -298,7 +298,7 @@ fn FilterGraph::get_filter_bounds(
         max_y: target.min_y + (self.y + self.height) * height,
       }
     }
-    MaskUnits::UserSpaceOnUse => {
+    UserSpaceOnUse => {
       let width = target.width()
       let height = target.height()
       let min_x = resolve_mask_coord(
@@ -372,8 +372,8 @@ pub fn Mask::new(id : String, content : Array[SVGNode]) -> Mask {
     y_is_percent: true,
     width_is_percent: true,
     height_is_percent: true,
-    mask_units: MaskUnits::ObjectBoundingBox,
-    mask_content_units: MaskUnits::UserSpaceOnUse,
+    mask_units: ObjectBoundingBox,
+    mask_content_units: UserSpaceOnUse,
     mask_type: Luminance,
   }
 }
@@ -398,8 +398,8 @@ pub fn Mask::with_bounds(
     y_is_percent: false,
     width_is_percent: false,
     height_is_percent: false,
-    mask_units: MaskUnits::ObjectBoundingBox,
-    mask_content_units: MaskUnits::UserSpaceOnUse,
+    mask_units: ObjectBoundingBox,
+    mask_content_units: UserSpaceOnUse,
     mask_type: Luminance,
   }
 }
@@ -561,7 +561,7 @@ pub fn SVGDocument::add_marker(self : SVGDocument, marker : Marker) -> Unit {
 /// Get the mask region bounds for a given target bounds
 fn Mask::get_mask_bounds(self : Mask, target : BoundingBox) -> BoundingBox {
   match self.mask_units {
-    MaskUnits::ObjectBoundingBox => {
+    ObjectBoundingBox => {
       let tw = target.max_x - target.min_x
       let th = target.max_y - target.min_y
       {
@@ -571,7 +571,7 @@ fn Mask::get_mask_bounds(self : Mask, target : BoundingBox) -> BoundingBox {
         max_y: target.min_y + (self.y + self.height) * th,
       }
     }
-    MaskUnits::UserSpaceOnUse => {
+    UserSpaceOnUse => {
       let tw = target.max_x - target.min_x
       let th = target.max_y - target.min_y
       let min_x = resolve_mask_coord(

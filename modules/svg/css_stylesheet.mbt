@@ -12,20 +12,20 @@ fn parse_embedded_stylesheets(
   let mut in_style = false
   for event in events {
     match event {
-      @xml.Event::Start(element) =>
+      Start(element) =>
         if element.name == "style" {
           content.reset()
           in_style = true
         }
-      @xml.Event::Empty(element) =>
+      Empty(element) =>
         if element.name == "style" {
           stylesheets.push(@css.parse_stylesheet(""))
         }
-      @xml.Event::Text(text) | @xml.Event::CData(text) =>
+      Text(text) | CData(text) =>
         if in_style {
           content.write_string(text)
         }
-      @xml.Event::End(name) =>
+      End(name) =>
         if in_style && name == "style" {
           stylesheets.push(
             @css.parse_stylesheet(trim_string(content.to_string())),
@@ -120,7 +120,7 @@ fn presentation_stylesheet(
     Some(selector) => selector
     None => return None
   }
-  let stylesheet = @css_cascade.Stylesheet::new(@css_cascade.Author)
+  let stylesheet = @css_cascade.Stylesheet::new(Author)
   stylesheet.add_rule("*", selector, declarations)
   Some(stylesheet)
 }

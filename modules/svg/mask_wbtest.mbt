@@ -124,7 +124,7 @@ test "maskUnits userSpaceOnUse with rotation transform" {
 ///|
 test "node mask operations" {
   let node = SVGNode::new(
-    Shape::Rect(x=0.0, y=0.0, width=100.0, height=100.0, rx=0.0, ry=0.0),
+    Rect(x=0.0, y=0.0, width=100.0, height=100.0, rx=0.0, ry=0.0),
   )
   inspect(node.mask_id is None, content="true")
   node.set_mask("my-mask")
@@ -136,7 +136,7 @@ test "node mask operations" {
 ///|
 test "node clip path operations" {
   let node = SVGNode::new(
-    Shape::Rect(x=0.0, y=0.0, width=100.0, height=100.0, rx=0.0, ry=0.0),
+    Rect(x=0.0, y=0.0, width=100.0, height=100.0, rx=0.0, ry=0.0),
   )
   inspect(node.clip_path_id is None, content="true")
   node.set_clip_path("my-clip")

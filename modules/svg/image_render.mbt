@@ -339,7 +339,7 @@ fn render_embedded_svg_image(
       if doc.root.view_box is None {
         let (svg_w, svg_h) = extract_svg_size(processed)
         if svg_w > 0.0 && svg_h > 0.0 {
-          doc.root.view_box = Some(ViewBox::{
+          doc.root.view_box = Some({
             min_x: 0.0,
             min_y: 0.0,
             width: svg_w,
@@ -364,7 +364,7 @@ fn render_embedded_svg_image(
         height,
         transform,
         ctx,
-        PreserveAspectRatio::{ align: None, meet_or_slice: Meet },
+        { align: None, meet_or_slice: Meet },
         sampling,
         opacity,
       )

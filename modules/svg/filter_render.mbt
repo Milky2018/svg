@@ -686,8 +686,8 @@ fn filter_primitive_x(
   target : BoundingBox,
 ) -> Double {
   match graph.primitive_units {
-    MaskUnits::ObjectBoundingBox => value * target.width()
-    MaskUnits::UserSpaceOnUse => value
+    ObjectBoundingBox => value * target.width()
+    UserSpaceOnUse => value
   }
 }
 
@@ -698,8 +698,8 @@ fn filter_primitive_y(
   target : BoundingBox,
 ) -> Double {
   match graph.primitive_units {
-    MaskUnits::ObjectBoundingBox => value * target.height()
-    MaskUnits::UserSpaceOnUse => value
+    ObjectBoundingBox => value * target.height()
+    UserSpaceOnUse => value
   }
 }
 
@@ -711,8 +711,8 @@ fn filter_primitive_position_x(
   origin_x : Int,
 ) -> Double {
   match graph.primitive_units {
-    MaskUnits::ObjectBoundingBox => target.min_x + value * target.width()
-    MaskUnits::UserSpaceOnUse => value - origin_x.to_double()
+    ObjectBoundingBox => target.min_x + value * target.width()
+    UserSpaceOnUse => value - origin_x.to_double()
   }
 }
 
@@ -724,8 +724,8 @@ fn filter_primitive_position_y(
   origin_y : Int,
 ) -> Double {
   match graph.primitive_units {
-    MaskUnits::ObjectBoundingBox => target.min_y + value * target.height()
-    MaskUnits::UserSpaceOnUse => value - origin_y.to_double()
+    ObjectBoundingBox => target.min_y + value * target.height()
+    UserSpaceOnUse => value - origin_y.to_double()
   }
 }
 
@@ -1088,22 +1088,22 @@ fn evaluate_filter_graph(
         fractal_noise~
       ) => {
         let frequency_x = match graph.primitive_units {
-          MaskUnits::ObjectBoundingBox =>
+          ObjectBoundingBox =>
             if target_bounds.width() <= 0.0 {
               0.0
             } else {
               base_x / target_bounds.width()
             }
-          MaskUnits::UserSpaceOnUse => base_x
+          UserSpaceOnUse => base_x
         }
         let frequency_y = match graph.primitive_units {
-          MaskUnits::ObjectBoundingBox =>
+          ObjectBoundingBox =>
             if target_bounds.height() <= 0.0 {
               0.0
             } else {
               base_y / target_bounds.height()
             }
-          MaskUnits::UserSpaceOnUse => base_y
+          UserSpaceOnUse => base_y
         }
         (
           turbulence_filter_image(
@@ -1197,8 +1197,8 @@ fn evaluate_filter_graph(
     }
   }
   let filter_bounds = match graph.units {
-    MaskUnits::ObjectBoundingBox => graph.get_filter_bounds(target_bounds)
-    MaskUnits::UserSpaceOnUse => {
+    ObjectBoundingBox => graph.get_filter_bounds(target_bounds)
+    UserSpaceOnUse => {
       let device_target = {
         min_x: target_bounds.min_x + origin_x.to_double(),
         min_y: target_bounds.min_y + origin_y.to_double(),

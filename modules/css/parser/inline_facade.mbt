@@ -4,11 +4,11 @@ fn seed_direction(tokens : Array[@token.Token]) -> @style.Direction {
   let mut pos = 0
   while pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::Whitespace | @token.Token::Semicolon => {
+      Whitespace | Semicolon => {
         pos += 1
         continue
       }
-      @token.Token::EOF => break
+      EOF => break
       _ => ()
     }
 
@@ -19,11 +19,11 @@ fn seed_direction(tokens : Array[@token.Token]) -> @style.Direction {
             0 => ()
             _ =>
               match value_tokens[0] {
-                @token.Token::Ident(s) =>
+                Ident(s) =>
                   if s == "rtl" {
-                    direction = @style.Direction::Rtl
+                    direction = Rtl
                   } else if s == "ltr" {
-                    direction = @style.Direction::Ltr
+                    direction = Ltr
                   }
                 _ => ()
               }
@@ -31,11 +31,11 @@ fn seed_direction(tokens : Array[@token.Token]) -> @style.Direction {
         }
         while pos < tokens.length() {
           match tokens[pos] {
-            @token.Token::Semicolon => {
+            Semicolon => {
               pos += 1
               break
             }
-            @token.Token::EOF => break
+            EOF => break
             _ => pos += 1
           }
         }
@@ -59,11 +59,11 @@ pub fn parse_inline_style(css : String) -> @style.Style {
   while pos < tokens.length() {
     // Skip leading whitespace and semicolons
     match tokens[pos] {
-      @token.Token::Whitespace | @token.Token::Semicolon => {
+      Whitespace | Semicolon => {
         pos += 1
         continue
       }
-      @token.Token::EOF => break
+      EOF => break
       _ => ()
     }
 
@@ -74,11 +74,11 @@ pub fn parse_inline_style(css : String) -> @style.Style {
         // Skip to next semicolon or end
         while pos < tokens.length() {
           match tokens[pos] {
-            @token.Token::Semicolon => {
+            Semicolon => {
               pos += 1
               break
             }
-            @token.Token::EOF => break
+            EOF => break
             _ => pos += 1
           }
         }
@@ -99,8 +99,8 @@ pub fn parse_inline_style(css : String) -> @style.Style {
 /// The layout engine expects outer dimensions (border-box), so we adjust here.
 fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
   match style.box_sizing {
-    @types.BorderBox => style // No adjustment needed
-    @types.ContentBox => {
+    BorderBox => style // No adjustment needed
+    ContentBox => {
       // Calculate padding and border sums
       let padding_h = resolve_dimension_to_px(style.padding.left) +
         resolve_dimension_to_px(style.padding.right)
@@ -113,33 +113,33 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
 
       // Adjust width and height to include padding+border
       let adjusted_width = match style.width {
-        @types.Dimension::Length(w) =>
+        Length(w) =>
           @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_height = match style.height {
-        @types.Dimension::Length(h) =>
+        Length(h) =>
           @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       // Adjust min/max constraints too
       let adjusted_min_width = match style.min_width {
-        @types.Dimension::Length(w) =>
+        Length(w) =>
           @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_min_height = match style.min_height {
-        @types.Dimension::Length(h) =>
+        Length(h) =>
           @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
       let adjusted_max_width = match style.max_width {
-        @types.Dimension::Length(w) =>
+        Length(w) =>
           @types.Dimension::Length(w + padding_h + border_h)
         other => other
       }
       let adjusted_max_height = match style.max_height {
-        @types.Dimension::Length(h) =>
+        Length(h) =>
           @types.Dimension::Length(h + padding_v + border_v)
         other => other
       }
@@ -152,7 +152,7 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
         max_width: adjusted_max_width,
         max_height: adjusted_max_height,
         // Mark as adjusted (now using border-box semantics internally)
-        box_sizing: @types.BorderBox,
+        box_sizing: BorderBox,
       }
     }
   }
@@ -162,19 +162,19 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
 /// Helper to resolve a dimension to pixels (for padding/border calculation)
 fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
   match dim {
-    @types.Length(v) => v
-    @types.Percent(_) => 0.0 // Percentages are resolved later
-    @types.Calc(px, _) => px // Percent component is resolved later
-    @types.MathFn(op, args) =>
+    Length(v) => v
+    Percent(_) => 0.0 // Percentages are resolved later
+    Calc(px, _) => px // Percent component is resolved later
+    MathFn(op, args) =>
       // Percent components resolve later; reduce using px parts only.
       if args.is_empty() {
         0.0
       } else {
         @types.apply_math_op(op, args.map(fn(a) { a.0 }))
       }
-    @types.Auto => 0.0
-    @types.MinContent => 0.0 // Intrinsic sizing resolved during layout
-    @types.MaxContent => 0.0
-    @types.FitContent(_) => 0.0
+    Auto => 0.0
+    MinContent => 0.0 // Intrinsic sizing resolved during layout
+    MaxContent => 0.0
+    FitContent(_) => 0.0
   }
 }

@@ -89,11 +89,11 @@ test "Show MediaFeature - range features" {
 
 ///|
 test "Show MediaFeature - optional value features" {
-  let s_width = MediaFeature::Width(Some(MediaValue::Number(800.0))).to_string()
+  let s_width = MediaFeature::Width(Some(Number(800.0))).to_string()
   assert_true(s_width.contains("Width("))
   let s_height = MediaFeature::Height(None).to_string()
   assert_true(s_height.contains("Height("))
-  let s_ar = MediaFeature::AspectRatio(Some(MediaValue::Ratio(4, 3))).to_string()
+  let s_ar = MediaFeature::AspectRatio(Some(Ratio(4, 3))).to_string()
   assert_true(s_ar.contains("AspectRatio("))
   let s_res = MediaFeature::Resolution(None).to_string()
   assert_true(s_res.contains("Resolution("))
@@ -102,9 +102,9 @@ test "Show MediaFeature - optional value features" {
 ///|
 test "Show MediaFeature - range syntax" {
   let v = MediaValue::Dimension(500.0, "px")
-  let s = MediaFeature::WidthRange(RangeOp::Le, v).to_string()
+  let s = MediaFeature::WidthRange(Le, v).to_string()
   assert_true(s.contains("WidthRange("))
-  let s2 = MediaFeature::HeightRange(RangeOp::Ge, v).to_string()
+  let s2 = MediaFeature::HeightRange(Ge, v).to_string()
   assert_true(s2.contains("HeightRange("))
 }
 
@@ -130,7 +130,7 @@ test "Show MediaFeature - discrete features" {
 
 ///|
 test "Show MediaFeature - custom" {
-  let s = MediaFeature::Custom("foo", Some(MediaValue::Number(1.0))).to_string()
+  let s = MediaFeature::Custom("foo", Some(Number(1.0))).to_string()
   assert_true(s.contains("Custom("))
   assert_true(s.contains("\"foo\""))
   let s2 = MediaFeature::Custom("bar", None).to_string()
@@ -142,8 +142,8 @@ test "Show MediaQuery and MediaQueryList" {
   let mq : MediaQuery = {
     negated: true,
     only: false,
-    media_type: Some(MediaType::Screen),
-    conditions: [MediaFeature::Color],
+    media_type: Some(Screen),
+    conditions: [Color],
   }
   let s = mq.to_string()
   assert_true(s.contains("negated: true"))
@@ -355,7 +355,7 @@ test "MediaValue - non-pixel values yield zero pixels" {
     negated: false,
     only: false,
     media_type: None,
-    conditions: [MediaFeature::MinWidth(MediaValue::Ratio(16, 9))],
+    conditions: [MinWidth(Ratio(16, 9))],
   }
   // 800 >= 0 (ratio coerced to 0px) → true
   inspect(mq.evaluate(env), content="true")
@@ -364,7 +364,7 @@ test "MediaValue - non-pixel values yield zero pixels" {
     negated: false,
     only: false,
     media_type: None,
-    conditions: [MediaFeature::MinWidth(MediaValue::Ident("foo"))],
+    conditions: [MinWidth(Ident("foo"))],
   }
   inspect(mq2.evaluate(env), content="true")
 }

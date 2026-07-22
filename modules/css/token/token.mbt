@@ -60,7 +60,7 @@ pub fn Token::to_string(self : Token) -> String {
     Number(n, t) => {
       let typ = match t {
         Integer => "int"
-        NumType::Number => "num"
+        Number => "num"
       }
       "Number(\{n}, \{typ})"
     }

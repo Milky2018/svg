@@ -14,10 +14,10 @@ pub(all) enum StepPosition {
 ///|
 pub impl Show for StepPosition with fn output(self, logger) {
   match self {
-    StepPosition::Start => logger.write_string("Start")
-    StepPosition::End => logger.write_string("End")
-    StepPosition::JumpNone => logger.write_string("JumpNone")
-    StepPosition::JumpBoth => logger.write_string("JumpBoth")
+    Start => logger.write_string("Start")
+    End => logger.write_string("End")
+    JumpNone => logger.write_string("JumpNone")
+    JumpBoth => logger.write_string("JumpBoth")
   }
 }
 
@@ -346,23 +346,23 @@ fn sample_linear_function(
 
 ///|
 fn sample_steps(count : Int, position : StepPosition, t : Double) -> Double {
-  if count <= 0 || (position == StepPosition::JumpNone && count <= 1) {
+  if count <= 0 || (position == JumpNone && count <= 1) {
     return t
   }
   let steps = count.to_double()
   let mut current_step = (t * steps).floor()
   match position {
-    StepPosition::Start | StepPosition::JumpBoth =>
+    Start | JumpBoth =>
       current_step = current_step + 1.0
-    StepPosition::End | StepPosition::JumpNone => ()
+    End | JumpNone => ()
   }
   if current_step < 0.0 {
     current_step = 0.0
   }
   let jumps = match position {
-    StepPosition::JumpNone => count - 1
-    StepPosition::JumpBoth => count + 1
-    StepPosition::Start | StepPosition::End => count
+    JumpNone => count - 1
+    JumpBoth => count + 1
+    Start | End => count
   }
   let jumps = jumps.to_double()
   if current_step > jumps {
@@ -764,7 +764,7 @@ fn parse_steps(value : String) -> Easing? {
   match parse_function_args(value, "steps(") {
     Some(parts) if parts.length() == 1 =>
       match parse_easing_int(parts[0]) {
-        Some(count) if count > 0 => Some(Steps(count, StepPosition::End))
+        Some(count) if count > 0 => Some(Steps(count, End))
         _ => None
       }
     Some(parts) if parts.length() == 2 =>
@@ -772,13 +772,13 @@ fn parse_steps(value : String) -> Easing? {
         Some(count) if count > 0 => {
           let position = match parts[1].to_lower() {
             "start" | "jump-start" => Some(StepPosition::Start)
-            "end" | "jump-end" => Some(StepPosition::End)
-            "jump-none" => Some(StepPosition::JumpNone)
-            "jump-both" => Some(StepPosition::JumpBoth)
+            "end" | "jump-end" => Some(End)
+            "jump-none" => Some(JumpNone)
+            "jump-both" => Some(JumpBoth)
             _ => None
           }
           match position {
-            Some(StepPosition::JumpNone) if count <= 1 => None
+            Some(JumpNone) if count <= 1 => None
             Some(pos) => Some(Steps(count, pos))
             None => None
           }
@@ -808,8 +808,8 @@ fn parse_named_easing(value : String) -> Easing? {
     "easein" => Some(EaseIn)
     "easeout" => Some(EaseOut)
     "easeinout" => Some(EaseInOut)
-    "stepstart" => Some(Steps(1, StepPosition::Start))
-    "stepend" => Some(Steps(1, StepPosition::End))
+    "stepstart" => Some(Steps(1, Start))
+    "stepend" => Some(Steps(1, End))
     "easeinsine" => Some(EaseInSine)
     "easeoutsine" => Some(EaseOutSine)
     "easeinoutsine" => Some(EaseInOutSine)

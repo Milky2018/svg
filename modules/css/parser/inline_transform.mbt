@@ -5,11 +5,11 @@ fn parse_box_sizing(tokens : ArrayView[@token.Token]) -> @types.BoxSizing? {
     return None
   }
   match tokens[0] {
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "content-box" {
-        Some(@types.ContentBox)
+        Some(ContentBox)
       } else if s == "border-box" {
-        Some(@types.BorderBox)
+        Some(BorderBox)
       } else {
         None
       }
@@ -23,7 +23,7 @@ fn skip_whitespace(tokens : ArrayView[@token.Token]) -> ArrayView[@token.Token] 
   let mut i = 0
   while i < tokens.length() {
     match tokens[i] {
-      @token.Token::Whitespace => i += 1
+      Whitespace => i += 1
       _ => break
     }
   }
@@ -39,7 +39,7 @@ fn parse_contain(tokens : ArrayView[@token.Token]) -> @style.Contain {
   let mut remaining = skip_whitespace(tokens)
   while remaining.length() > 0 {
     match remaining[0] {
-      @token.Token::Ident(s) => {
+      Ident(s) => {
         if s == "none" {
           return @style.Contain::none()
         } else if s == "strict" {
@@ -59,7 +59,7 @@ fn parse_contain(tokens : ArrayView[@token.Token]) -> @style.Contain {
         }
         remaining = skip_whitespace(remaining[1:])
       }
-      @token.Token::Whitespace => remaining = skip_whitespace(remaining[1:])
+      Whitespace => remaining = skip_whitespace(remaining[1:])
       _ => break
     }
   }
@@ -94,7 +94,7 @@ fn parse_container_type(tokens : ArrayView[@token.Token]) -> @style.Contain? {
     return None
   }
   match remaining[0] {
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "normal" {
         Some(@style.Contain::none())
       } else if s == "size" {
@@ -117,18 +117,18 @@ fn parse_contain_intrinsic_axis(tokens : ArrayView[@token.Token]) -> Double? {
     return None
   }
   match remaining[0] {
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "none" || s == "auto" {
         None
       } else {
         match parse_dimension(remaining) {
-          Some(@types.Length(v)) => if v > 0.0 { Some(v) } else { Some(0.0) }
+          Some(Length(v)) => if v > 0.0 { Some(v) } else { Some(0.0) }
           _ => None
         }
       }
     _ =>
       match parse_dimension(remaining) {
-        Some(@types.Length(v)) => if v > 0.0 { Some(v) } else { Some(0.0) }
+        Some(Length(v)) => if v > 0.0 { Some(v) } else { Some(0.0) }
         _ => None
       }
   }
@@ -144,8 +144,8 @@ fn parse_contain_intrinsic_size(
   let axis_values : Array[Double?] = []
   while remaining.length() > 0 {
     match remaining[0] {
-      @token.Token::Whitespace => remaining = skip_whitespace(remaining[1:])
-      @token.Token::Ident(s) =>
+      Whitespace => remaining = skip_whitespace(remaining[1:])
+      Ident(s) =>
         if s == "auto" {
           remaining = skip_whitespace(remaining[1:])
         } else if s == "none" {
@@ -153,7 +153,7 @@ fn parse_contain_intrinsic_size(
           remaining = skip_whitespace(remaining[1:])
         } else {
           match parse_dimension(remaining) {
-            Some(@types.Length(v)) =>
+            Some(Length(v)) =>
               axis_values.push(Some(if v > 0.0 { v } else { 0.0 }))
             _ => ()
           }
@@ -161,7 +161,7 @@ fn parse_contain_intrinsic_size(
         }
       _ => {
         match parse_dimension(remaining) {
-          Some(@types.Length(v)) =>
+          Some(Length(v)) =>
             axis_values.push(Some(if v > 0.0 { v } else { 0.0 }))
           _ => ()
         }
@@ -188,7 +188,7 @@ fn parse_transform(tokens : ArrayView[@token.Token]) -> @style.Transform {
   }
   // Check for "none"
   match remaining[0] {
-    @token.Token::Ident(s) => if s == "none" { return @style.Transform::none() }
+    Ident(s) => if s == "none" { return @style.Transform::none() }
     _ => ()
   }
   // Reconstruct the value as string for parsing with the full transform parser
@@ -197,24 +197,24 @@ fn parse_transform(tokens : ArrayView[@token.Token]) -> @style.Transform {
   let sb = StringBuilder::new()
   for i = 0; i < remaining.length(); i = i + 1 {
     match remaining[i] {
-      @token.Token::Ident(s) => sb.write_string(s)
-      @token.Token::Function(name) => {
+      Ident(s) => sb.write_string(s)
+      Function(name) => {
         sb.write_string(name)
         sb.write_char('(')
       }
-      @token.Token::Dimension(value, unit) => {
+      Dimension(value, unit) => {
         sb.write_string(value.to_string())
         sb.write_string(unit)
       }
-      @token.Token::Percentage(value) => {
+      Percentage(value) => {
         sb.write_string(value.to_string())
         sb.write_char('%')
       }
-      @token.Token::Number(value, _) => sb.write_string(value.to_string())
-      @token.Token::Comma => sb.write_char(',')
-      @token.Token::RightParen => sb.write_char(')')
-      @token.Token::LeftParen => sb.write_char('(')
-      @token.Token::Whitespace => sb.write_char(' ')
+      Number(value, _) => sb.write_string(value.to_string())
+      Comma => sb.write_char(',')
+      RightParen => sb.write_char(')')
+      LeftParen => sb.write_char('(')
+      Whitespace => sb.write_char(' ')
       _ => ()
     }
   }
@@ -229,16 +229,16 @@ fn parse_pointer_events(
 ) -> @style.PointerEvents {
   let remaining = skip_whitespace(tokens)
   if remaining.length() == 0 {
-    return @style.PointerEvents::Auto
+    return Auto
   }
   match remaining[0] {
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "none" {
-        @style.PointerEvents::None
+        None
       } else {
-        @style.PointerEvents::Auto
+        Auto
       }
-    _ => @style.PointerEvents::Auto
+    _ => Auto
   }
 }
 
@@ -465,28 +465,28 @@ fn parse_scale_value(value : String) -> Double {
 fn parse_translate_value(value : String) -> @style.TranslateValue {
   let v = value.trim()
   if v.is_empty() {
-    return @style.TranslateValue::Length(0.0)
+    return Length(0.0)
   }
   let tokens = skip_whitespace(@token.tokenize(v.to_owned())[:])
   if tokens.length() == 0 {
-    return @style.TranslateValue::Length(0.0)
+    return Length(0.0)
   }
   match tokens[0] {
-    @token.Token::Dimension(n, raw_unit) => {
+    Dimension(n, raw_unit) => {
       let unit = raw_unit.to_lower()
       if unit == "%" {
-        @style.TranslateValue::Percent(n / 100.0)
+        Percent(n / 100.0)
       } else {
         let px = match dimension_unit_to_px(n, unit) {
           Some(p) => p
           None => n
         }
-        @style.TranslateValue::Length(px)
+        Length(px)
       }
     }
-    @token.Token::Percentage(n) => @style.TranslateValue::Percent(n / 100.0)
-    @token.Token::Number(n, _) => @style.TranslateValue::Length(n)
-    _ => @style.TranslateValue::Length(0.0)
+    Percentage(n) => Percent(n / 100.0)
+    Number(n, _) => Length(n)
+    _ => Length(0.0)
   }
 }
 
@@ -515,7 +515,7 @@ pub fn parse_translate_property_from_string(value : String) -> @style.Transform 
   let y = if parts.length() > 1 {
     parse_translate_value(parts[1])
   } else {
-    @style.TranslateValue::Length(0.0)
+    Length(0.0)
   }
   { ..@style.Transform::none(), translate_x: x, translate_y: y }
 }

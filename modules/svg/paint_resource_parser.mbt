@@ -158,9 +158,9 @@ fn parse_marker_with_content(
 ///|
 fn parse_marker_units(value : String) -> MarkerUnits {
   match trim_string(value) {
-    "userSpaceOnUse" => MarkerUnits::UserSpaceOnUse_
-    "strokeWidth" => MarkerUnits::StrokeWidth
-    _ => MarkerUnits::StrokeWidth
+    "userSpaceOnUse" => UserSpaceOnUse_
+    "strokeWidth" => StrokeWidth
+    _ => StrokeWidth
   }
 }
 
@@ -168,16 +168,16 @@ fn parse_marker_units(value : String) -> MarkerUnits {
 fn parse_marker_orient(value : String) -> MarkerOrient {
   let v = trim_string(value)
   if v == "auto" {
-    MarkerOrient::Auto
+    Auto
   } else if v == "auto-start-reverse" {
-    MarkerOrient::AutoStartReverse
+    AutoStartReverse
   } else {
     let angle = if string_ends_with(v, "deg") {
       parse_number(build_substring(v, 0, v.length() - 3))
     } else {
       parse_number(v)
     }
-    MarkerOrient::Angle(angle)
+    Angle(angle)
   }
 }
 

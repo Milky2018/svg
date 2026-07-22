@@ -13,9 +13,9 @@ fn resolve_paint_fallback(
   node_color : Color,
 ) -> ResolvedPaint {
   match fallback {
-    PaintFallback::NoPaint => ResolvedPaint::None
-    PaintFallback::SolidColor(color) => ResolvedPaint::SolidColor(color)
-    PaintFallback::CurrentColor => ResolvedPaint::SolidColor(node_color)
+    NoPaint => None
+    SolidColor(color) => SolidColor(color)
+    CurrentColor => SolidColor(node_color)
   }
 }
 
@@ -37,44 +37,44 @@ fn resolve_paint_for_render(
   resources : RenderResources,
 ) -> ResolvedPaint {
   match paint {
-    None => ResolvedPaint::None
-    SolidColor(color) => ResolvedPaint::SolidColor(color)
+    None => None
+    SolidColor(color) => SolidColor(color)
     LinearGrad(grad) =>
       if grad.stops.length() == 0 {
-        ResolvedPaint::None
+        None
       } else {
-        ResolvedPaint::LinearGrad(grad)
+        LinearGrad(grad)
       }
     RadialGrad(grad) =>
       if grad.stops.length() == 0 {
-        ResolvedPaint::None
+        None
       } else {
-        ResolvedPaint::RadialGrad(grad)
+        RadialGrad(grad)
       }
-    CurrentColor => ResolvedPaint::SolidColor(node_color)
+    CurrentColor => SolidColor(node_color)
     PaintServerRef(id, fallback) =>
       match resources.gradients.resolve(id) {
-        Some(Gradient::Linear(grad)) =>
+        Some(Linear(grad)) =>
           if !grad.transform.is_invertible() {
             resolve_paint_fallback(fallback, node_color)
           } else if grad.stops.length() == 0 {
-            ResolvedPaint::None
+            None
           } else {
-            ResolvedPaint::LinearGrad(grad)
+            LinearGrad(grad)
           }
-        Some(Gradient::Radial(grad)) =>
+        Some(Radial(grad)) =>
           if !grad.transform.is_invertible() {
             resolve_paint_fallback(fallback, node_color)
           } else if grad.stops.length() == 0 {
-            ResolvedPaint::None
+            None
           } else {
-            ResolvedPaint::RadialGrad(grad)
+            RadialGrad(grad)
           }
         None =>
           match resources.patterns.resolve(id) {
             Some(pattern) =>
               if pattern_is_valid(pattern) {
-                ResolvedPaint::Pattern(pattern)
+                Pattern(pattern)
               } else {
                 resolve_paint_fallback(fallback, node_color)
               }
@@ -129,9 +129,9 @@ fn build_pattern_tile(
   let bbox_width = bbox.width()
   let bbox_height = bbox.height()
   let (tile_x, tile_y, tile_width, tile_height) = match pattern.pattern_units {
-    PatternUnits::UserSpaceOnUse =>
+    UserSpaceOnUse =>
       (pattern.x, pattern.y, pattern.width, pattern.height)
-    PatternUnits::ObjectBoundingBox =>
+    ObjectBoundingBox =>
       (
         bbox.min_x + pattern.x * bbox_width,
         bbox.min_y + pattern.y * bbox_height,
@@ -233,8 +233,8 @@ fn build_pattern_tile(
     None => {
       let tile_offset = Transform::translate(-tile_x, -tile_y)
       match pattern.pattern_content_units {
-        PatternUnits::UserSpaceOnUse => pixel_scale.multiply(tile_offset)
-        PatternUnits::ObjectBoundingBox =>
+        UserSpaceOnUse => pixel_scale.multiply(tile_offset)
+        ObjectBoundingBox =>
           pixel_scale.multiply(
             tile_offset.multiply(
               Transform::translate(bbox.min_x, bbox.min_y).multiply(

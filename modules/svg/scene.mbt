@@ -308,9 +308,9 @@ fn render_node(
       match resources.clips.get(id) {
         Some(clip) => {
           let bbox_local = match clip.units {
-            ClipPathUnits::ObjectBoundingBox =>
+            ObjectBoundingBox =>
               compute_bounds_without_self_transform(node, Transform::identity())
-            ClipPathUnits::UserSpaceOnUse => BoundingBox::empty()
+            UserSpaceOnUse => BoundingBox::empty()
           }
           apply_clip_path(ctx, clip, transform, bbox_local, resources)
         }
@@ -642,12 +642,12 @@ fn apply_mask_to_isolated_surface(
     resources,
   )
   let mask_parent = match mask.mask_content_units {
-    MaskUnits::ObjectBoundingBox => {
+    ObjectBoundingBox => {
       let translate = Transform::translate(bbox_local.min_x, bbox_local.min_y)
       let scale = Transform::scale(bbox_local.width(), bbox_local.height())
       element_transform.multiply(translate.multiply(scale))
     }
-    MaskUnits::UserSpaceOnUse => element_transform
+    UserSpaceOnUse => element_transform
   }
   for content_node in mask.content {
     render_node(

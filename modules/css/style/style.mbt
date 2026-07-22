@@ -147,8 +147,8 @@ pub(all) struct ScrollSnapType {
 
 ///|
 let scroll_snap_type_none : ScrollSnapType = {
-  axis: ScrollSnapAxis::None,
-  strictness: ScrollSnapStrictness::None,
+  axis: None,
+  strictness: None,
 }
 
 ///|
@@ -158,22 +158,22 @@ pub fn ScrollSnapType::none() -> ScrollSnapType {
 
 ///|
 pub fn ScrollSnapType::is_mandatory(self : ScrollSnapType) -> Bool {
-  self.strictness == ScrollSnapStrictness::Mandatory
+  self.strictness == Mandatory
 }
 
 ///|
 pub fn ScrollSnapType::snaps_x(self : ScrollSnapType) -> Bool {
   match self.axis {
-    ScrollSnapAxis::X | ScrollSnapAxis::Both => true
-    ScrollSnapAxis::None | ScrollSnapAxis::Y => false
+    X | Both => true
+    None | Y => false
   }
 }
 
 ///|
 pub fn ScrollSnapType::snaps_y(self : ScrollSnapType) -> Bool {
   match self.axis {
-    ScrollSnapAxis::Y | ScrollSnapAxis::Both => true
-    ScrollSnapAxis::None | ScrollSnapAxis::X => false
+    Y | Both => true
+    None | X => false
   }
 }
 
@@ -306,8 +306,8 @@ pub fn Transform::has_matrix3d(self : Transform) -> Bool {
 /// single shared instance is safe and avoids re-allocating the identity on every
 /// `Transform::none()` call (one per default style).
 let transform_identity : Transform = {
-  translate_x: TranslateValue::Length(0.0),
-  translate_y: TranslateValue::Length(0.0),
+  translate_x: Length(0.0),
+  translate_y: Length(0.0),
   scale_x: 1.0,
   scale_y: 1.0,
   rotate_degrees: 0.0,
@@ -333,8 +333,8 @@ pub fn Transform::none() -> Transform {
 /// Check if transform is identity (no visual change)
 pub fn Transform::is_none(self : Transform) -> Bool {
   let translate_none = match (self.translate_x, self.translate_y) {
-    (TranslateValue::Length(0.0), TranslateValue::Length(0.0)) => true
-    (TranslateValue::Percent(0.0), TranslateValue::Percent(0.0)) => true
+    (Length(0.0), Length(0.0)) => true
+    (Percent(0.0), Percent(0.0)) => true
     _ => false
   }
   let scale_none = self.scale_x == 1.0 && self.scale_y == 1.0
@@ -398,8 +398,8 @@ pub fn Transform::compute_translate_x(
   element_width : Double,
 ) -> Double {
   match self.translate_x {
-    TranslateValue::Length(v) => v
-    TranslateValue::Percent(p) => element_width * p
+    Length(v) => v
+    Percent(p) => element_width * p
   }
 }
 
@@ -410,8 +410,8 @@ pub fn Transform::compute_translate_y(
   element_height : Double,
 ) -> Double {
   match self.translate_y {
-    TranslateValue::Length(v) => v
-    TranslateValue::Percent(p) => element_height * p
+    Length(v) => v
+    Percent(p) => element_height * p
   }
 }
 
@@ -430,7 +430,7 @@ pub(all) enum ClipPath {
 
 ///|
 pub fn ClipPath::none() -> ClipPath {
-  ClipPath::None
+  None
 }
 
 ///|
@@ -551,14 +551,14 @@ pub fn Style::has_multicol(self : Style) -> Bool {
     Some(v) => v > 0
     None =>
       match self.column_width {
-        @types.Length(v) => v > 0.0
-        @types.Percent(v) => v > 0.0
-        @types.Calc(px, pct) => px > 0.0 || pct > 0.0
-        @types.MathFn(_, _) => true
-        @types.Auto
-        | @types.MinContent
-        | @types.MaxContent
-        | @types.FitContent(_) => false
+        Length(v) => v > 0.0
+        Percent(v) => v > 0.0
+        Calc(px, pct) => px > 0.0 || pct > 0.0
+        MathFn(_, _) => true
+        Auto
+        | MinContent
+        | MaxContent
+        | FitContent(_) => false
       }
   }
 }
@@ -1162,27 +1162,27 @@ pub fn Style::layout_eq(self : Style, other : Style) -> Bool {
 ///|
 pub fn Style::default() -> Style {
   {
-    display: @types.Block,
-    position: @types.Static,
-    float: @types.Float::None,
-    clear: @types.Clear::None,
-    box_sizing: @types.ContentBox,
-    overflow_x: @types.Visible,
-    overflow_y: @types.Visible,
+    display: Block,
+    position: Static,
+    float: None,
+    clear: None,
+    box_sizing: ContentBox,
+    overflow_x: Visible,
+    overflow_y: Visible,
     scroll_snap_type: ScrollSnapType::none(),
-    scroll_snap_align_x: ScrollSnapAlign::None,
-    scroll_snap_align_y: ScrollSnapAlign::None,
-    width: @types.Auto,
-    height: @types.Auto,
-    min_width: @types.Auto,
-    min_height: @types.Auto,
-    max_width: @types.Auto,
-    max_height: @types.Auto,
+    scroll_snap_align_x: None,
+    scroll_snap_align_y: None,
+    width: Auto,
+    height: Auto,
+    min_width: Auto,
+    min_height: Auto,
+    max_width: Auto,
+    max_height: Auto,
     margin: {
-      left: @types.Length(0.0),
-      right: @types.Length(0.0),
-      top: @types.Length(0.0),
-      bottom: @types.Length(0.0),
+      left: Length(0.0),
+      right: Length(0.0),
+      top: Length(0.0),
+      bottom: Length(0.0),
     },
     border_style: { left: None, right: None, top: None, bottom: None },
     border_color: {
@@ -1192,58 +1192,58 @@ pub fn Style::default() -> Style {
       bottom: @types.Color::transparent(),
     },
     padding: {
-      left: @types.Length(0.0),
-      right: @types.Length(0.0),
-      top: @types.Length(0.0),
-      bottom: @types.Length(0.0),
+      left: Length(0.0),
+      right: Length(0.0),
+      top: Length(0.0),
+      bottom: Length(0.0),
     },
     border: {
-      left: @types.Length(0.0),
-      right: @types.Length(0.0),
-      top: @types.Length(0.0),
-      bottom: @types.Length(0.0),
+      left: Length(0.0),
+      right: Length(0.0),
+      top: Length(0.0),
+      bottom: Length(0.0),
     },
-    margin_trim: MarginTrim::None,
-    flex_direction: @types.Row,
-    flex_wrap: @types.NoWrap,
-    justify_content: @types.Start,
-    align_items: @types.Stretch,
-    align_content: @types.Stretch,
+    margin_trim: None,
+    flex_direction: Row,
+    flex_wrap: NoWrap,
+    justify_content: Start,
+    align_items: Stretch,
+    align_content: Stretch,
     justify_content_unsafe: false,
     align_content_unsafe: false,
-    align_self: @types.AlignSelf::Auto,
+    align_self: Auto,
     flex_grow: 0.0,
     flex_shrink: 1.0,
-    flex_basis: @types.Auto,
+    flex_basis: Auto,
     order: 0,
-    row_gap: @types.Length(0.0),
-    column_gap: @types.Length(0.0),
+    row_gap: Length(0.0),
+    column_gap: Length(0.0),
     column_gap_is_normal: true,
     column_count: None,
-    column_width: @types.Auto,
+    column_width: Auto,
     column_fill: Balance,
     aspect_ratio: None,
     inset: {
-      left: @types.Auto,
-      right: @types.Auto,
-      top: @types.Auto,
-      bottom: @types.Auto,
+      left: Auto,
+      right: Auto,
+      top: Auto,
+      bottom: Auto,
     },
     grid_template_rows: [],
     grid_template_columns: [],
     grid_auto_rows: [],
     grid_auto_columns: [],
-    grid_auto_flow: @types.Row,
+    grid_auto_flow: Row,
     grid_template_column_line_names: [],
     grid_template_row_line_names: [],
-    grid_template_columns_kind: @types.Explicit,
-    grid_template_rows_kind: @types.Explicit,
+    grid_template_columns_kind: Explicit,
+    grid_template_rows_kind: Explicit,
     grid_template_areas: [],
     grid_row: @types.GridLine::auto(),
     grid_column: @types.GridLine::auto(),
     grid_area: None,
-    justify_items: @types.Stretch,
-    justify_self: @types.AlignSelf::Auto,
+    justify_items: Stretch,
+    justify_self: Auto,
     font_size: 16.0,
     font_weight: 400.0,
     font_family: "",
@@ -1254,21 +1254,21 @@ pub fn Style::default() -> Style {
     writing_mode: HorizontalTb,
     direction: Ltr,
     vertical_align: Baseline,
-    clip: @types.ClipRect::Auto,
+    clip: Auto,
     clip_path: ClipPath::none(),
     visibility: Visible,
-    pointer_events: PointerEvents::Auto,
+    pointer_events: Auto,
     z_index: Auto,
     opacity: 1.0,
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
-    background_image: @types.None,
+    background_image: None,
     box_shadows: [],
     contain: Contain::none(),
-    break_before: BreakBefore::Auto,
-    break_after: BreakBefore::Auto,
-    break_inside: BreakInside::Auto,
-    column_span: ColumnSpan::None,
+    break_before: Auto,
+    break_after: Auto,
+    break_inside: Auto,
+    column_span: None,
     contain_intrinsic_inline_size: None,
     contain_intrinsic_block_size: None,
     transform: Transform::none(),

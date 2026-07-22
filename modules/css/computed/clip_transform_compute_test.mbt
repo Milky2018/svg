@@ -106,7 +106,7 @@ test "compute_inline transform matrix3d as 2D affine matrix" {
 test "parse_clip_path - inset" {
   let clip_path = @computed.parse_clip_path("inset(16px 0 25% 4px)")
   match clip_path {
-    @style.ClipPath::Inset(top, right, bottom, left) =>
+    Inset(top, right, bottom, left) =>
       debug_inspect([top, right, bottom, left], content="[16, 0, -0.25, 4]")
     _ => fail("expected inset clip-path")
   }
@@ -116,7 +116,7 @@ test "parse_clip_path - inset" {
 test "parse_clip_path - rect" {
   let clip_path = @computed.parse_clip_path("rect(16px 128px 64px 16px)")
   match clip_path {
-    @style.ClipPath::Rect(top, right, bottom, left) =>
+    Rect(top, right, bottom, left) =>
       debug_inspect([top, right, bottom, left], content="[16, 128, 64, 16]")
     _ => fail("expected rect clip-path")
   }
@@ -126,7 +126,7 @@ test "parse_clip_path - rect" {
 test "parse_clip_path - xywh" {
   let clip_path = @computed.parse_clip_path("xywh(16px 16px 112px 48px)")
   match clip_path {
-    @style.ClipPath::Xywh(x, y, width, height) =>
+    Xywh(x, y, width, height) =>
       debug_inspect([x, y, width, height], content="[16, 16, 112, 48]")
     _ => fail("expected xywh clip-path")
   }
@@ -136,7 +136,7 @@ test "parse_clip_path - xywh" {
 test "parse_clip_path - circle" {
   let clip_path = @computed.parse_clip_path("circle(24px at 24px 24px)")
   match clip_path {
-    @style.ClipPath::Circle(radius, center_x, center_y) =>
+    Circle(radius, center_x, center_y) =>
       debug_inspect([radius, center_x, center_y], content="[24, 24, 24]")
     _ => fail("expected circle clip-path")
   }
@@ -146,7 +146,7 @@ test "parse_clip_path - circle" {
 test "parse_clip_path - ellipse" {
   let clip_path = @computed.parse_clip_path("ellipse(24px 16px at 32px 32px)")
   match clip_path {
-    @style.ClipPath::Ellipse(radius_x, radius_y, center_x, center_y) =>
+    Ellipse(radius_x, radius_y, center_x, center_y) =>
       debug_inspect(
         [radius_x, radius_y, center_x, center_y],
         content="[24, 16, 32, 32]",
@@ -161,7 +161,7 @@ test "parse_clip_path - polygon" {
     "polygon(32px 0, 64px 64px, 0 64px)",
   )
   match clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="3")
       let (x0, y0) = points[0]
       let (x1, y1) = points[1]
@@ -176,7 +176,7 @@ test "parse_clip_path - polygon" {
 test "parse_clip_path - path as polygon" {
   let clip_path = @computed.parse_clip_path("path(\"M 32 0 L 64 64 L 0 64 Z\")")
   match clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="3")
       let (x0, y0) = points[0]
       let (x1, y1) = points[1]
@@ -191,7 +191,7 @@ test "parse_clip_path - path as polygon" {
 test "parse_clip_path - quadratic path as polygon" {
   let clip_path = @computed.parse_clip_path("path(\"M 0 64 Q 32 0 64 64 Z\")")
   match clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="9")
       let (x0, y0) = points[0]
       let (x4, y4) = points[4]
@@ -208,7 +208,7 @@ test "parse_clip_path - cubic path as polygon" {
     "path(\"M 0 64 C 0 0 64 0 64 64 Z\")",
   )
   match clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="9")
       let (x0, y0) = points[0]
       let (x4, y4) = points[4]
@@ -225,7 +225,7 @@ test "parse_clip_path - smooth quadratic path as polygon" {
     "path(\"M 0 64 Q 16 0 32 64 T 64 64 Z\")",
   )
   match clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="17")
       let (x0, y0) = points[0]
       let (x4, y4) = points[4]
@@ -247,7 +247,7 @@ test "parse_clip_path - smooth cubic path as polygon" {
     "path(\"M 0 64 C 0 0 32 0 32 64 S 64 128 64 64 Z\")",
   )
   match clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="17")
       let (x0, y0) = points[0]
       let (x8, y8) = points[8]
@@ -268,7 +268,7 @@ test "parse_clip_path - arc path as polygon" {
     "path(\"M 0 64 A 32 32 0 0 1 64 64 Z\")",
   )
   match clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="9")
       let (x0, y0) = points[0]
       let (x4, y4) = points[4]
@@ -289,7 +289,7 @@ test "compute_inline clip-path property" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("clip-path: inset(16px 0 0 16px)", ctx)
   match style.clip_path {
-    @style.ClipPath::Inset(top, right, bottom, left) =>
+    Inset(top, right, bottom, left) =>
       debug_inspect([top, right, bottom, left], content="[16, 0, 0, 16]")
     _ => fail("expected inset clip-path")
   }

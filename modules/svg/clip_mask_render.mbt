@@ -162,8 +162,8 @@ fn build_clip_path_coverage(
   depth : Int,
 ) -> CoverageMask {
   let base_transform = match clip.units {
-    ClipPathUnits::UserSpaceOnUse => element_transform
-    ClipPathUnits::ObjectBoundingBox => {
+    UserSpaceOnUse => element_transform
+    ObjectBoundingBox => {
       if bbox_local.is_empty() {
         return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [] }
       }
@@ -248,7 +248,7 @@ fn render_masked_node(
     None => return
   }
   let mask_parent = match mask.mask_content_units {
-    MaskUnits::ObjectBoundingBox => {
+    ObjectBoundingBox => {
       let scale = Transform::scale(bbox_local.width(), bbox_local.height())
       let translate = Transform::translate(bbox_local.min_x, bbox_local.min_y)
       let object_transform = element_transform.multiply(
@@ -256,7 +256,7 @@ fn render_masked_node(
       )
       offset.multiply(object_transform)
     }
-    MaskUnits::UserSpaceOnUse => offset.multiply(element_transform)
+    UserSpaceOnUse => offset.multiply(element_transform)
   }
   for content_node in mask.content {
     render_node(

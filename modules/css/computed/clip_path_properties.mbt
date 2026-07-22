@@ -5,7 +5,7 @@
 pub fn parse_clip(value : String) -> @types.ClipRect {
   let v = value.trim().to_lower()
   if v == "auto" || v == "initial" || v == "unset" {
-    return @types.ClipRect::Auto
+    return Auto
   }
   // Parse rect(top, right, bottom, left)
   if v.has_prefix("rect(") && v.has_suffix(")") {
@@ -36,10 +36,10 @@ pub fn parse_clip(value : String) -> @types.ClipRect {
       let right = parse_clip_value(parts[1])
       let bottom = parse_clip_value(parts[2])
       let left = parse_clip_value(parts[3])
-      return @types.ClipRect::Rect(top~, right~, bottom~, left~)
+      return Rect(top~, right~, bottom~, left~)
     }
   }
-  @types.ClipRect::Auto
+  Auto
 }
 
 ///|
@@ -49,7 +49,7 @@ pub fn parse_clip_path(value : String) -> @style.ClipPath {
   let raw_v = value.trim().to_owned()
   let v = raw_v.to_lower()
   if v == "none" || v == "initial" || v == "unset" || v.is_empty() {
-    return @style.ClipPath::None
+    return None
   }
   if v.has_prefix("inset(") && v.has_suffix(")") {
     let raw_content = view_to_string(
@@ -68,24 +68,24 @@ pub fn parse_clip_path(value : String) -> @style.ClipPath {
       match values.length() {
         1 => {
           let v = values[0]
-          return @style.ClipPath::Inset(v, v, v, v)
+          return Inset(v, v, v, v)
         }
         2 => {
           let vertical = values[0]
           let horizontal = values[1]
-          return @style.ClipPath::Inset(
+          return Inset(
             vertical, horizontal, vertical, horizontal,
           )
         }
         3 =>
-          return @style.ClipPath::Inset(
+          return Inset(
             values[0],
             values[1],
             values[2],
             values[1],
           )
         _ =>
-          return @style.ClipPath::Inset(
+          return Inset(
             values[0],
             values[1],
             values[2],
@@ -147,56 +147,56 @@ pub fn parse_clip_path(value : String) -> @style.ClipPath {
       .to_owned()
     return parse_clip_path_path(content)
   }
-  @style.ClipPath::None
+  None
 }
 
 ///|
 fn parse_clip_path_rect(content : String) -> @style.ClipPath {
   let parts = split_clip_path_values(content)
   if parts.length() < 4 {
-    return @style.ClipPath::None
+    return None
   }
   let top = parse_clip_path_shape_value(parts[0]) catch {
-    _ => return @style.ClipPath::None
+    _ => return None
   }
   let right = parse_clip_path_shape_value(parts[1]) catch {
-    _ => return @style.ClipPath::None
+    _ => return None
   }
   let bottom = parse_clip_path_shape_value(parts[2]) catch {
-    _ => return @style.ClipPath::None
+    _ => return None
   }
   let left = parse_clip_path_shape_value(parts[3]) catch {
-    _ => return @style.ClipPath::None
+    _ => return None
   }
-  @style.ClipPath::Rect(top, right, bottom, left)
+  Rect(top, right, bottom, left)
 }
 
 ///|
 fn parse_clip_path_xywh(content : String) -> @style.ClipPath {
   let parts = split_clip_path_values(content)
   if parts.length() < 4 {
-    return @style.ClipPath::None
+    return None
   }
   let x = parse_clip_path_shape_value(parts[0]) catch {
-    _ => return @style.ClipPath::None
+    _ => return None
   }
   let y = parse_clip_path_shape_value(parts[1]) catch {
-    _ => return @style.ClipPath::None
+    _ => return None
   }
   let width = parse_clip_path_shape_value(parts[2]) catch {
-    _ => return @style.ClipPath::None
+    _ => return None
   }
   let height = parse_clip_path_shape_value(parts[3]) catch {
-    _ => return @style.ClipPath::None
+    _ => return None
   }
-  @style.ClipPath::Xywh(x, y, width, height)
+  Xywh(x, y, width, height)
 }
 
 ///|
 fn parse_clip_path_circle(content : String) -> @style.ClipPath {
   let parts = split_clip_path_values(content)
   if parts.length() == 0 {
-    return @style.ClipPath::None
+    return None
   }
   let mut at_index = -1
   for i in 0..<parts.length() {
@@ -210,40 +210,40 @@ fn parse_clip_path_circle(content : String) -> @style.ClipPath {
   let mut center_y = -0.5
   if at_index == 0 {
     if parts.length() < 3 {
-      return @style.ClipPath::None
+      return None
     }
     center_x = parse_clip_path_shape_value(parts[1]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
     center_y = parse_clip_path_shape_value(parts[2]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
   } else if at_index > 0 {
     radius = parse_clip_path_shape_value(parts[0]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
     if parts.length() <= at_index + 2 {
-      return @style.ClipPath::None
+      return None
     }
     center_x = parse_clip_path_shape_value(parts[at_index + 1]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
     center_y = parse_clip_path_shape_value(parts[at_index + 2]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
   } else {
     radius = parse_clip_path_shape_value(parts[0]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
   }
-  @style.ClipPath::Circle(radius, center_x, center_y)
+  Circle(radius, center_x, center_y)
 }
 
 ///|
 fn parse_clip_path_ellipse(content : String) -> @style.ClipPath {
   let parts = split_clip_path_values(content)
   if parts.length() == 0 {
-    return @style.ClipPath::None
+    return None
   }
   let mut at_index = -1
   for i in 0..<parts.length() {
@@ -258,42 +258,42 @@ fn parse_clip_path_ellipse(content : String) -> @style.ClipPath {
   let mut center_y = -0.5
   if at_index == 0 {
     if parts.length() < 3 {
-      return @style.ClipPath::None
+      return None
     }
     center_x = parse_clip_path_shape_value(parts[1]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
     center_y = parse_clip_path_shape_value(parts[2]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
   } else if at_index > 0 {
     if at_index < 2 || parts.length() <= at_index + 2 {
-      return @style.ClipPath::None
+      return None
     }
     radius_x = parse_clip_path_shape_value(parts[0]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
     radius_y = parse_clip_path_shape_value(parts[1]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
     center_x = parse_clip_path_shape_value(parts[at_index + 1]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
     center_y = parse_clip_path_shape_value(parts[at_index + 2]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
   } else {
     if parts.length() < 2 {
-      return @style.ClipPath::None
+      return None
     }
     radius_x = parse_clip_path_shape_value(parts[0]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
     radius_y = parse_clip_path_shape_value(parts[1]) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
   }
-  @style.ClipPath::Ellipse(radius_x, radius_y, center_x, center_y)
+  Ellipse(radius_x, radius_y, center_x, center_y)
 }
 
 ///|
@@ -305,12 +305,12 @@ fn parse_clip_path_polygon(content : String) -> @style.ClipPath {
       continue
     }
     let v = parse_clip_path_shape_value(part) catch {
-      _ => return @style.ClipPath::None
+      _ => return None
     }
     values.push(v)
   }
   if values.length() < 6 || values.length() % 2 != 0 {
-    return @style.ClipPath::None
+    return None
   }
   let points : Array[(Double, Double)] = []
   let mut i = 0
@@ -318,14 +318,14 @@ fn parse_clip_path_polygon(content : String) -> @style.ClipPath {
     points.push((values[i], values[i + 1]))
     i = i + 2
   }
-  @style.ClipPath::Polygon(points)
+  Polygon(points)
 }
 
 ///|
 fn parse_clip_path_path(content : String) -> @style.ClipPath {
   let path_data = match extract_clip_path_path_string(content) {
     Some(v) => v
-    None => return @style.ClipPath::None
+    None => return None
   }
   parse_clip_path_path_data(path_data)
 }
@@ -393,15 +393,15 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
     match command {
       "M" | "m" => {
         if i + 1 >= tokens.length() {
-          return @style.ClipPath::None
+          return None
         }
         let x = match parse_clip_path_path_number(tokens[i]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let y = match parse_clip_path_path_number(tokens[i + 1]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         if command == "m" {
           current_x += x
@@ -420,15 +420,15 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
       }
       "L" | "l" => {
         if i + 1 >= tokens.length() {
-          return @style.ClipPath::None
+          return None
         }
         let x = match parse_clip_path_path_number(tokens[i]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let y = match parse_clip_path_path_number(tokens[i + 1]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         if command == "l" {
           current_x += x
@@ -445,7 +445,7 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
       "H" | "h" => {
         let x = match parse_clip_path_path_number(tokens[i]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         if command == "h" {
           current_x += x
@@ -460,7 +460,7 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
       "V" | "v" => {
         let y = match parse_clip_path_path_number(tokens[i]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         if command == "v" {
           current_y += y
@@ -474,23 +474,23 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
       }
       "Q" | "q" => {
         if i + 3 >= tokens.length() {
-          return @style.ClipPath::None
+          return None
         }
         let control_x = match parse_clip_path_path_number(tokens[i]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let control_y = match parse_clip_path_path_number(tokens[i + 1]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let end_x = match parse_clip_path_path_number(tokens[i + 2]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let end_y = match parse_clip_path_path_number(tokens[i + 3]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let absolute_control_x = if command == "q" {
           current_x + control_x
@@ -526,15 +526,15 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
       }
       "T" | "t" => {
         if i + 1 >= tokens.length() {
-          return @style.ClipPath::None
+          return None
         }
         let end_x = match parse_clip_path_path_number(tokens[i]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let end_y = match parse_clip_path_path_number(tokens[i + 1]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let absolute_control_x = if has_quadratic_control {
           2.0 * current_x - quadratic_control_x
@@ -570,31 +570,31 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
       }
       "C" | "c" => {
         if i + 5 >= tokens.length() {
-          return @style.ClipPath::None
+          return None
         }
         let control1_x = match parse_clip_path_path_number(tokens[i]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let control1_y = match parse_clip_path_path_number(tokens[i + 1]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let control2_x = match parse_clip_path_path_number(tokens[i + 2]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let control2_y = match parse_clip_path_path_number(tokens[i + 3]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let end_x = match parse_clip_path_path_number(tokens[i + 4]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let end_y = match parse_clip_path_path_number(tokens[i + 5]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let absolute_control1_x = if command == "c" {
           current_x + control1_x
@@ -640,23 +640,23 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
       }
       "S" | "s" => {
         if i + 3 >= tokens.length() {
-          return @style.ClipPath::None
+          return None
         }
         let control2_x = match parse_clip_path_path_number(tokens[i]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let control2_y = match parse_clip_path_path_number(tokens[i + 1]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let end_x = match parse_clip_path_path_number(tokens[i + 2]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let end_y = match parse_clip_path_path_number(tokens[i + 3]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let absolute_control1_x = if has_cubic_control {
           2.0 * current_x - cubic_control_x
@@ -702,36 +702,36 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
       }
       "A" | "a" => {
         if i + 6 >= tokens.length() {
-          return @style.ClipPath::None
+          return None
         }
         let radius_x = match parse_clip_path_path_number(tokens[i]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let radius_y = match parse_clip_path_path_number(tokens[i + 1]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let rotation_degrees = match
           parse_clip_path_path_number(tokens[i + 2]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let large_arc_flag = match parse_clip_path_path_number(tokens[i + 3]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let sweep_flag = match parse_clip_path_path_number(tokens[i + 4]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let end_x = match parse_clip_path_path_number(tokens[i + 5]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let end_y = match parse_clip_path_path_number(tokens[i + 6]) {
           Some(v) => v
-          None => return @style.ClipPath::None
+          None => return None
         }
         let absolute_end_x = if command == "a" {
           current_x + end_x
@@ -761,13 +761,13 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
         has_cubic_control = false
         i += 7
       }
-      _ => return @style.ClipPath::None
+      _ => return None
     }
   }
   if points.length() < 3 {
-    return @style.ClipPath::None
+    return None
   }
-  @style.ClipPath::Polygon(points)
+  Polygon(points)
 }
 
 ///|

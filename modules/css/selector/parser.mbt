@@ -119,7 +119,7 @@ fn SelectorParser::parse_selector_list(self : SelectorParser) -> SelectorList? {
   if !self.is_at_end() {
     return None
   }
-  Some(SelectorList::{ selectors, })
+  Some({ selectors, })
 }
 
 ///|
@@ -679,7 +679,7 @@ fn SelectorParser::parse_attr_value(self : SelectorParser) -> String? {
       let _ = self.advance()
       Some(v)
     }
-    @token.Token::String(v) => {
+    String(v) => {
       let _ = self.advance()
       Some(v)
     }
@@ -1057,7 +1057,7 @@ fn SelectorParser::parse_pseudo_class(self : SelectorParser) -> PseudoClass? {
           let mut ok = true
           while true {
             match self.peek() {
-              Number(n, @token.NumType::Integer) => {
+              Number(n, Integer) => {
                 let _ = self.advance()
                 levels.push(n.to_int())
                 self.skip_whitespace()
@@ -1112,7 +1112,7 @@ fn SelectorParser::parse_pseudo_class(self : SelectorParser) -> PseudoClass? {
                 let _ = self.advance()
                 tags.push(v)
               }
-              @token.Token::String(v) => {
+              String(v) => {
                 let _ = self.advance()
                 tags.push(v)
               }
@@ -1513,15 +1513,15 @@ pub fn parse_selector_list_from_tokens(
   let mut i = start
   while i < end {
     match tokens[i] {
-      @token.Token::EOF => break
-      @token.Token::Function(_)
-      | @token.Token::LeftParen
-      | @token.Token::LeftBracket => depth = depth + 1
-      @token.Token::RightParen | @token.Token::RightBracket =>
+      EOF => break
+      Function(_)
+      | LeftParen
+      | LeftBracket => depth = depth + 1
+      RightParen | RightBracket =>
         if depth > 0 {
           depth = depth - 1
         }
-      @token.Token::Comma =>
+      Comma =>
         if depth == 0 {
           match parse_selector_slice(tokens, segment_start, i) {
             Some(sel) => result.push(sel)

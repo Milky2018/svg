@@ -100,7 +100,7 @@ test "parse pointer-events none" {
 test "parse clip-path inset" {
   let style = parse_inline_style("clip-path: inset(16px 0 25% 4px)")
   match style.clip_path {
-    @style.ClipPath::Inset(top, right, bottom, left) =>
+    Inset(top, right, bottom, left) =>
       debug_inspect([top, right, bottom, left], content="[16, 0, -0.25, 4]")
     _ => fail("expected inset clip-path")
   }
@@ -110,7 +110,7 @@ test "parse clip-path inset" {
 test "parse clip-path rect" {
   let style = parse_inline_style("clip-path: rect(16px 128px 64px 16px)")
   match style.clip_path {
-    @style.ClipPath::Rect(top, right, bottom, left) =>
+    Rect(top, right, bottom, left) =>
       debug_inspect([top, right, bottom, left], content="[16, 128, 64, 16]")
     _ => fail("expected rect clip-path")
   }
@@ -120,7 +120,7 @@ test "parse clip-path rect" {
 test "parse clip-path xywh" {
   let style = parse_inline_style("clip-path: xywh(16px 16px 112px 48px)")
   match style.clip_path {
-    @style.ClipPath::Xywh(x, y, width, height) =>
+    Xywh(x, y, width, height) =>
       debug_inspect([x, y, width, height], content="[16, 16, 112, 48]")
     _ => fail("expected xywh clip-path")
   }
@@ -130,7 +130,7 @@ test "parse clip-path xywh" {
 test "parse clip-path circle" {
   let style = parse_inline_style("clip-path: circle(24px at 24px 24px)")
   match style.clip_path {
-    @style.ClipPath::Circle(radius, center_x, center_y) =>
+    Circle(radius, center_x, center_y) =>
       debug_inspect([radius, center_x, center_y], content="[24, 24, 24]")
     _ => fail("expected circle clip-path")
   }
@@ -140,7 +140,7 @@ test "parse clip-path circle" {
 test "parse clip-path ellipse" {
   let style = parse_inline_style("clip-path: ellipse(24px 16px at 32px 32px)")
   match style.clip_path {
-    @style.ClipPath::Ellipse(radius_x, radius_y, center_x, center_y) =>
+    Ellipse(radius_x, radius_y, center_x, center_y) =>
       debug_inspect(
         [radius_x, radius_y, center_x, center_y],
         content="[24, 16, 32, 32]",
@@ -155,7 +155,7 @@ test "parse clip-path polygon" {
     "clip-path: polygon(32px 0, 64px 64px, 0 64px)",
   )
   match style.clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="3")
       let (x0, y0) = points[0]
       let (x1, y1) = points[1]
@@ -170,7 +170,7 @@ test "parse clip-path polygon" {
 test "parse clip-path path as polygon" {
   let style = parse_inline_style("clip-path: path(\"M 32 0 L 64 64 L 0 64 Z\")")
   match style.clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="3")
       let (x0, y0) = points[0]
       let (x1, y1) = points[1]
@@ -185,7 +185,7 @@ test "parse clip-path path as polygon" {
 test "parse clip-path quadratic path as polygon" {
   let style = parse_inline_style("clip-path: path(\"M 0 64 Q 32 0 64 64 Z\")")
   match style.clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="9")
       let (x0, y0) = points[0]
       let (x4, y4) = points[4]
@@ -202,7 +202,7 @@ test "parse clip-path cubic path as polygon" {
     "clip-path: path(\"M 0 64 C 0 0 64 0 64 64 Z\")",
   )
   match style.clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="9")
       let (x0, y0) = points[0]
       let (x4, y4) = points[4]
@@ -219,7 +219,7 @@ test "parse clip-path smooth quadratic path as polygon" {
     "clip-path: path(\"M 0 64 Q 16 0 32 64 T 64 64 Z\")",
   )
   match style.clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="17")
       let (x0, y0) = points[0]
       let (x4, y4) = points[4]
@@ -241,7 +241,7 @@ test "parse clip-path smooth cubic path as polygon" {
     "clip-path: path(\"M 0 64 C 0 0 32 0 32 64 S 64 128 64 64 Z\")",
   )
   match style.clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="17")
       let (x0, y0) = points[0]
       let (x8, y8) = points[8]
@@ -262,7 +262,7 @@ test "parse clip-path arc path as polygon" {
     "clip-path: path(\"M 0 64 A 32 32 0 0 1 64 64 Z\")",
   )
   match style.clip_path {
-    @style.ClipPath::Polygon(points) => {
+    Polygon(points) => {
       inspect(points.length(), content="9")
       let (x0, y0) = points[0]
       let (x4, y4) = points[4]

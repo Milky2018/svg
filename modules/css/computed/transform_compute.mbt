@@ -245,35 +245,35 @@ fn parse_zoom(value : String) -> Double {
 fn parse_translate_value(value : String) -> @style.TranslateValue {
   let v = value.trim()
   if v.is_empty() {
-    return @style.TranslateValue::Length(0.0)
+    return Length(0.0)
   }
   // Check for percentage
   if v.has_suffix("%") {
     let num_str = view_to_string(v.view(end_offset=v.length() - 1))
     let n = @string.parse_double(num_str.trim()) catch {
-      _ => return @style.TranslateValue::Length(0.0)
+      _ => return Length(0.0)
     }
-    @style.TranslateValue::Percent(n / 100.0)
+    Percent(n / 100.0)
   } else if v.has_suffix("px") {
     let num_str = view_to_string(v.view(end_offset=v.length() - 2))
     let n = @string.parse_double(num_str.trim()) catch {
-      _ => return @style.TranslateValue::Length(0.0)
+      _ => return Length(0.0)
     }
-    @style.TranslateValue::Length(n)
+    Length(n)
   } else if v.has_suffix("em") || v.has_suffix("rem") {
     // em/rem - convert to pixels assuming 16px base
     let suffix_len = if v.has_suffix("rem") { 3 } else { 2 }
     let num_str = view_to_string(v.view(end_offset=v.length() - suffix_len))
     let n = @string.parse_double(num_str.trim()) catch {
-      _ => return @style.TranslateValue::Length(0.0)
+      _ => return Length(0.0)
     }
-    @style.TranslateValue::Length(n * 16.0)
+    Length(n * 16.0)
   } else {
     // Try parsing as plain number (assumed px)
     let n = @string.parse_double(v) catch {
-      _ => return @style.TranslateValue::Length(0.0)
+      _ => return Length(0.0)
     }
-    @style.TranslateValue::Length(n)
+    Length(n)
   }
 }
 
@@ -336,11 +336,11 @@ fn strip_inline_important_marker(
   let trimmed = value.trim().to_owned()
   let compact = strip_css_ascii_whitespace(trimmed.to_lower())
   if !compact.has_suffix("!important") {
-    return (trimmed, @cascade.Importance::Normal)
+    return (trimmed, Normal)
   }
   let important_len = 9
   if trimmed.length() <= important_len {
-    return (trimmed, @cascade.Importance::Normal)
+    return (trimmed, Normal)
   }
   let mut bang_pos = trimmed.length() - important_len
   while bang_pos > 0 {
@@ -352,16 +352,16 @@ fn strip_inline_important_marker(
     }
   }
   if bang_pos <= 0 {
-    return (trimmed, @cascade.Importance::Normal)
+    return (trimmed, Normal)
   }
   if trimmed[bang_pos - 1].to_int().unsafe_to_char() != '!' {
-    return (trimmed, @cascade.Importance::Normal)
+    return (trimmed, Normal)
   }
   let stripped = view_to_string(trimmed.view(end_offset=bang_pos - 1))
     .trim()
     .to_owned()
   if stripped.is_empty() {
-    return (trimmed, @cascade.Importance::Normal)
+    return (trimmed, Normal)
   }
-  (stripped, @cascade.Importance::Important)
+  (stripped, Important)
 }

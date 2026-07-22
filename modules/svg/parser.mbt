@@ -271,7 +271,7 @@ fn SVGParser::new(events : Array[@xml.Event]) -> SVGParser {
 
 ///|
 fn SVGParser::is_end(self : SVGParser) -> Bool {
-  self.pos >= self.events.length() || self.events[self.pos] is @xml.Event::Eof
+  self.pos >= self.events.length() || self.events[self.pos] is Eof
 }
 
 ///|
@@ -279,7 +279,7 @@ fn SVGParser::peek_event(self : SVGParser) -> @xml.Event {
   if self.pos < self.events.length() {
     self.events[self.pos]
   } else {
-    @xml.Event::Eof
+    Eof
   }
 }
 
@@ -290,7 +290,7 @@ fn SVGParser::advance_event(self : SVGParser) -> @xml.Event {
     self.pos += 1
     event
   } else {
-    @xml.Event::Eof
+    Eof
   }
 }
 
@@ -382,10 +382,10 @@ fn normalize_xml_namespaces(events : Array[@xml.Event]) -> Array[@xml.Event] {
   for event in events {
     let current = scopes[scopes.length() - 1]
     match event {
-      @xml.Event::Start(element) => {
+      Start(element) => {
         let scope = current.with_declarations(element.attributes)
         normalized.push(
-          @xml.Event::Start(
+          Start(
             @xml.XmlElement::with_attrs(
               scope.normalize_element_name(element.name),
               element.attributes,
@@ -394,10 +394,10 @@ fn normalize_xml_namespaces(events : Array[@xml.Event]) -> Array[@xml.Event] {
         )
         scopes.push(scope)
       }
-      @xml.Event::Empty(element) => {
+      Empty(element) => {
         let scope = current.with_declarations(element.attributes)
         normalized.push(
-          @xml.Event::Empty(
+          Empty(
             @xml.XmlElement::with_attrs(
               scope.normalize_element_name(element.name),
               element.attributes,
@@ -405,8 +405,8 @@ fn normalize_xml_namespaces(events : Array[@xml.Event]) -> Array[@xml.Event] {
           ),
         )
       }
-      @xml.Event::End(name) => {
-        normalized.push(@xml.Event::End(current.normalize_element_name(name)))
+      End(name) => {
+        normalized.push(End(current.normalize_element_name(name)))
         if scopes.length() > 1 {
           let _ = scopes.pop()
         }
@@ -425,7 +425,7 @@ fn read_xml_events(svg_str : String) -> Array[@xml.Event]? {
     while true {
       let event = reader.read_event()
       events.push(event)
-      if event is @xml.Event::Eof {
+      if event is Eof {
         break
       }
     }
@@ -471,12 +471,12 @@ fn parse_element(
   let mut self_closing = false
   while !parser.is_end() && element is None {
     match parser.advance_event() {
-      @xml.Event::Start(found) => element = Some(found)
-      @xml.Event::Empty(found) => {
+      Start(found) => element = Some(found)
+      Empty(found) => {
         element = Some(found)
         self_closing = true
       }
-      @xml.Event::End(_) | @xml.Event::Eof => return None
+      End(_) | Eof => return None
       _ => ()
     }
   }
@@ -765,9 +765,9 @@ fn skip_to_end_tag(parser : SVGParser, tag_name : String) -> Unit {
   let mut depth = 0
   while !parser.is_end() {
     match parser.advance_event() {
-      @xml.Event::Start(_) => depth += 1
-      @xml.Event::Empty(_) => ()
-      @xml.Event::End(name) => {
+      Start(_) => depth += 1
+      Empty(_) => ()
+      End(name) => {
         if depth == 0 && name == tag_name {
           return
         }
@@ -775,7 +775,7 @@ fn skip_to_end_tag(parser : SVGParser, tag_name : String) -> Unit {
           depth -= 1
         }
       }
-      @xml.Event::Eof => return
+      Eof => return
       _ => ()
     }
   }
@@ -787,14 +787,14 @@ fn parse_plain_text_content(parser : SVGParser, tag_name : String) -> String? {
   let mut has_nested_element = false
   while !parser.is_end() {
     match parser.advance_event() {
-      @xml.Event::Text(text) | @xml.Event::CData(text) =>
+      Text(text) | CData(text) =>
         content.write_string(text)
-      @xml.Event::Start(element) => {
+      Start(element) => {
         has_nested_element = true
         skip_to_end_tag(parser, element.name)
       }
-      @xml.Event::Empty(_) => has_nested_element = true
-      @xml.Event::End(name) =>
+      Empty(_) => has_nested_element = true
+      End(name) =>
         if name == tag_name {
           return if has_nested_element {
             None
@@ -802,7 +802,7 @@ fn parse_plain_text_content(parser : SVGParser, tag_name : String) -> String? {
             Some(content.to_string())
           }
         }
-      @xml.Event::Eof => return None
+      Eof => return None
       _ => ()
     }
   }
@@ -816,14 +816,14 @@ fn count_direct_child_elements(parser : SVGParser, parent_tag : String) -> Int {
   let mut count = 0
   while pos < parser.events.length() {
     match parser.events[pos] {
-      @xml.Event::Start(_) => {
+      Start(_) => {
         if depth == 0 {
           count += 1
         }
         depth += 1
       }
-      @xml.Event::Empty(_) => if depth == 0 { count += 1 }
-      @xml.Event::End(name) => {
+      Empty(_) => if depth == 0 { count += 1 }
+      End(name) => {
         if depth == 0 && name == parent_tag {
           break
         }
@@ -831,7 +831,7 @@ fn count_direct_child_elements(parser : SVGParser, parent_tag : String) -> Int {
           depth -= 1
         }
       }
-      @xml.Event::Eof => break
+      Eof => break
       _ => ()
     }
     pos += 1
@@ -885,13 +885,13 @@ fn parse_children(
   ctx.previous_sibling_stack.push(None)
   while !parser.is_end() {
     match parser.peek_event() {
-      @xml.Event::End(name) => {
+      End(name) => {
         let _ = parser.advance_event()
         if name == parent_tag {
           break
         }
       }
-      @xml.Event::Start(_) | @xml.Event::Empty(_) => {
+      Start(_) | Empty(_) => {
         let current_index = ctx.sibling_index_stack.length() - 1
         ctx.sibling_index_stack[current_index] += 1
         match parse_element(parser, ctx, parent_tag) {
@@ -909,7 +909,7 @@ fn parse_children(
           None => break
         }
       }
-      @xml.Event::Eof => break
+      Eof => break
       _ => {
         let _ = parser.advance_event()
       }

@@ -14,9 +14,9 @@ fn split_top_level_commas(
   let mut start = 0
   for i = 0; i < tokens.length(); i = i + 1 {
     match tokens[i] {
-      @token.Token::Function(_) | @token.Token::LeftParen => depth = depth + 1
-      @token.Token::RightParen => if depth > 0 { depth = depth - 1 }
-      @token.Token::Comma =>
+      Function(_) | LeftParen => depth = depth + 1
+      RightParen => if depth > 0 { depth = depth - 1 }
+      Comma =>
         if depth == 0 {
           segments.push(tokens[start:i])
           start = i + 1
@@ -36,26 +36,26 @@ fn reconstruct_css(tokens : ArrayView[@token.Token]) -> String {
   let sb = StringBuilder::new()
   for i = 0; i < tokens.length(); i = i + 1 {
     match tokens[i] {
-      @token.Token::Ident(s) => sb.write_string(s)
-      @token.Token::Function(name) => {
+      Ident(s) => sb.write_string(s)
+      Function(name) => {
         sb.write_string(name)
         sb.write_char('(')
       }
-      @token.Token::Number(v, _) => sb.write_string(format_number(v))
-      @token.Token::Dimension(v, unit) => {
+      Number(v, _) => sb.write_string(format_number(v))
+      Dimension(v, unit) => {
         sb.write_string(format_number(v))
         sb.write_string(unit)
       }
-      @token.Token::Percentage(v) => {
+      Percentage(v) => {
         sb.write_string(format_number(v))
         sb.write_char('%')
       }
-      @token.Token::LeftParen => sb.write_char('(')
-      @token.Token::RightParen => sb.write_char(')')
-      @token.Token::Comma => sb.write_char(',')
-      @token.Token::Whitespace => sb.write_char(' ')
-      @token.Token::Delim(c) => sb.write_char(c)
-      @token.Token::Colon => sb.write_char(':')
+      LeftParen => sb.write_char('(')
+      RightParen => sb.write_char(')')
+      Comma => sb.write_char(',')
+      Whitespace => sb.write_char(' ')
+      Delim(c) => sb.write_char(c)
+      Colon => sb.write_char(':')
       _ => ()
     }
   }
@@ -79,7 +79,7 @@ fn format_number(v : Double) -> String {
 /// Parse a single `<time>` token (`<n>s` / `<n>ms` / unitless `0`) into seconds.
 fn time_token_to_seconds(t : @token.Token) -> Double? {
   match t {
-    @token.Token::Dimension(v, unit) => {
+    Dimension(v, unit) => {
       let u = unit.to_lower()
       if u == "s" {
         Some(v)
@@ -89,7 +89,7 @@ fn time_token_to_seconds(t : @token.Token) -> Double? {
         None
       }
     }
-    @token.Token::Number(v, _) => if v == 0.0 { Some(0.0) } else { None }
+    Number(v, _) => if v == 0.0 { Some(0.0) } else { None }
     _ => None
   }
 }
@@ -133,7 +133,7 @@ fn parse_ident_list(tokens : ArrayView[@token.Token]) -> Array[String] {
     let s = skip_whitespace(seg)
     if s.length() > 0 {
       match s[0] {
-        @token.Token::Ident(name) => result.push(name)
+        Ident(name) => result.push(name)
         _ => ()
       }
     }
@@ -151,11 +151,11 @@ fn parse_iteration_count_list(
     let s = skip_whitespace(seg)
     if s.length() > 0 {
       match s[0] {
-        @token.Token::Number(v, _) =>
-          result.push(@types.AnimationIterationCount::Count(v))
-        @token.Token::Ident(name) =>
+        Number(v, _) =>
+          result.push(Count(v))
+        Ident(name) =>
           if name.to_lower() == "infinite" {
-            result.push(@types.AnimationIterationCount::Infinite)
+            result.push(Infinite)
           }
         _ => ()
       }
@@ -168,10 +168,10 @@ fn parse_iteration_count_list(
 /// Map an ident to an animation-direction, if it is one.
 fn ident_to_direction(s : String) -> @types.AnimationDirection? {
   match s.to_lower() {
-    "normal" => Some(@types.AnimationDirection::Normal)
-    "reverse" => Some(@types.AnimationDirection::Reverse)
-    "alternate" => Some(@types.AnimationDirection::Alternate)
-    "alternate-reverse" => Some(@types.AnimationDirection::AlternateReverse)
+    "normal" => Some(Normal)
+    "reverse" => Some(Reverse)
+    "alternate" => Some(Alternate)
+    "alternate-reverse" => Some(AlternateReverse)
     _ => None
   }
 }
@@ -180,10 +180,10 @@ fn ident_to_direction(s : String) -> @types.AnimationDirection? {
 /// Map an ident to an animation-fill-mode, if it is one.
 fn ident_to_fill_mode(s : String) -> @types.AnimationFillMode? {
   match s.to_lower() {
-    "none" => Some(@types.AnimationFillMode::None)
-    "forwards" => Some(@types.AnimationFillMode::Forwards)
-    "backwards" => Some(@types.AnimationFillMode::Backwards)
-    "both" => Some(@types.AnimationFillMode::Both)
+    "none" => Some(None)
+    "forwards" => Some(Forwards)
+    "backwards" => Some(Backwards)
+    "both" => Some(Both)
     _ => None
   }
 }
@@ -192,8 +192,8 @@ fn ident_to_fill_mode(s : String) -> @types.AnimationFillMode? {
 /// Map an ident to an animation-play-state, if it is one.
 fn ident_to_play_state(s : String) -> @types.AnimationPlayState? {
   match s.to_lower() {
-    "running" => Some(@types.AnimationPlayState::Running)
-    "paused" => Some(@types.AnimationPlayState::Paused)
+    "running" => Some(Running)
+    "paused" => Some(Paused)
     _ => None
   }
 }
@@ -208,7 +208,7 @@ fn parse_direction_list(
     let s = skip_whitespace(seg)
     if s.length() > 0 {
       match s[0] {
-        @token.Token::Ident(name) =>
+        Ident(name) =>
           match ident_to_direction(name) {
             Some(d) => result.push(d)
             None => ()
@@ -230,7 +230,7 @@ fn parse_fill_mode_list(
     let s = skip_whitespace(seg)
     if s.length() > 0 {
       match s[0] {
-        @token.Token::Ident(name) =>
+        Ident(name) =>
           match ident_to_fill_mode(name) {
             Some(f) => result.push(f)
             None => ()
@@ -252,7 +252,7 @@ fn parse_play_state_list(
     let s = skip_whitespace(seg)
     if s.length() > 0 {
       match s[0] {
-        @token.Token::Ident(name) =>
+        Ident(name) =>
           match ident_to_play_state(name) {
             Some(p) => result.push(p)
             None => ()
@@ -299,15 +299,15 @@ fn try_parse_easing_at(
   i : Int,
 ) -> (@types.Easing, Int)? {
   match seg[i] {
-    @token.Token::Function(_) => {
+    Function(_) => {
       // Consume through the matching RightParen.
       let mut j = i + 1
       let mut depth = 1
       while j < seg.length() && depth > 0 {
         match seg[j] {
-          @token.Token::Function(_) | @token.Token::LeftParen =>
+          Function(_) | LeftParen =>
             depth = depth + 1
-          @token.Token::RightParen => depth = depth - 1
+          RightParen => depth = depth - 1
           _ => ()
         }
         j = j + 1
@@ -318,7 +318,7 @@ fn try_parse_easing_at(
         None => None
       }
     }
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       // Only treat as easing when it is not a direction/fill/play-state keyword
       // (those are handled separately) and parse_easing accepts it.
       if ident_to_direction(s) is None &&
@@ -341,19 +341,19 @@ fn parse_animation_item(seg : ArrayView[@token.Token]) -> AnimationItem {
   let item : AnimationItem = {
     name: "none",
     duration: 0.0,
-    timing: @types.Easing::Ease,
+    timing: Ease,
     delay: 0.0,
-    iteration: @types.AnimationIterationCount::Count(1.0),
-    direction: @types.AnimationDirection::Normal,
-    fill: @types.AnimationFillMode::None,
-    play_state: @types.AnimationPlayState::Running,
+    iteration: Count(1.0),
+    direction: Normal,
+    fill: None,
+    play_state: Running,
     time_count: 0,
   }
   let mut i = 0
   while i < seg.length() {
     match seg[i] {
-      @token.Token::Whitespace => i = i + 1
-      @token.Token::Dimension(_, _) | @token.Token::Number(_, _) =>
+      Whitespace => i = i + 1
+      Dimension(_, _) | Number(_, _) =>
         // A <time> is duration (first) then delay (second). A bare <number>
         // (or `0`) that is not a time is iteration-count.
         match time_token_to_seconds(seg[i]) {
@@ -369,14 +369,14 @@ fn parse_animation_item(seg : ArrayView[@token.Token]) -> AnimationItem {
           None =>
             // Non-time number => iteration-count.
             match seg[i] {
-              @token.Token::Number(v, _) => {
-                item.iteration = @types.AnimationIterationCount::Count(v)
+              Number(v, _) => {
+                item.iteration = Count(v)
                 i = i + 1
               }
               _ => i = i + 1
             }
         }
-      @token.Token::Function(_) =>
+      Function(_) =>
         match try_parse_easing_at(seg, i) {
           Some((e, next)) => {
             item.timing = e
@@ -384,10 +384,10 @@ fn parse_animation_item(seg : ArrayView[@token.Token]) -> AnimationItem {
           }
           None => i = i + 1
         }
-      @token.Token::Ident(s) => {
+      Ident(s) => {
         let ls = s.to_lower()
         if ls == "infinite" {
-          item.iteration = @types.AnimationIterationCount::Infinite
+          item.iteration = Infinite
           i = i + 1
         } else if ident_to_direction(s) is Some(d) {
           item.direction = d
@@ -489,15 +489,15 @@ fn parse_transition_item(seg : ArrayView[@token.Token]) -> TransitionItem {
   let item : TransitionItem = {
     property: "all",
     duration: 0.0,
-    timing: @types.Easing::Ease,
+    timing: Ease,
     delay: 0.0,
     time_count: 0,
   }
   let mut i = 0
   while i < seg.length() {
     match seg[i] {
-      @token.Token::Whitespace => i = i + 1
-      @token.Token::Dimension(_, _) | @token.Token::Number(_, _) =>
+      Whitespace => i = i + 1
+      Dimension(_, _) | Number(_, _) =>
         match time_token_to_seconds(seg[i]) {
           Some(secs) => {
             if item.time_count == 0 {
@@ -510,7 +510,7 @@ fn parse_transition_item(seg : ArrayView[@token.Token]) -> TransitionItem {
           }
           None => i = i + 1
         }
-      @token.Token::Function(_) =>
+      Function(_) =>
         match try_parse_easing_at(seg, i) {
           Some((e, next)) => {
             item.timing = e
@@ -518,7 +518,7 @@ fn parse_transition_item(seg : ArrayView[@token.Token]) -> TransitionItem {
           }
           None => i = i + 1
         }
-      @token.Token::Ident(s) =>
+      Ident(s) =>
         match try_parse_easing_at(seg, i) {
           Some((e, next)) => {
             item.timing = e

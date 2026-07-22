@@ -2,11 +2,11 @@
 /// Parse grid-auto-flow value
 pub fn parse_grid_auto_flow(value : String) -> @types.GridAutoFlow {
   match value.trim().to_lower() {
-    "row" => @types.GridAutoFlow::Row
-    "column" => @types.GridAutoFlow::Column
-    "row dense" | "dense row" => @types.GridAutoFlow::RowDense
-    "column dense" | "dense column" => @types.GridAutoFlow::ColumnDense
-    _ => @types.GridAutoFlow::Row
+    "row" => Row
+    "column" => Column
+    "row dense" | "dense row" => RowDense
+    "column dense" | "dense column" => ColumnDense
+    _ => Row
   }
 }
 
@@ -112,19 +112,19 @@ pub fn resolve_grid_line_placement(
   line_names : Array[Array[String]],
 ) -> (Int?, Int?) {
   let start_line = match start {
-    @types.GridPlacement::Line(n) => Some(n)
-    @types.GridPlacement::Named(name) =>
+    Line(n) => Some(n)
+    Named(name) =>
       resolve_named_grid_side(name, true, line_names)
-    @types.GridPlacement::NamedLine(n, name) =>
+    NamedLine(n, name) =>
       find_grid_named_line_nth(name, n, line_names)
     // Auto / Span / SpanNamed are relative and resolved by the layout engine.
     _ => None
   }
   let end_line = match end {
-    @types.GridPlacement::Line(n) => Some(n)
-    @types.GridPlacement::Named(name) =>
+    Line(n) => Some(n)
+    Named(name) =>
       resolve_named_grid_side(name, false, line_names)
-    @types.GridPlacement::NamedLine(n, name) =>
+    NamedLine(n, name) =>
       find_grid_named_line_nth(name, n, line_names)
     _ => None
   }

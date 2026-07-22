@@ -91,9 +91,9 @@ fn MediaQuery::evaluate_without_negation(
 ) -> Bool {
   // Check media type
   match self.media_type {
-    Some(MediaType::Print) => return false // We're rendering to screen
-    Some(MediaType::Speech) => return false
-    Some(MediaType::All) | Some(MediaType::Screen) | None => ()
+    Some(Print) => return false // We're rendering to screen
+    Some(Speech) => return false
+    Some(All) | Some(Screen) | None => ()
   }
   // Check all conditions (AND semantics)
   for condition in self.conditions {
@@ -109,93 +109,93 @@ fn MediaQuery::evaluate_without_negation(
 fn evaluate_feature(feature : MediaFeature, env : MediaEnvironment) -> Bool {
   match feature {
     // Width features
-    MediaFeature::Width(value) =>
+    Width(value) =>
       match value {
-        Some(v) => compare_value(v, env.viewport_width, RangeOp::Eq, env)
+        Some(v) => compare_value(v, env.viewport_width, Eq, env)
         None => true // Boolean context: width exists
       }
-    MediaFeature::MinWidth(value) =>
-      compare_value(value, env.viewport_width, RangeOp::Ge, env)
-    MediaFeature::MaxWidth(value) =>
-      compare_value(value, env.viewport_width, RangeOp::Le, env)
-    MediaFeature::WidthRange(op, value) =>
+    MinWidth(value) =>
+      compare_value(value, env.viewport_width, Ge, env)
+    MaxWidth(value) =>
+      compare_value(value, env.viewport_width, Le, env)
+    WidthRange(op, value) =>
       compare_value_with_op(value, env.viewport_width, op, env)
     // Height features
-    MediaFeature::Height(value) =>
+    Height(value) =>
       match value {
-        Some(v) => compare_value(v, env.viewport_height, RangeOp::Eq, env)
+        Some(v) => compare_value(v, env.viewport_height, Eq, env)
         None => true
       }
-    MediaFeature::MinHeight(value) =>
-      compare_value(value, env.viewport_height, RangeOp::Ge, env)
-    MediaFeature::MaxHeight(value) =>
-      compare_value(value, env.viewport_height, RangeOp::Le, env)
-    MediaFeature::HeightRange(op, value) =>
+    MinHeight(value) =>
+      compare_value(value, env.viewport_height, Ge, env)
+    MaxHeight(value) =>
+      compare_value(value, env.viewport_height, Le, env)
+    HeightRange(op, value) =>
       compare_value_with_op(value, env.viewport_height, op, env)
     // Aspect ratio
-    MediaFeature::AspectRatio(value) =>
+    AspectRatio(value) =>
       match value {
         Some(v) =>
           compare_aspect_ratio(
             v,
             env.viewport_width,
             env.viewport_height,
-            RangeOp::Eq,
+            Eq,
           )
         None => true
       }
-    MediaFeature::MinAspectRatio(value) =>
+    MinAspectRatio(value) =>
       compare_aspect_ratio(
         value,
         env.viewport_width,
         env.viewport_height,
-        RangeOp::Ge,
+        Ge,
       )
-    MediaFeature::MaxAspectRatio(value) =>
+    MaxAspectRatio(value) =>
       compare_aspect_ratio(
         value,
         env.viewport_width,
         env.viewport_height,
-        RangeOp::Le,
+        Le,
       )
     // Orientation
-    MediaFeature::Orientation(value) =>
+    Orientation(value) =>
       match value.to_lower() {
         "portrait" => env.viewport_height >= env.viewport_width
         "landscape" => env.viewport_width > env.viewport_height
         _ => true
       }
     // Resolution
-    MediaFeature::Resolution(value) =>
+    Resolution(value) =>
       match value {
-        Some(v) => compare_resolution(v, env.device_pixel_ratio, RangeOp::Eq)
+        Some(v) => compare_resolution(v, env.device_pixel_ratio, Eq)
         None => true
       }
-    MediaFeature::MinResolution(value) =>
-      compare_resolution(value, env.device_pixel_ratio, RangeOp::Ge)
-    MediaFeature::MaxResolution(value) =>
-      compare_resolution(value, env.device_pixel_ratio, RangeOp::Le)
+    MinResolution(value) =>
+      compare_resolution(value, env.device_pixel_ratio, Ge)
+    MaxResolution(value) =>
+      compare_resolution(value, env.device_pixel_ratio, Le)
     // Boolean features (always true for screen)
-    MediaFeature::Color => true
-    MediaFeature::ColorIndex => false
-    MediaFeature::ColorGamut => true
-    MediaFeature::Grid => false
-    MediaFeature::Hover => true // Assume hover is available
-    MediaFeature::Monochrome => false
-    MediaFeature::Pointer => true // Assume pointer is available
-    MediaFeature::Scripting => true
-    MediaFeature::Update => true
+    Color => true
+    ColorIndex => false
+    ColorGamut => true
+    Grid => false
+    Hover => true // Assume hover is available
+    Monochrome => false
+    Pointer => true // Assume pointer is available
+    Scripting => true
+    Update => true
     // Discrete features
-    MediaFeature::DisplayMode(_) => true // Assume browser mode
-    MediaFeature::PrefersColorScheme(scheme) =>
+    DisplayMode(_) => true // Assume browser mode
+    PrefersColorScheme(scheme) =>
       match scheme.to_lower() {
         "dark" => env.color_scheme == Dark
         "light" => env.color_scheme == Light
         _ => true // Unknown scheme matches any
       }
-    MediaFeature::PrefersReducedMotion(_) => true // Accept any motion preference
+    PrefersReducedMotion(_) => true // Accept any motion preference
     // Unknown features default to true
-    MediaFeature::Custom(_, _) => true
+    Custom(_, _) => true
   }
 }
 
@@ -205,8 +205,8 @@ fn evaluate_feature(feature : MediaFeature, env : MediaEnvironment) -> Bool {
 /// 500px regardless of which dimension the feature compares against.
 fn to_pixels(value : MediaValue, env : MediaEnvironment) -> Double {
   match value {
-    MediaValue::Number(n) => n
-    MediaValue::Dimension(n, unit) =>
+    Number(n) => n
+    Dimension(n, unit) =>
       match unit.to_lower() {
         "px" => n
         "em" | "rem" => n * 16.0 // Assume 16px base font size
@@ -235,8 +235,8 @@ fn to_pixels(value : MediaValue, env : MediaEnvironment) -> Double {
         "mm" => n * 3.78 // 1mm ≈ 3.78px
         _ => n
       }
-    MediaValue::Ratio(_, _) => 0.0 // Ratios aren't pixel values
-    MediaValue::Ident(_) => 0.0 // Identifiers aren't pixel values
+    Ratio(_, _) => 0.0 // Ratios aren't pixel values
+    Ident(_) => 0.0 // Identifiers aren't pixel values
   }
 }
 
@@ -252,11 +252,11 @@ fn compare_value(
 ) -> Bool {
   let query_pixels = to_pixels(query_value, env)
   match op {
-    RangeOp::Eq => (actual - query_pixels).abs() < 0.01
-    RangeOp::Lt => actual < query_pixels
-    RangeOp::Le => actual <= query_pixels
-    RangeOp::Gt => actual > query_pixels
-    RangeOp::Ge => actual >= query_pixels
+    Eq => (actual - query_pixels).abs() < 0.01
+    Lt => actual < query_pixels
+    Le => actual <= query_pixels
+    Gt => actual > query_pixels
+    Ge => actual >= query_pixels
   }
 }
 
@@ -286,21 +286,21 @@ fn compare_aspect_ratio(
   }
   let actual_ratio = width / height
   let query_ratio = match query_value {
-    MediaValue::Ratio(w, h) =>
+    Ratio(w, h) =>
       if h == 0 {
         0.0
       } else {
         w.to_double() / h.to_double()
       }
-    MediaValue::Number(n) => n
+    Number(n) => n
     _ => 1.0
   }
   match op {
-    RangeOp::Eq => (actual_ratio - query_ratio).abs() < 0.01
-    RangeOp::Lt => actual_ratio < query_ratio
-    RangeOp::Le => actual_ratio <= query_ratio
-    RangeOp::Gt => actual_ratio > query_ratio
-    RangeOp::Ge => actual_ratio >= query_ratio
+    Eq => (actual_ratio - query_ratio).abs() < 0.01
+    Lt => actual_ratio < query_ratio
+    Le => actual_ratio <= query_ratio
+    Gt => actual_ratio > query_ratio
+    Ge => actual_ratio >= query_ratio
   }
 }
 
@@ -312,8 +312,8 @@ fn compare_resolution(
   op : RangeOp,
 ) -> Bool {
   let query_dpr = match query_value {
-    MediaValue::Number(n) => n
-    MediaValue::Dimension(n, unit) =>
+    Number(n) => n
+    Dimension(n, unit) =>
       match unit.to_lower() {
         "dppx" | "x" => n
         "dpi" => n / 96.0
@@ -323,10 +323,10 @@ fn compare_resolution(
     _ => 1.0
   }
   match op {
-    RangeOp::Eq => (actual_dpr - query_dpr).abs() < 0.01
-    RangeOp::Lt => actual_dpr < query_dpr
-    RangeOp::Le => actual_dpr <= query_dpr
-    RangeOp::Gt => actual_dpr > query_dpr
-    RangeOp::Ge => actual_dpr >= query_dpr
+    Eq => (actual_dpr - query_dpr).abs() < 0.01
+    Lt => actual_dpr < query_dpr
+    Le => actual_dpr <= query_dpr
+    Gt => actual_dpr > query_dpr
+    Ge => actual_dpr >= query_dpr
   }
 }

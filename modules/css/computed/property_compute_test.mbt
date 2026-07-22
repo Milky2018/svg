@@ -411,17 +411,17 @@ test "compute preserves border shorthand and longhand source order" {
   let ctx = @computed.ComputeContext::new()
   let border_decl = @cascade.Declaration::with_metadata(
     "border",
-    @cascade.Value("10px solid transparent"),
-    @cascade.Author,
-    @cascade.Normal,
+    Value("10px solid transparent"),
+    Author,
+    Normal,
     { a: 0, b: 1, c: 0 },
     0,
   )
   let left_decl = @cascade.Declaration::with_metadata(
     "border-left-width",
-    @cascade.Value("100px"),
-    @cascade.Author,
-    @cascade.Normal,
+    Value("100px"),
+    Author,
+    Normal,
     { a: 0, b: 1, c: 0 },
     1,
   )
@@ -433,17 +433,17 @@ test "compute preserves border shorthand and longhand source order" {
 
   let left_first_decl = @cascade.Declaration::with_metadata(
     "border-left-width",
-    @cascade.Value("100px"),
-    @cascade.Author,
-    @cascade.Normal,
+    Value("100px"),
+    Author,
+    Normal,
     { a: 0, b: 1, c: 0 },
     0,
   )
   let border_second_decl = @cascade.Declaration::with_metadata(
     "border",
-    @cascade.Value("10px solid transparent"),
-    @cascade.Author,
-    @cascade.Normal,
+    Value("10px solid transparent"),
+    Author,
+    Normal,
     { a: 0, b: 1, c: 0 },
     1,
   )
@@ -495,7 +495,7 @@ test "compute inline border longhand overrides stylesheet shorthand" {
     @cascade.Declaration::from_inline(
       "border-top-width",
       "100px",
-      @cascade.Normal,
+      Normal,
     ),
   ]
   let style = @computed.compute(

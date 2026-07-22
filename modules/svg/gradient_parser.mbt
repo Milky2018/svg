@@ -113,7 +113,7 @@ fn parse_linear_gradient_with_stops(
   if !stops.is_empty() {
     specified = specified | 128
   }
-  ctx.gradients.add_definition(id, Gradient::Linear(grad), reference, specified)
+  ctx.gradients.add_definition(id, Linear(grad), reference, specified)
 }
 
 ///|
@@ -225,7 +225,7 @@ fn parse_radial_gradient_with_stops(
   if !stops.is_empty() {
     specified = specified | 256
   }
-  ctx.gradients.add_definition(id, Gradient::Radial(grad), reference, specified)
+  ctx.gradients.add_definition(id, Radial(grad), reference, specified)
 }
 
 ///|
@@ -273,15 +273,15 @@ fn parse_gradient_stops(
   ctx.previous_sibling_stack.push(None)
   while !parser.is_end() {
     let (element, has_children) = match parser.advance_event() {
-      @xml.Event::Start(element) => (Some(element), true)
-      @xml.Event::Empty(element) => (Some(element), false)
-      @xml.Event::End(name) => {
+      Start(element) => (Some(element), true)
+      Empty(element) => (Some(element), false)
+      End(name) => {
         if name == parent_tag {
           break
         }
         (None, false)
       }
-      @xml.Event::Eof => break
+      Eof => break
       _ => (None, false)
     }
     match element {

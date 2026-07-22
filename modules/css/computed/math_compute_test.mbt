@@ -132,7 +132,7 @@ test "compute_inline units are case-insensitive" {
   )
   assert_eq(
     @computed.compute_inline("width: 10VW", ctx).width,
-    @types.Length(192.0),
+    Length(192.0),
   )
 }
 
@@ -460,9 +460,9 @@ test "compute - explicit inherit keyword forces inheritance" {
   let ctx = @computed.ComputeContext::with_parent(parent)
   let decl : @cascade.Declaration = {
     property: "color",
-    value: @cascade.Inherit,
-    origin: @cascade.Author,
-    importance: @cascade.Normal,
+    value: Inherit,
+    origin: Author,
+    importance: Normal,
     specificity: { a: 0, b: 0, c: 0 },
     source_order: 0,
   }

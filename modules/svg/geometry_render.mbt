@@ -172,7 +172,7 @@ fn render_line(
 ) -> Unit {
   fn draw_stroke() -> Unit {
     match resolve_paint_for_render(node.stroke.paint, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
+      SolidColor(color) =>
         if node.stroke_opacity > 0.0 && node.stroke.width > 0.0 {
           let stroke_color = apply_opacity(
             color,
@@ -1006,7 +1006,7 @@ fn build_marker_subpaths(commands : Array[PathCommand]) -> Array[MarkerSubpath] 
       }
       out_points.push(dup)
     }
-    subpaths.push(MarkerSubpath::{ points: out_points })
+    subpaths.push({ points: out_points })
   }
 
   fn record_out(

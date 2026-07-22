@@ -169,8 +169,8 @@ fn parse_length_or_percent(s : String) -> (Double, Bool) {
 fn parse_mask_length(value : String, units : MaskUnits) -> (Double, Bool) {
   let (val, is_percent) = parse_length_or_percent(value)
   match units {
-    MaskUnits::ObjectBoundingBox => (val, false)
-    MaskUnits::UserSpaceOnUse => (val, is_percent)
+    ObjectBoundingBox => (val, false)
+    UserSpaceOnUse => (val, is_percent)
   }
 }
 
@@ -266,12 +266,12 @@ fn parse_paint_fallback(value : String) -> PaintFallback {
   let value = trim_string(value)
   let lower = value.to_lower()
   if value.length() == 0 || lower == "none" {
-    return PaintFallback::NoPaint
+    return NoPaint
   }
   if lower == "currentcolor" {
-    return PaintFallback::CurrentColor
+    return CurrentColor
   }
-  PaintFallback::SolidColor(parse_color(value))
+  SolidColor(parse_color(value))
 }
 
 ///|
@@ -305,22 +305,22 @@ fn parse_paint_order(value : String) -> PaintOrder {
   if !order.contains(Markers) {
     order.push(Markers)
   }
-  PaintOrder::{ order, }
+  { order, }
 }
 
 ///|
 fn parse_color(value : String) -> Color {
   match @css_computed.parse_color(value) {
-    @css_computed.Resolved(color) =>
+    Resolved(color) =>
       Color::rgba(
         color.r,
         color.g,
         color.b,
         clamp_int((color.a * 255.0).round().to_int(), 0, 255),
       )
-    @css_computed.CurrentColor
-    | @css_computed.Inherit
-    | @css_computed.Invalid => Color::black()
+    CurrentColor
+    | Inherit
+    | Invalid => Color::black()
   }
 }
 

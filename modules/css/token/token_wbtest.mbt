@@ -3,19 +3,19 @@ test "Token::to_string for each constructible variant" {
   inspect(Token::Ident("foo").to_string(), content="Ident(foo)")
   inspect(Token::Function("calc").to_string(), content="Function(calc)")
   inspect(Token::AtKeyword("media").to_string(), content="AtKeyword(media)")
-  inspect(Token::Hash("id", HashType::Id).to_string(), content="Hash(id)")
+  inspect(Token::Hash("id", Id).to_string(), content="Hash(id)")
   inspect(
-    Token::Hash("123", HashType::Unrestricted).to_string(),
+    Token::Hash("123", Unrestricted).to_string(),
     content="Hash(123)",
   )
   inspect(Token::String("hi").to_string(), content="String(hi)")
   inspect(Token::BadString.to_string(), content="BadString")
   inspect(
-    Token::Number(10.0, NumType::Integer).to_string(),
+    Token::Number(10.0, Integer).to_string(),
     content="Number(10, int)",
   )
   inspect(
-    Token::Number(1.5, NumType::Number).to_string(),
+    Token::Number(1.5, Number).to_string(),
     content="Number(1.5, num)",
   )
   inspect(Token::Percentage(50.0).to_string(), content="Percentage(50)")

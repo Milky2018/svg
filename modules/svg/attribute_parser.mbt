@@ -561,7 +561,7 @@ fn parse_view_box(value : String) -> ViewBox? {
   if nums.length() < 4 {
     return None
   }
-  Some(ViewBox::{
+  Some({
     min_x: nums[0],
     min_y: nums[1],
     width: nums[2],
@@ -580,7 +580,7 @@ fn parse_preserve_aspect_ratio(value : String) -> PreserveAspectRatio {
     return PreserveAspectRatio::default()
   }
   if tokens[0] == "none" {
-    return PreserveAspectRatio::{ align: None, meet_or_slice: Meet }
+    return { align: None, meet_or_slice: Meet }
   }
   let align = match tokens[0] {
     "xMinYMin" => XMinYMin
@@ -602,23 +602,23 @@ fn parse_preserve_aspect_ratio(value : String) -> PreserveAspectRatio {
   } else {
     Meet
   }
-  PreserveAspectRatio::{ align, meet_or_slice }
+  { align, meet_or_slice }
 }
 
 ///|
 fn parse_mask_units(value : String) -> MaskUnits {
   match trim_string(value) {
-    "userSpaceOnUse" => MaskUnits::UserSpaceOnUse
-    "objectBoundingBox" => MaskUnits::ObjectBoundingBox
-    _ => MaskUnits::ObjectBoundingBox
+    "userSpaceOnUse" => UserSpaceOnUse
+    "objectBoundingBox" => ObjectBoundingBox
+    _ => ObjectBoundingBox
   }
 }
 
 ///|
 fn parse_clip_path_units(value : String) -> ClipPathUnits {
   match trim_string(value) {
-    "objectBoundingBox" => ClipPathUnits::ObjectBoundingBox
-    _ => ClipPathUnits::UserSpaceOnUse
+    "objectBoundingBox" => ObjectBoundingBox
+    _ => UserSpaceOnUse
   }
 }
 

@@ -45,11 +45,11 @@ fn parse_interpolation_space(spec : String) -> ColorInterpolationSpace? {
     return None
   }
   match tokens[0].trim().to_owned() {
-    "srgb" => Some(ColorInterpolationSpace::Srgb)
-    "oklab" => Some(ColorInterpolationSpace::Oklab)
-    "oklch" => Some(ColorInterpolationSpace::Oklch)
-    "lab" => Some(ColorInterpolationSpace::Lab)
-    "lch" => Some(ColorInterpolationSpace::Lch)
+    "srgb" => Some(Srgb)
+    "oklab" => Some(Oklab)
+    "oklch" => Some(Oklch)
+    "lab" => Some(Lab)
+    "lch" => Some(Lch)
     _ => None
   }
 }

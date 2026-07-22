@@ -30,9 +30,9 @@ fn parse_calc_expression(
   match parse_calc_linear(tokens) {
     Some(((px, pct), rest)) =>
       if pct.abs() < 0.0001 {
-        Some((@types.Length(px), rest))
+        Some((Length(px), rest))
       } else if px.abs() < 0.0001 {
-        Some((@types.Percent(pct), rest))
+        Some((Percent(pct), rest))
       } else {
         // Mixed - cannot simplify (fall back to Auto)
         None
@@ -62,10 +62,10 @@ fn parse_calc_linear(
       break
     }
     match remaining[0] {
-      @token.Token::RightParen =>
+      RightParen =>
         // End of calc expression: return the linear form (pct as a ratio).
         return Some(((result_px, result_pct / 100.0), remaining[1:]))
-      @token.Token::Dimension(value, raw_unit) => {
+      Dimension(value, raw_unit) => {
         let unit = raw_unit.to_lower()
         if unit == "%" {
           if !have_value {
@@ -104,7 +104,7 @@ fn parse_calc_linear(
         }
         remaining = remaining[1:]
       }
-      @token.Token::Percentage(value) => {
+      Percentage(value) => {
         if !have_value {
           result_pct = value * leading_factor
           have_value = true
@@ -120,7 +120,7 @@ fn parse_calc_linear(
         }
         remaining = remaining[1:]
       }
-      @token.Token::Number(value, _) => {
+      Number(value, _) => {
         // Unitless number. After a dimensioned term it scales the running
         // result (`10px * 2`); before the first term it is a leading factor for
         // the next term (`2 * 10px`). Zero has no effect.
@@ -145,7 +145,7 @@ fn parse_calc_linear(
         }
         remaining = remaining[1:]
       }
-      @token.Token::Delim(c) =>
+      Delim(c) =>
         if c == '+' || c == '-' || c == '*' || c == '/' {
           current_op = c
           remaining = remaining[1:]
@@ -163,11 +163,11 @@ fn parse_calc_linear(
 /// Mirrors the computed engine's lp_to_dimension.
 fn lp_to_dim(px : Double, pct : Double) -> @types.Dimension {
   if pct.abs() < 0.0001 {
-    @types.Length(px)
+    Length(px)
   } else if px.abs() < 0.0001 {
-    @types.Percent(pct)
+    Percent(pct)
   } else {
-    @types.Calc(px, pct)
+    Calc(px, pct)
   }
 }
 
@@ -177,9 +177,9 @@ fn lp_to_dim(px : Double, pct : Double) -> @types.Dimension {
 /// intrinsic keywords, Auto) — matching the computed engine's math_arg_lp.
 fn dimension_to_lp(dim : @types.Dimension) -> (Double, Double)? {
   match dim {
-    @types.Length(px) => Some((px, 0.0))
-    @types.Percent(p) => Some((0.0, p))
-    @types.Calc(px, pct) => Some((px, pct))
+    Length(px) => Some((px, 0.0))
+    Percent(p) => Some((0.0, p))
+    Calc(px, pct) => Some((px, pct))
     _ => None
   }
 }
@@ -198,7 +198,7 @@ fn parse_math_arg_lp(
     return None
   }
   match toks[0] {
-    @token.Token::Function(name) => {
+    Function(name) => {
       let lname = name.to_lower()
       if lname == "calc" {
         parse_calc_linear(toks[1:])
@@ -215,7 +215,7 @@ fn parse_math_arg_lp(
         None
       }
     }
-    @token.Token::Dimension(value, raw_unit) => {
+    Dimension(value, raw_unit) => {
       let unit = raw_unit.to_lower()
       if unit == "%" {
         Some(((0.0, value / 100.0), toks[1:]))
@@ -228,8 +228,8 @@ fn parse_math_arg_lp(
         }
       }
     }
-    @token.Token::Percentage(value) => Some(((0.0, value / 100.0), toks[1:]))
-    @token.Token::Number(value, _) =>
+    Percentage(value) => Some(((0.0, value / 100.0), toks[1:]))
+    Number(value, _) =>
       if value == 0.0 {
         Some(((0.0, 0.0), toks[1:]))
       } else {
@@ -250,8 +250,8 @@ fn parse_math_function(
 ) -> (@types.Dimension, ArrayView[@token.Token])? {
   let op = match op_name {
     "min" => @types.MathOp::Min
-    "max" => @types.MathOp::Max
-    _ => @types.MathOp::Clamp
+    "max" => Max
+    _ => Clamp
   }
   let lps : Array[(Double, Double)] = []
   let mut remaining = tokens
@@ -263,7 +263,7 @@ fn parse_math_function(
     }
     // Allow an empty argument list to terminate cleanly (e.g. malformed input).
     match remaining[0] {
-      @token.Token::RightParen => {
+      RightParen => {
         remaining = remaining[1:]
         closed = true
         continue
@@ -278,8 +278,8 @@ fn parse_math_function(
           return None
         }
         match remaining[0] {
-          @token.Token::Comma => remaining = remaining[1:]
-          @token.Token::RightParen => {
+          Comma => remaining = remaining[1:]
+          RightParen => {
             remaining = remaining[1:]
             closed = true
           }
@@ -292,7 +292,7 @@ fn parse_math_function(
   if lps.is_empty() {
     return None
   }
-  if op == @types.MathOp::Clamp && lps.length() != 3 {
+  if op == Clamp && lps.length() != 3 {
     return None
   }
   // Single min()/max() argument resolves to that argument verbatim.
@@ -313,11 +313,11 @@ fn parse_math_function(
   let dim = if all_px {
     @types.Dimension::Length(@types.apply_math_op(op, lps.map(fn(lp) { lp.0 })))
   } else if all_pct {
-    @types.Dimension::Percent(
+    Percent(
       @types.apply_math_op(op, lps.map(fn(lp) { lp.1 })),
     )
   } else {
-    @types.Dimension::MathFn(op, lps)
+    MathFn(op, lps)
   }
   Some((dim, remaining))
 }
@@ -372,55 +372,55 @@ fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
     return None
   }
   match tokens[0] {
-    @token.Token::Function(name) => {
+    Function(name) => {
       let lname = name.to_lower()
       if lname == "calc" {
         // Try to parse and simplify calc expression
         match parse_calc_expression(tokens[1:]) {
           Some((dim, _)) => return Some(dim)
-          None => return Some(@types.Auto) // Fallback for complex calc
+          None => return Some(Auto) // Fallback for complex calc
         }
       } else if lname == "min" || lname == "max" || lname == "clamp" {
         match parse_math_function(lname, tokens[1:]) {
           Some((dim, _)) => return Some(dim)
-          None => return Some(@types.Auto) // Fallback for complex/mixed-calc args
+          None => return Some(Auto) // Fallback for complex/mixed-calc args
         }
       } else {
         None
       }
     }
-    @token.Token::Dimension(value, raw_unit) => {
+    Dimension(value, raw_unit) => {
       // CSS units are case-insensitive.
       let unit = raw_unit.to_lower()
       if unit == "%" {
-        Some(@types.Percent(value / 100.0))
+        Some(Percent(value / 100.0))
       } else {
         match dimension_unit_to_px(value, unit) {
-          Some(px) => Some(@types.Length(px))
+          Some(px) => Some(Length(px))
           // Unknown unit: fall back to treating the number as pixels (legacy).
-          None => Some(@types.Length(value))
+          None => Some(Length(value))
         }
       }
     }
-    @token.Token::Percentage(value) => Some(@types.Percent(value / 100.0))
-    @token.Token::Number(value, _) =>
+    Percentage(value) => Some(Percent(value / 100.0))
+    Number(value, _) =>
       // Unitless 0 is valid
       if value == 0.0 {
-        Some(@types.Length(0.0))
+        Some(Length(0.0))
       } else {
         None
       }
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "auto" {
-        Some(@types.Auto)
+        Some(Auto)
       } else if s == "min-content" {
-        Some(@types.MinContent)
+        Some(MinContent)
       } else if s == "max-content" {
-        Some(@types.MaxContent)
+        Some(MaxContent)
       } else if s == "fit-content" {
         // fit-content without argument is equivalent to fit-content(max-content)
         // Using infinity to represent unbounded
-        Some(@types.FitContent(1.0e10))
+        Some(FitContent(1.0e10))
       } else {
         None
       }
@@ -457,47 +457,47 @@ fn parse_multi_dimensions(
 ///|
 fn parse_display_keyword(keyword : String) -> @types.Display? {
   if keyword == "block" {
-    Some(@types.Block)
+    Some(Block)
   } else if keyword == "inline" {
-    Some(@types.Inline)
+    Some(Inline)
   } else if keyword == "inline-block" {
-    Some(@types.InlineBlock)
+    Some(InlineBlock)
   } else if keyword == "flex" {
-    Some(@types.Flex)
+    Some(Flex)
   } else if keyword == "inline-flex" {
-    Some(@types.InlineFlex)
+    Some(InlineFlex)
   } else if keyword == "grid" {
-    Some(@types.Grid)
+    Some(Grid)
   } else if keyword == "inline-grid" {
-    Some(@types.InlineGrid)
+    Some(InlineGrid)
   } else if keyword == "table" {
-    Some(@types.Table)
+    Some(Table)
   } else if keyword == "inline-table" {
-    Some(@types.InlineTable)
+    Some(InlineTable)
   } else if keyword == "table-row" {
-    Some(@types.TableRow)
+    Some(TableRow)
   } else if keyword == "table-cell" {
-    Some(@types.TableCell)
+    Some(TableCell)
   } else if keyword == "table-caption" {
-    Some(@types.TableCaption)
+    Some(TableCaption)
   } else if keyword == "table-row-group" {
-    Some(@types.TableRowGroup)
+    Some(TableRowGroup)
   } else if keyword == "table-header-group" {
-    Some(@types.TableHeaderGroup)
+    Some(TableHeaderGroup)
   } else if keyword == "table-footer-group" {
-    Some(@types.TableFooterGroup)
+    Some(TableFooterGroup)
   } else if keyword == "table-column" {
-    Some(@types.TableColumn)
+    Some(TableColumn)
   } else if keyword == "table-column-group" {
-    Some(@types.TableColumnGroup)
+    Some(TableColumnGroup)
   } else if keyword == "none" {
-    Some(@types.Display::None)
+    Some(None)
   } else if keyword == "contents" {
-    Some(@types.Contents)
+    Some(Contents)
   } else if keyword == "flow-root" {
-    Some(@types.FlowRoot)
+    Some(FlowRoot)
   } else if keyword == "math" {
-    Some(@types.Inline)
+    Some(Inline)
   } else {
     None
   }
@@ -512,8 +512,8 @@ fn parse_display(tokens : ArrayView[@token.Token]) -> @types.Display? {
   let keywords : Array[String] = []
   for token in tokens {
     match token {
-      @token.Token::Ident(s) => keywords.push(s)
-      @token.Token::Whitespace => ()
+      Ident(s) => keywords.push(s)
+      Whitespace => ()
       _ => return None
     }
   }
@@ -525,15 +525,15 @@ fn parse_display(tokens : ArrayView[@token.Token]) -> @types.Display? {
     let second = keywords[1]
     if (first == "math" && second == "inline") ||
       (first == "inline" && second == "math") {
-      return Some(@types.Inline)
+      return Some(Inline)
     }
     if (first == "math" && second == "block") ||
       (first == "block" && second == "math") {
-      return Some(@types.Block)
+      return Some(Block)
     }
     if (first == "flow-root" && second == "list-item") ||
       (first == "list-item" && second == "flow-root") {
-      return Some(@types.FlowRoot)
+      return Some(FlowRoot)
     }
   }
   if keywords.length() != 1 {
@@ -549,13 +549,13 @@ fn parse_position(tokens : ArrayView[@token.Token]) -> @types.Position? {
     return None
   }
   match tokens[0] {
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "relative" {
-        Some(@types.Relative)
+        Some(Relative)
       } else if s == "absolute" {
-        Some(@types.Absolute)
+        Some(Absolute)
       } else if s == "fixed" {
-        Some(@types.Fixed)
+        Some(Fixed)
       } else {
         None
       }
@@ -573,29 +573,29 @@ fn parse_float(
     return None
   }
   match tokens[0] {
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "left" {
-        Some(@types.Float::Left)
+        Some(Left)
       } else if s == "right" {
-        Some(@types.Float::Right)
+        Some(Right)
       } else if s == "inline-start" {
         Some(
           if direction.is_rtl() {
-            @types.Float::Right
+            Right
           } else {
-            @types.Float::Left
+            Left
           },
         )
       } else if s == "inline-end" {
         Some(
           if direction.is_rtl() {
-            @types.Float::Left
+            Left
           } else {
-            @types.Float::Right
+            Right
           },
         )
       } else if s == "none" {
-        Some(@types.Float::None)
+        Some(None)
       } else {
         None
       }
@@ -613,31 +613,31 @@ fn parse_clear(
     return None
   }
   match tokens[0] {
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "left" {
-        Some(@types.Clear::Left)
+        Some(Left)
       } else if s == "right" {
-        Some(@types.Clear::Right)
+        Some(Right)
       } else if s == "inline-start" {
         Some(
           if direction.is_rtl() {
-            @types.Clear::Right
+            Right
           } else {
-            @types.Clear::Left
+            Left
           },
         )
       } else if s == "inline-end" {
         Some(
           if direction.is_rtl() {
-            @types.Clear::Left
+            Left
           } else {
-            @types.Clear::Right
+            Right
           },
         )
       } else if s == "both" {
-        Some(@types.Clear::Both)
+        Some(Both)
       } else if s == "none" {
-        Some(@types.Clear::None)
+        Some(None)
       } else {
         None
       }
@@ -654,15 +654,15 @@ fn parse_flex_direction(
     return None
   }
   match tokens[0] {
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "row" {
-        Some(@types.Row)
+        Some(Row)
       } else if s == "row-reverse" {
-        Some(@types.RowReverse)
+        Some(RowReverse)
       } else if s == "column" {
-        Some(@types.Column)
+        Some(Column)
       } else if s == "column-reverse" {
-        Some(@types.ColumnReverse)
+        Some(ColumnReverse)
       } else {
         None
       }
@@ -677,13 +677,13 @@ fn parse_flex_wrap(tokens : ArrayView[@token.Token]) -> @types.FlexWrap? {
     return None
   }
   match tokens[0] {
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "nowrap" {
-        Some(@types.NoWrap)
+        Some(NoWrap)
       } else if s == "wrap" {
-        Some(@types.FlexWrap::Wrap)
+        Some(Wrap)
       } else if s == "wrap-reverse" {
-        Some(@types.WrapReverse)
+        Some(WrapReverse)
       } else {
         None
       }
@@ -694,31 +694,31 @@ fn parse_flex_wrap(tokens : ArrayView[@token.Token]) -> @types.FlexWrap? {
 ///|
 fn parse_alignment_keyword(value : String) -> @types.Alignment? {
   if value == "flex-start" {
-    Some(@types.Alignment::FlexStart)
+    Some(FlexStart)
   } else if value == "start" {
-    Some(@types.Alignment::Start)
+    Some(Start)
   } else if value == "flex-end" {
-    Some(@types.Alignment::FlexEnd)
+    Some(FlexEnd)
   } else if value == "end" {
-    Some(@types.Alignment::End)
+    Some(End)
   } else if value == "left" {
-    Some(@types.Alignment::Left)
+    Some(Left)
   } else if value == "right" {
-    Some(@types.Alignment::Right)
+    Some(Right)
   } else if value == "center" {
-    Some(@types.Alignment::Center)
+    Some(Center)
   } else if value == "space-between" {
-    Some(@types.SpaceBetween)
+    Some(SpaceBetween)
   } else if value == "space-around" {
-    Some(@types.SpaceAround)
+    Some(SpaceAround)
   } else if value == "space-evenly" {
-    Some(@types.SpaceEvenly)
+    Some(SpaceEvenly)
   } else if value == "stretch" {
-    Some(@types.Alignment::Stretch)
+    Some(Stretch)
   } else if value == "baseline" || value == "first baseline" {
-    Some(@types.Alignment::Baseline)
+    Some(Baseline)
   } else if value == "last baseline" {
-    Some(@types.Alignment::End)
+    Some(End)
   } else {
     None
   }
@@ -729,7 +729,7 @@ fn collect_alignment_parts(tokens : ArrayView[@token.Token]) -> Array[String] {
   let parts : Array[String] = []
   for i = 0; i < tokens.length(); i = i + 1 {
     match tokens[i] {
-      @token.Token::Ident(s) => parts.push(s)
+      Ident(s) => parts.push(s)
       _ => ()
     }
   }
@@ -772,9 +772,9 @@ fn parse_alignment_segment_with_overflow(
     Some(parsed) => {
       let alignment = if is_safe {
         match parsed {
-          @types.Alignment::Center
-          | @types.Alignment::End
-          | @types.Alignment::FlexEnd => @types.Alignment::Start
+          Center
+          | End
+          | FlexEnd => @types.Alignment::Start
           _ => parsed
         }
       } else {
@@ -844,19 +844,19 @@ fn parse_self_alignment(tokens : ArrayView[@token.Token]) -> @types.AlignSelf? {
     return None
   }
   match tokens[0] {
-    @token.Token::Ident(s) =>
+    Ident(s) =>
       if s == "auto" {
-        Some(@types.AlignSelf::Auto)
+        Some(Auto)
       } else if s == "flex-start" || s == "start" {
-        Some(@types.AlignSelf::Start)
+        Some(Start)
       } else if s == "flex-end" || s == "end" {
-        Some(@types.AlignSelf::End)
+        Some(End)
       } else if s == "center" {
-        Some(@types.AlignSelf::Center)
+        Some(Center)
       } else if s == "stretch" {
-        Some(@types.AlignSelf::Stretch)
+        Some(Stretch)
       } else if s == "baseline" {
-        Some(@types.AlignSelf::Baseline)
+        Some(Baseline)
       } else {
         None
       }
@@ -871,7 +871,7 @@ fn parse_number(tokens : ArrayView[@token.Token]) -> Double? {
     return None
   }
   match tokens[0] {
-    @token.Token::Number(value, _) => Some(value)
+    Number(value, _) => Some(value)
     _ => None
   }
 }
@@ -883,7 +883,7 @@ fn parse_integer(tokens : ArrayView[@token.Token]) -> Int? {
     return None
   }
   match tokens[0] {
-    @token.Token::Number(value, _) => Some(value.to_int())
+    Number(value, _) => Some(value.to_int())
     _ => None
   }
 }
@@ -904,18 +904,18 @@ fn parse_flex_shorthand(
 
   // Check for keyword values
   match tokens[0] {
-    @token.Token::Ident(s) => {
+    Ident(s) => {
       if s == "none" {
         // flex: none = 0 0 auto
-        return Some((0.0, 0.0, @types.Auto))
+        return Some((0.0, 0.0, Auto))
       }
       if s == "auto" {
         // flex: auto = 1 1 auto
-        return Some((1.0, 1.0, @types.Auto))
+        return Some((1.0, 1.0, Auto))
       }
       if s == "initial" {
         // flex: initial = 0 1 auto
-        return Some((0.0, 1.0, @types.Auto))
+        return Some((0.0, 1.0, Auto))
       }
     }
     _ => ()
@@ -936,7 +936,7 @@ fn parse_flex_shorthand(
       break
     }
     match tokens_view[0] {
-      @token.Token::Number(v, _) => {
+      Number(v, _) => {
         if seen_basis {
           // Number after basis is invalid (e.g., "1 0% 1")
           return None
@@ -944,7 +944,7 @@ fn parse_flex_shorthand(
         numbers.push(v)
         tokens_view = tokens_view[1:]
       }
-      @token.Token::Dimension(_, _) | @token.Token::Percentage(_) => {
+      Dimension(_, _) | Percentage(_) => {
         // This is flex-basis
         if seen_basis {
           // Second basis value is invalid
@@ -959,13 +959,13 @@ fn parse_flex_shorthand(
           None => break
         }
       }
-      @token.Token::Ident(s) =>
+      Ident(s) =>
         // Could be flex-basis keyword (auto, content, etc.)
         if s == "auto" || s == "content" {
           if seen_basis {
             return None
           }
-          basis = Some(@types.Auto)
+          basis = Some(Auto)
           seen_basis = true
           tokens_view = tokens_view[1:]
         } else {
@@ -980,7 +980,7 @@ fn parse_flex_shorthand(
   if tokens_view.length() > 0 {
     // Still have tokens left - could be invalid like "1 0% 1"
     match tokens_view[0] {
-      @token.Token::Number(_, _) =>
+      Number(_, _) =>
         // Number after basis is invalid
         if seen_basis {
           return None
@@ -997,9 +997,9 @@ fn parse_flex_shorthand(
     None =>
       // CSS spec: when only numbers are specified, basis defaults to 0%.
       if numbers.length() >= 1 {
-        @types.Percent(0.0)
+        Percent(0.0)
       } else {
-        @types.Auto
+        Auto
       }
   }
   if numbers.length() == 0 && basis is None {
@@ -1025,25 +1025,25 @@ fn parse_flex_flow_shorthand(
   let mut i = 0
   while i < tokens.length() {
     match tokens[i] {
-      @token.Token::Ident(s) =>
+      Ident(s) =>
         // Check if it's a flex-direction value
         if s == "row" {
-          direction = Some(@types.FlexDirection::Row)
+          direction = Some(Row)
         } else if s == "row-reverse" {
-          direction = Some(@types.FlexDirection::RowReverse)
+          direction = Some(RowReverse)
         } else if s == "column" {
-          direction = Some(@types.FlexDirection::Column)
+          direction = Some(Column)
         } else if s == "column-reverse" {
-          direction = Some(@types.FlexDirection::ColumnReverse)
+          direction = Some(ColumnReverse)
           // Check if it's a flex-wrap value
         } else if s == "nowrap" {
-          wrap = Some(@types.FlexWrap::NoWrap)
+          wrap = Some(NoWrap)
         } else if s == "wrap" {
-          wrap = Some(@types.FlexWrap::Wrap)
+          wrap = Some(Wrap)
         } else if s == "wrap-reverse" {
-          wrap = Some(@types.FlexWrap::WrapReverse)
+          wrap = Some(WrapReverse)
         }
-      @token.Token::Whitespace => ()
+      Whitespace => ()
       _ => ()
     }
     i += 1
@@ -1053,8 +1053,8 @@ fn parse_flex_flow_shorthand(
   if direction is Some(_) || wrap is Some(_) {
     Some(
       (
-        direction.unwrap_or(@types.FlexDirection::Row),
-        wrap.unwrap_or(@types.FlexWrap::NoWrap),
+        direction.unwrap_or(Row),
+        wrap.unwrap_or(NoWrap),
       ),
     )
   } else {
@@ -1070,15 +1070,15 @@ fn parse_aspect_ratio(tokens : ArrayView[@token.Token]) -> Double? {
   }
   let tokens = skip_whitespace(tokens)
   match tokens[0] {
-    @token.Token::Number(value, _) => {
+    Number(value, _) => {
       // Check for "x / y" format
       let rest = skip_whitespace(tokens[1:])
       if rest.length() >= 2 {
         match (rest[0], skip_whitespace(rest[1:])) {
-          (@token.Token::Delim('/'), rest2) =>
+          (Delim('/'), rest2) =>
             if rest2.length() > 0 {
               match rest2[0] {
-                @token.Token::Number(divisor, _) =>
+                Number(divisor, _) =>
                   if divisor != 0.0 {
                     return Some(value / divisor)
                   } else {

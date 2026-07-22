@@ -150,7 +150,7 @@ pub fn ViewBox::get_transform(
     }
   }
   // Combine: first translate by viewBox min, then scale
-  Transform::{ a: sx, b: 0.0, c: 0.0, d: sy, e: tx, f: ty }
+  { a: sx, b: 0.0, c: 0.0, d: sy, e: tx, f: ty }
 }
 
 ///|

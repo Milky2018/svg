@@ -68,7 +68,7 @@ test "README: inspect structured diagnostics" {
   let result = render_svg("<svg><broken></svg>", 8, 8, RenderOptions::default())
   assert_eq(result.image.width(), 8)
   assert_true(result.diagnostics.length() > 0)
-  assert_eq(result.diagnostics[0].kind, RenderDiagnosticKind::ParseFailed)
+  assert_eq(result.diagnostics[0].kind, ParseFailed)
 }
 ```
 

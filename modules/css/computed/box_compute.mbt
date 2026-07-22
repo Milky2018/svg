@@ -2,16 +2,16 @@
 /// Parse border-collapse value
 fn parse_border_collapse(value : String) -> @style.BorderCollapse {
   match value.trim() {
-    "collapse" => @style.Collapse
-    "separate" => @style.Separate
-    _ => @style.Separate
+    "collapse" => Collapse
+    "separate" => Separate
+    _ => Separate
   }
 }
 
 ///|
 /// Border style keywords that suppress used border width.
 fn is_none_border_style_enum(style : @style.BorderStyle) -> Bool {
-  style == @style.BorderStyle::None || style == @style.BorderStyle::Hidden
+  style == None || style == Hidden
 }
 
 ///|
@@ -89,24 +89,24 @@ fn extract_border_style_from_shorthand(value : String) -> @style.BorderStyle {
   if found_style {
     result
   } else {
-    @style.BorderStyle::Solid // Default when only width/color specified
+    Solid // Default when only width/color specified
   }
 }
 
 ///|
 fn parse_border_style_value(value : String) -> @style.BorderStyle {
   match value.trim().to_lower() {
-    "none" => @style.BorderStyle::None
-    "hidden" => @style.BorderStyle::Hidden
-    "dotted" => @style.BorderStyle::Dotted
-    "dashed" => @style.BorderStyle::Dashed
-    "solid" => @style.BorderStyle::Solid
-    "double" => @style.BorderStyle::Double
-    "groove" => @style.BorderStyle::Groove
-    "ridge" => @style.BorderStyle::Ridge
-    "inset" => @style.BorderStyle::Inset
-    "outset" => @style.BorderStyle::Outset
-    _ => @style.BorderStyle::None
+    "none" => None
+    "hidden" => Hidden
+    "dotted" => Dotted
+    "dashed" => Dashed
+    "solid" => Solid
+    "double" => Double
+    "groove" => Groove
+    "ridge" => Ridge
+    "inset" => Inset
+    "outset" => Outset
+    _ => None
   }
 }
 
@@ -119,7 +119,7 @@ fn resolve_border_width(
 ) -> @types.Dimension {
   let v = value.trim().to_lower()
   if v == "none" || v == "hidden" || v == "0" {
-    return @types.Length(0.0)
+    return Length(0.0)
   }
 
   let mut has_visible_style = false
@@ -137,9 +137,9 @@ fn resolve_border_width(
         has_none_style = true
         continue
       }
-      "thin" => return @types.Length(1.0)
-      "medium" => return @types.Length(3.0)
-      "thick" => return @types.Length(5.0)
+      "thin" => return Length(1.0)
+      "medium" => return Length(3.0)
+      "thick" => return Length(5.0)
       "solid"
       | "dotted"
       | "dashed"
@@ -156,17 +156,17 @@ fn resolve_border_width(
 
     // Length-like token found in shorthand.
     match resolve_dimension(part, ctx) {
-      @types.Length(px) => return @types.Length(px)
+      Length(px) => return Length(px)
       _ => ()
     }
   }
 
   if has_none_style {
-    @types.Length(0.0)
+    Length(0.0)
   } else if has_visible_style {
-    @types.Length(1.5)
+    Length(1.5)
   } else {
-    @types.Length(0.0)
+    Length(0.0)
   }
 }
 
@@ -174,9 +174,9 @@ fn resolve_border_width(
 /// Parse table-layout value
 fn parse_table_layout(value : String) -> @style.TableLayout {
   match value.trim() {
-    "fixed" => @style.TableLayout::Fixed
-    "auto" => @style.Auto
-    _ => @style.Auto
+    "fixed" => Fixed
+    "auto" => Auto
+    _ => Auto
   }
 }
 
@@ -184,9 +184,9 @@ fn parse_table_layout(value : String) -> @style.TableLayout {
 /// Parse caption-side value
 fn parse_caption_side(value : String) -> @style.CaptionSide {
   match value.trim() {
-    "top" => @style.CaptionSide::Top
-    "bottom" => @style.CaptionSide::Bottom
-    _ => @style.CaptionSide::Top
+    "top" => Top
+    "bottom" => Bottom
+    _ => Top
   }
 }
 
@@ -194,14 +194,14 @@ fn parse_caption_side(value : String) -> @style.CaptionSide {
 /// Parse margin-trim value
 fn parse_margin_trim(value : String) -> @style.MarginTrim {
   match value.trim().to_lower() {
-    "none" => @style.MarginTrim::None
-    "block-start" => @style.MarginTrim::BlockStart
-    "block-end" => @style.MarginTrim::BlockEnd
-    "block" => @style.MarginTrim::Block
-    "inline-start" => @style.MarginTrim::InlineStart
-    "inline-end" => @style.MarginTrim::InlineEnd
-    "inline" => @style.MarginTrim::Inline
-    _ => @style.MarginTrim::None
+    "none" => None
+    "block-start" => BlockStart
+    "block-end" => BlockEnd
+    "block" => Block
+    "inline-start" => InlineStart
+    "inline-end" => InlineEnd
+    "inline" => Inline
+    _ => None
   }
 }
 
@@ -221,12 +221,12 @@ fn parse_border_spacing(
     return (0.0, 0.0)
   }
   let horizontal = match resolve_dimension(parts[0].to_owned(), ctx) {
-    @types.Length(px) => px
+    Length(px) => px
     _ => 0.0
   }
   let vertical = if parts.length() >= 2 {
     match resolve_dimension(parts[1].to_owned(), ctx) {
-      @types.Length(px) => px
+      Length(px) => px
       _ => horizontal
     }
   } else {
@@ -260,7 +260,7 @@ fn resolve_border_radius(
   let values : Array[Double] = parts.map(fn(p) {
     let dim = resolve_dimension(p.to_owned(), ctx)
     match dim {
-      @types.Percent(pct) => -pct // Negative encodes percentage (fraction) for render-time resolution
+      Percent(pct) => -pct // Negative encodes percentage (fraction) for render-time resolution
       _ => resolve_dimension_to_px(dim)
     }
   })

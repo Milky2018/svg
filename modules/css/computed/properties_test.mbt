@@ -122,23 +122,23 @@ test "parse_float covers all values" {
 ///|
 test "parse_float_with_direction - inline-start respects direction" {
   inspect(
-    @computed.parse_float_with_direction("inline-start", @style.Direction::Ltr),
+    @computed.parse_float_with_direction("inline-start", Ltr),
     content="Left",
   )
   inspect(
-    @computed.parse_float_with_direction("inline-start", @style.Direction::Rtl),
+    @computed.parse_float_with_direction("inline-start", Rtl),
     content="Right",
   )
   inspect(
-    @computed.parse_float_with_direction("inline-end", @style.Direction::Ltr),
+    @computed.parse_float_with_direction("inline-end", Ltr),
     content="Right",
   )
   inspect(
-    @computed.parse_float_with_direction("inline-end", @style.Direction::Rtl),
+    @computed.parse_float_with_direction("inline-end", Rtl),
     content="Left",
   )
   inspect(
-    @computed.parse_float_with_direction("left", @style.Direction::Rtl),
+    @computed.parse_float_with_direction("left", Rtl),
     content="Left",
   )
 }
@@ -552,23 +552,23 @@ test "parse_alignment" {
 ///|
 test "parse_clear_with_direction - inline-start/end" {
   inspect(
-    @computed.parse_clear_with_direction("inline-start", @style.Direction::Ltr),
+    @computed.parse_clear_with_direction("inline-start", Ltr),
     content="Left",
   )
   inspect(
-    @computed.parse_clear_with_direction("inline-start", @style.Direction::Rtl),
+    @computed.parse_clear_with_direction("inline-start", Rtl),
     content="Right",
   )
   inspect(
-    @computed.parse_clear_with_direction("inline-end", @style.Direction::Ltr),
+    @computed.parse_clear_with_direction("inline-end", Ltr),
     content="Right",
   )
   inspect(
-    @computed.parse_clear_with_direction("inline-end", @style.Direction::Rtl),
+    @computed.parse_clear_with_direction("inline-end", Rtl),
     content="Left",
   )
   inspect(
-    @computed.parse_clear_with_direction("both", @style.Direction::Ltr),
+    @computed.parse_clear_with_direction("both", Ltr),
     content="Both",
   )
 }
@@ -724,8 +724,8 @@ test "find_grid_named_line_nth and NamedLine resolution" {
   )
   // `grid-column: 2 col / span 1` -> start resolves to the 2nd "col" line
   let (s, e) = @computed.resolve_grid_line_placement(
-    @types.GridPlacement::NamedLine(2, "col"),
-    @types.GridPlacement::SpanNamed(1, "col"),
+    NamedLine(2, "col"),
+    SpanNamed(1, "col"),
     names,
   )
   debug_inspect(s, content="Some(2)")

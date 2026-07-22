@@ -541,7 +541,7 @@ test "Declaration::with_metadata" {
   let spec : @selector.Specificity = { a: 1, b: 2, c: 3 }
   let d = Declaration::with_metadata(
     "padding",
-    PropertyValue::Inherit,
+    Inherit,
     User,
     Important,
     spec,
@@ -580,7 +580,7 @@ test "CascadedValues::each and properties" {
 test "CascadedValues::get_value returns None for non-Value (keyword)" {
   let decl : Declaration = {
     property: "color",
-    value: PropertyValue::Inherit,
+    value: Inherit,
     origin: Author,
     importance: Normal,
     specificity: { a: 0, b: 0, c: 0 },

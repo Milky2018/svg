@@ -50,21 +50,21 @@ test "Show for SimpleSelector variants" {
 test "Show for AttributeSelector" {
   let s : AttributeSelector = {
     name: "href",
-    match_type: AttributeMatch::Exists,
+    match_type: Exists,
     case_insensitive: false,
     any_namespace: false,
   }
   inspect(s, content="[href]")
   let s2 : AttributeSelector = {
     name: "type",
-    match_type: AttributeMatch::Exact("text"),
+    match_type: Exact("text"),
     case_insensitive: false,
     any_namespace: false,
   }
   inspect(s2, content="[type Exact(text)]")
   let s3 : AttributeSelector = {
     name: "lang",
-    match_type: AttributeMatch::DashMatch("en"),
+    match_type: DashMatch("en"),
     case_insensitive: true,
     any_namespace: false,
   }
@@ -239,7 +239,7 @@ test "Element::set_parent" {
 test "SimpleSelector Show for Attribute variant" {
   let attr : AttributeSelector = {
     name: "type",
-    match_type: AttributeMatch::Exact("button"),
+    match_type: Exact("button"),
     case_insensitive: false,
     any_namespace: false,
   }

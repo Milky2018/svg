@@ -92,8 +92,8 @@ test "Easing::sample cubic-bezier" {
 
 ///|
 test "Easing::sample steps" {
-  let start = Easing::steps(4, StepPosition::Start)
-  let end = Easing::steps(4, StepPosition::End)
+  let start = Easing::steps(4, Start)
+  let end = Easing::steps(4, End)
   inspect(start.sample(0.0), content="0.25")
   inspect(start.sample(0.24), content="0.25")
   inspect(end.sample(0.24), content="0")
@@ -103,8 +103,8 @@ test "Easing::sample steps" {
 
 ///|
 test "Easing::sample CSS step positions" {
-  let jump_none = Easing::steps(4, StepPosition::JumpNone)
-  let jump_both = Easing::steps(4, StepPosition::JumpBoth)
+  let jump_none = Easing::steps(4, JumpNone)
+  let jump_both = Easing::steps(4, JumpBoth)
   inspect(jump_none.sample(0.0), content="0")
   assert_close(jump_none.sample(0.25), 1.0 / 3.0)
   inspect(jump_none.sample(1.0), content="1")

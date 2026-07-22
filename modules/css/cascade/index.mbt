@@ -37,16 +37,16 @@ fn extract_primary_index_key(
   let mut tag : String? = None
   // Check type selector
   match selector.type_selector {
-    Some(@selector.Type(name)) => tag = Some(name.to_lower())
-    Some(@selector.Universal) => () // Universal doesn't narrow down
+    Some(Type(name)) => tag = Some(name.to_lower())
+    Some(Universal) => () // Universal doesn't narrow down
     Some(_) => () // Other selector types (shouldn't be in type_selector position)
     None => ()
   }
   // Check subclasses
   for sub in selector.subclasses {
     match sub {
-      @selector.Id(name) => if id is None { id = Some(name) }
-      @selector.Class(name) => if class_name is None { class_name = Some(name) }
+      Id(name) => if id is None { id = Some(name) }
+      Class(name) => if class_name is None { class_name = Some(name) }
       _ => ()
     }
   }

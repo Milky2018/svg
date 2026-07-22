@@ -147,7 +147,7 @@ fn valid_svg_paint(value : String) -> Bool {
     )
     return fallback.length() == 0 || valid_svg_paint(fallback)
   }
-  !(@css_computed.parse_color(trimmed) is @css_computed.Invalid)
+  !(@css_computed.parse_color(trimmed) is Invalid)
 }
 
 ///|
@@ -267,7 +267,7 @@ fn svg_property_value_is_valid(property : String, value : String) -> Bool {
   match property {
     "fill" | "stroke" => valid_svg_paint(trimmed)
     "color" | "stop-color" =>
-      !(@css_computed.parse_color(trimmed) is @css_computed.Invalid)
+      !(@css_computed.parse_color(trimmed) is Invalid)
     "fill-rule" | "clip-rule" => trimmed == "nonzero" || trimmed == "evenodd"
     "fill-opacity" | "stroke-opacity" | "stop-opacity" | "opacity" =>
       valid_svg_number(trimmed, false)
@@ -310,7 +310,7 @@ fn svg_declaration_is_valid(
   value : @css_cascade.PropertyValue,
 ) -> Bool {
   match value {
-    @css_cascade.Value(value) => svg_property_value_is_valid(property, value)
+    Value(value) => svg_property_value_is_valid(property, value)
     _ => true
   }
 }

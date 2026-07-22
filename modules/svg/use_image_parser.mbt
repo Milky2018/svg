@@ -70,7 +70,7 @@ fn parse_use(
               match (node.viewport_width, node.viewport_height) {
                 (Some(w), Some(h)) =>
                   (
-                    Some(ViewBox::{
+                    Some({
                       min_x: 0.0,
                       min_y: 0.0,
                       width: w,
@@ -82,7 +82,7 @@ fn parse_use(
                   match viewport_fallback {
                     Some((vw, vh)) =>
                       (
-                        Some(ViewBox::{
+                        Some({
                           min_x: 0.0,
                           min_y: 0.0,
                           width: vw,
@@ -95,7 +95,7 @@ fn parse_use(
               }
           }
           if force_non_uniform {
-            node.preserve_aspect_ratio = PreserveAspectRatio::{
+            node.preserve_aspect_ratio = {
               align: None,
               meet_or_slice: Meet,
             }
@@ -164,13 +164,13 @@ fn parse_use(
             if node.view_box is None &&
               node.viewport_width is Some(_) &&
               node.viewport_height is Some(_) {
-              node.view_box = Some(ViewBox::{
+              node.view_box = Some({
                 min_x: 0.0,
                 min_y: 0.0,
                 width: node.viewport_width.unwrap(),
                 height: node.viewport_height.unwrap(),
               })
-              node.preserve_aspect_ratio = PreserveAspectRatio::{
+              node.preserve_aspect_ratio = {
                 align: None,
                 meet_or_slice: Meet,
               }

@@ -307,108 +307,108 @@ priv struct StyleBuilder {
 ///|
 fn StyleBuilder::new() -> StyleBuilder {
   {
-    display: @types.Display::Block,
-    position: @types.Position::Static,
-    float: @types.Float::None,
-    clear: @types.Clear::None,
-    box_sizing: @types.BoxSizing::ContentBox,
-    overflow_x: @types.Overflow::Visible,
-    overflow_y: @types.Overflow::Visible,
+    display: Block,
+    position: Static,
+    float: None,
+    clear: None,
+    box_sizing: ContentBox,
+    overflow_x: Visible,
+    overflow_y: Visible,
     scroll_snap_type: @style.ScrollSnapType::none(),
-    scroll_snap_align_x: @style.ScrollSnapAlign::None,
-    scroll_snap_align_y: @style.ScrollSnapAlign::None,
-    width: @types.Dimension::Auto,
-    height: @types.Dimension::Auto,
-    min_width: @types.Dimension::Auto,
-    min_height: @types.Dimension::Auto,
-    max_width: @types.Dimension::Auto,
-    max_height: @types.Dimension::Auto,
-    margin_top: @types.Dimension::Length(0.0),
-    margin_right: @types.Dimension::Length(0.0),
-    margin_bottom: @types.Dimension::Length(0.0),
-    margin_left: @types.Dimension::Length(0.0),
-    margin_trim: @style.MarginTrim::None,
-    padding_top: @types.Dimension::Length(0.0),
-    padding_right: @types.Dimension::Length(0.0),
-    padding_bottom: @types.Dimension::Length(0.0),
-    padding_left: @types.Dimension::Length(0.0),
-    border_top: @types.Dimension::Length(0.0),
-    border_right: @types.Dimension::Length(0.0),
-    border_bottom: @types.Dimension::Length(0.0),
-    border_left: @types.Dimension::Length(0.0),
-    border_style_top: @style.BorderStyle::None,
-    border_style_right: @style.BorderStyle::None,
-    border_style_bottom: @style.BorderStyle::None,
-    border_style_left: @style.BorderStyle::None,
+    scroll_snap_align_x: None,
+    scroll_snap_align_y: None,
+    width: Auto,
+    height: Auto,
+    min_width: Auto,
+    min_height: Auto,
+    max_width: Auto,
+    max_height: Auto,
+    margin_top: Length(0.0),
+    margin_right: Length(0.0),
+    margin_bottom: Length(0.0),
+    margin_left: Length(0.0),
+    margin_trim: None,
+    padding_top: Length(0.0),
+    padding_right: Length(0.0),
+    padding_bottom: Length(0.0),
+    padding_left: Length(0.0),
+    border_top: Length(0.0),
+    border_right: Length(0.0),
+    border_bottom: Length(0.0),
+    border_left: Length(0.0),
+    border_style_top: None,
+    border_style_right: None,
+    border_style_bottom: None,
+    border_style_left: None,
     border_color_top: @types.Color::transparent(),
     border_color_right: @types.Color::transparent(),
     border_color_bottom: @types.Color::transparent(),
     border_color_left: @types.Color::transparent(),
-    flex_direction: @types.FlexDirection::Row,
-    flex_wrap: @types.FlexWrap::NoWrap,
-    justify_content: @types.Alignment::FlexStart,
-    align_items: @types.Alignment::Stretch,
-    align_content: @types.Alignment::Stretch,
+    flex_direction: Row,
+    flex_wrap: NoWrap,
+    justify_content: FlexStart,
+    align_items: Stretch,
+    align_content: Stretch,
     justify_content_unsafe: false,
     align_content_unsafe: false,
-    align_self: @types.AlignSelf::Auto,
-    justify_self: @types.AlignSelf::Auto,
-    justify_items: @types.Alignment::Stretch,
+    align_self: Auto,
+    justify_self: Auto,
+    justify_items: Stretch,
     flex_grow: 0.0,
     flex_shrink: 1.0,
-    flex_basis: @types.Dimension::Auto,
+    flex_basis: Auto,
     order: 0,
-    row_gap: @types.Dimension::Length(0.0),
-    column_gap: @types.Dimension::Length(0.0),
+    row_gap: Length(0.0),
+    column_gap: Length(0.0),
     column_gap_is_normal: true,
     column_count: None,
-    column_width: @types.Dimension::Auto,
-    column_fill: @style.ColumnFill::Balance,
+    column_width: Auto,
+    column_fill: Balance,
     aspect_ratio: None,
-    inset_top: @types.Dimension::Auto,
-    inset_right: @types.Dimension::Auto,
-    inset_bottom: @types.Dimension::Auto,
-    inset_left: @types.Dimension::Auto,
-    grid_auto_flow: @types.GridAutoFlow::Row,
+    inset_top: Auto,
+    inset_right: Auto,
+    inset_bottom: Auto,
+    inset_left: Auto,
+    grid_auto_flow: Row,
     grid_template_columns: [],
     grid_template_rows: [],
     grid_auto_rows: [],
     grid_auto_columns: [],
     grid_template_column_line_names: [],
     grid_template_row_line_names: [],
-    grid_template_columns_kind: @types.Explicit,
-    grid_template_rows_kind: @types.Explicit,
+    grid_template_columns_kind: Explicit,
+    grid_template_rows_kind: Explicit,
     grid_template_areas: [],
-    grid_column_start: @types.GridPlacement::Auto,
-    grid_column_end: @types.GridPlacement::Auto,
-    grid_row_start: @types.GridPlacement::Auto,
-    grid_row_end: @types.GridPlacement::Auto,
+    grid_column_start: Auto,
+    grid_column_end: Auto,
+    grid_row_start: Auto,
+    grid_row_end: Auto,
     grid_area: None,
     font_size: 16.0,
     font_weight: 400.0,
     font_family: "",
     line_height: 16.0,
-    text_align: @style.TextAlign::Start,
-    white_space: @style.WhiteSpace::Normal,
-    text_overflow: @style.TextOverflow::Clip,
-    writing_mode: @style.WritingMode::HorizontalTb,
-    direction: @style.Direction::Ltr,
-    vertical_align: @style.VerticalAlign::Baseline,
-    clip: @types.ClipRect::Auto,
+    text_align: Start,
+    white_space: Normal,
+    text_overflow: Clip,
+    writing_mode: HorizontalTb,
+    direction: Ltr,
+    vertical_align: Baseline,
+    clip: Auto,
     clip_path: @style.ClipPath::none(),
-    visibility: @style.Visibility::Visible,
-    pointer_events: @style.PointerEvents::Auto,
-    z_index: @style.ZIndex::Auto,
+    visibility: Visible,
+    pointer_events: Auto,
+    z_index: Auto,
     opacity: 1.0,
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
-    background_image: @types.None,
+    background_image: None,
     box_shadows: [],
     contain: @style.Contain::none(),
-    break_before: @style.BreakBefore::Auto,
-    break_after: @style.BreakBefore::Auto,
-    break_inside: @style.BreakInside::Auto,
-    column_span: @style.ColumnSpan::None,
+    break_before: Auto,
+    break_after: Auto,
+    break_inside: Auto,
+    column_span: None,
     contain_intrinsic_inline_size: None,
     contain_intrinsic_block_size: None,
     transform: @style.Transform::none(),
@@ -429,9 +429,9 @@ fn StyleBuilder::new() -> StyleBuilder {
     zoom: 1.0,
     border_spacing: 0.0,
     border_spacing_vertical: 0.0,
-    border_collapse: @style.BorderCollapse::Separate,
-    table_layout: @style.TableLayout::Auto,
-    caption_side: @style.CaptionSide::Top,
+    border_collapse: Separate,
+    table_layout: Auto,
+    caption_side: Top,
     rowspan: 1,
     colspan: 1,
     border_top_left_radius: 0.0,
@@ -749,12 +749,12 @@ fn resolve_keyword(
   ctx : ComputeContext,
 ) -> String {
   match value {
-    @cascade.PropertyValue::Value(v) => v
-    @cascade.PropertyValue::Inherit =>
+    Value(v) => v
+    Inherit =>
       // Get value from parent, or use initial if no parent
       get_inherited_value(property, ctx)
-    @cascade.PropertyValue::Initial => initial_value(property)
-    @cascade.PropertyValue::Unset =>
+    Initial => initial_value(property)
+    Unset =>
       // For inherited properties, acts like inherit
       // For non-inherited properties, acts like initial
       if is_inherited(property) {
@@ -762,7 +762,7 @@ fn resolve_keyword(
       } else {
         initial_value(property)
       }
-    @cascade.PropertyValue::Revert =>
+    Revert =>
       // This engine has author styles only. With no lower origin available,
       // use the same inherited/initial boundary as `unset`.
       if is_inherited(property) {
@@ -770,7 +770,7 @@ fn resolve_keyword(
       } else {
         initial_value(property)
       }
-    @cascade.PropertyValue::RevertLayer =>
+    RevertLayer =>
       // Cascade layers are not represented, so fall back to the author-origin
       // boundary documented for `revert` above.
       if is_inherited(property) {
@@ -796,46 +796,46 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
   match property {
     "display" =>
       match style.display {
-        @types.Display::Block => "block"
-        @types.Display::Inline => "inline"
-        @types.Display::InlineBlock => "inline-block"
-        @types.Display::Flex => "flex"
-        @types.Display::InlineFlex => "inline-flex"
-        @types.Display::Grid => "grid"
-        @types.Display::InlineGrid => "inline-grid"
-        @types.Display::Table => "table"
-        @types.Display::InlineTable => "inline-table"
-        @types.Display::TableRow => "table-row"
-        @types.Display::TableCell => "table-cell"
-        @types.Display::TableCaption => "table-caption"
-        @types.Display::TableRowGroup => "table-row-group"
-        @types.Display::TableHeaderGroup => "table-header-group"
-        @types.Display::TableFooterGroup => "table-footer-group"
-        @types.Display::TableColumn => "table-column"
-        @types.Display::TableColumnGroup => "table-column-group"
-        @types.Display::None => "none"
-        @types.Display::Contents => "contents"
-        @types.Display::FlowRoot => "flow-root"
+        Block => "block"
+        Inline => "inline"
+        InlineBlock => "inline-block"
+        Flex => "flex"
+        InlineFlex => "inline-flex"
+        Grid => "grid"
+        InlineGrid => "inline-grid"
+        Table => "table"
+        InlineTable => "inline-table"
+        TableRow => "table-row"
+        TableCell => "table-cell"
+        TableCaption => "table-caption"
+        TableRowGroup => "table-row-group"
+        TableHeaderGroup => "table-header-group"
+        TableFooterGroup => "table-footer-group"
+        TableColumn => "table-column"
+        TableColumnGroup => "table-column-group"
+        None => "none"
+        Contents => "contents"
+        FlowRoot => "flow-root"
       }
     "position" =>
       match style.position {
-        @types.Position::Static => "static"
-        @types.Position::Relative => "relative"
-        @types.Position::Absolute => "absolute"
-        @types.Position::Fixed => "fixed"
+        Static => "static"
+        Relative => "relative"
+        Absolute => "absolute"
+        Fixed => "fixed"
       }
     "flex-direction" =>
       match style.flex_direction {
-        @types.FlexDirection::Row => "row"
-        @types.FlexDirection::RowReverse => "row-reverse"
-        @types.FlexDirection::Column => "column"
-        @types.FlexDirection::ColumnReverse => "column-reverse"
+        Row => "row"
+        RowReverse => "row-reverse"
+        Column => "column"
+        ColumnReverse => "column-reverse"
       }
     "flex-wrap" =>
       match style.flex_wrap {
-        @types.FlexWrap::NoWrap => "nowrap"
-        @types.FlexWrap::Wrap => "wrap"
-        @types.FlexWrap::WrapReverse => "wrap-reverse"
+        NoWrap => "nowrap"
+        Wrap => "wrap"
+        WrapReverse => "wrap-reverse"
       }
     "width" => dimension_to_string(style.width)
     "height" => dimension_to_string(style.height)
@@ -849,13 +849,13 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
     "margin-left" => dimension_to_string(style.margin.left)
     "margin-trim" =>
       match style.margin_trim {
-        @style.MarginTrim::None => "none"
-        @style.MarginTrim::BlockStart => "block-start"
-        @style.MarginTrim::BlockEnd => "block-end"
-        @style.MarginTrim::Block => "block"
-        @style.MarginTrim::InlineStart => "inline-start"
-        @style.MarginTrim::InlineEnd => "inline-end"
-        @style.MarginTrim::Inline => "inline"
+        None => "none"
+        BlockStart => "block-start"
+        BlockEnd => "block-end"
+        Block => "block"
+        InlineStart => "inline-start"
+        InlineEnd => "inline-end"
+        Inline => "inline"
       }
     "padding-top" => dimension_to_string(style.padding.top)
     "padding-right" => dimension_to_string(style.padding.right)
@@ -869,30 +869,30 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
     "column-width" => dimension_to_string(style.column_width)
     "column-fill" =>
       match style.column_fill {
-        @style.ColumnFill::Balance => "balance"
-        @style.ColumnFill::Auto => "auto"
+        Balance => "balance"
+        Auto => "auto"
       }
     "break-before" =>
       match style.break_before {
-        @style.BreakBefore::Auto => "auto"
-        @style.BreakBefore::Column => "column"
-        @style.BreakBefore::Avoid => "avoid"
+        Auto => "auto"
+        Column => "column"
+        Avoid => "avoid"
       }
     "break-after" =>
       match style.break_after {
-        @style.BreakBefore::Auto => "auto"
-        @style.BreakBefore::Column => "column"
-        @style.BreakBefore::Avoid => "avoid"
+        Auto => "auto"
+        Column => "column"
+        Avoid => "avoid"
       }
     "break-inside" | "page-break-inside" =>
       match style.break_inside {
-        @style.BreakInside::Auto => "auto"
-        @style.BreakInside::Avoid => "avoid"
+        Auto => "auto"
+        Avoid => "avoid"
       }
     "column-span" =>
       match style.column_span {
-        @style.ColumnSpan::None => "none"
-        @style.ColumnSpan::All => "all"
+        None => "none"
+        All => "all"
       }
     "flex-grow" => style.flex_grow.to_string()
     "flex-shrink" => style.flex_shrink.to_string()
@@ -901,13 +901,13 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
     "background-color" => style.background_color.to_hex()
     "caption-side" =>
       match style.caption_side {
-        @style.CaptionSide::Top => "top"
-        @style.CaptionSide::Bottom => "bottom"
+        Top => "top"
+        Bottom => "bottom"
       }
     "border-collapse" =>
       match style.border_collapse {
-        @style.BorderCollapse::Separate => "separate"
-        @style.BorderCollapse::Collapse => "collapse"
+        Separate => "separate"
+        Collapse => "collapse"
       }
     "border-spacing" =>
       if style.border_spacing == style.border_spacing_vertical {
@@ -920,14 +920,14 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       }
     "writing-mode" =>
       match style.writing_mode {
-        @style.WritingMode::HorizontalTb => "horizontal-tb"
-        @style.WritingMode::VerticalRl => "vertical-rl"
-        @style.WritingMode::VerticalLr => "vertical-lr"
+        HorizontalTb => "horizontal-tb"
+        VerticalRl => "vertical-rl"
+        VerticalLr => "vertical-lr"
       }
     "direction" =>
       match style.direction {
-        @style.Direction::Ltr => "ltr"
-        @style.Direction::Rtl => "rtl"
+        Ltr => "ltr"
+        Rtl => "rtl"
       }
     "font-size" => style.font_size.to_string() + "px"
     "font-weight" => style.font_weight.to_string()
@@ -940,30 +940,30 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       )
     "text-overflow" =>
       match style.text_overflow {
-        @style.TextOverflow::Clip => "clip"
-        @style.TextOverflow::Ellipsis => "ellipsis"
+        Clip => "clip"
+        Ellipsis => "ellipsis"
       }
     "text-align" =>
       match style.text_align {
-        @style.TextAlign::Start => "start"
-        @style.TextAlign::End => "end"
-        @style.TextAlign::Left => "left"
-        @style.TextAlign::Right => "right"
-        @style.TextAlign::Center => "center"
-        @style.TextAlign::Justify => "justify"
+        Start => "start"
+        End => "end"
+        Left => "left"
+        Right => "right"
+        Center => "center"
+        Justify => "justify"
       }
     "white-space" =>
       match style.white_space {
-        @style.WhiteSpace::Normal => "normal"
-        @style.WhiteSpace::Nowrap => "nowrap"
-        @style.WhiteSpace::Pre => "pre"
-        @style.WhiteSpace::PreWrap => "pre-wrap"
-        @style.WhiteSpace::PreLine => "pre-line"
+        Normal => "normal"
+        Nowrap => "nowrap"
+        Pre => "pre"
+        PreWrap => "pre-wrap"
+        PreLine => "pre-line"
       }
     "pointer-events" =>
       match style.pointer_events {
-        @style.PointerEvents::Auto => "auto"
-        @style.PointerEvents::None => "none"
+        Auto => "auto"
+        None => "none"
       }
     "opacity" => style.opacity.to_string()
     "contain-intrinsic-inline-size" =>
@@ -984,18 +984,18 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
 /// Convert dimension to string
 fn dimension_to_string(dim : @types.Dimension) -> String {
   match dim {
-    @types.Dimension::Auto => "auto"
-    @types.Dimension::Length(n) =>
+    Auto => "auto"
+    Length(n) =>
       if n == 0.0 {
         "0"
       } else {
         n.to_string() + "px"
       }
-    @types.Dimension::Percent(n) => (n * 100.0).to_string() + "%"
-    @types.Dimension::MinContent => "min-content"
-    @types.Dimension::MaxContent => "max-content"
-    @types.Dimension::FitContent(n) => "fit-content(" + n.to_string() + "px)"
-    @types.Dimension::Calc(px, pct) => {
+    Percent(n) => (n * 100.0).to_string() + "%"
+    MinContent => "min-content"
+    MaxContent => "max-content"
+    FitContent(n) => "fit-content(" + n.to_string() + "px)"
+    Calc(px, pct) => {
       let pct_part = (pct * 100.0).to_string() + "%"
       if px < 0.0 {
         "calc(" + pct_part + " - " + (-px).to_string() + "px)"
@@ -1003,11 +1003,11 @@ fn dimension_to_string(dim : @types.Dimension) -> String {
         "calc(" + pct_part + " + " + px.to_string() + "px)"
       }
     }
-    @types.Dimension::MathFn(op, args) => {
+    MathFn(op, args) => {
       let name = match op {
-        @types.MathOp::Min => "min("
-        @types.MathOp::Max => "max("
-        @types.MathOp::Clamp => "clamp("
+        Min => "min("
+        Max => "max("
+        Clamp => "clamp("
       }
       let parts = args.map(fn(a) { math_arg_to_string(a.0, a.1) })
       name + parts.join(", ") + ")"

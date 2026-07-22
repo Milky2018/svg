@@ -71,7 +71,7 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
       (Some(min_v), Some(val_v), Some(max_v)) =>
         // clamp(min, val, max) == max(min, min(val, max))
         return Some(
-          @types.apply_math_op(@types.MathOp::Clamp, [min_v, val_v, max_v]),
+          @types.apply_math_op(Clamp, [min_v, val_v, max_v]),
         )
       _ => return None
     }
@@ -80,14 +80,14 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
   // Parse simple dimension value
   let dim = resolve_dimension(v.to_owned(), ctx)
   match dim {
-    @types.Length(px) => Some(px)
-    @types.Percent(_) => None // Cannot simplify percentages
-    @types.Calc(_, _) => None // Mixed calc needs a layout basis
-    @types.MathFn(_, _) => None // min/max/clamp need a layout basis
-    @types.Auto => None
-    @types.MinContent => None
-    @types.MaxContent => None
-    @types.FitContent(_) => None
+    Length(px) => Some(px)
+    Percent(_) => None // Cannot simplify percentages
+    Calc(_, _) => None // Mixed calc needs a layout basis
+    MathFn(_, _) => None // min/max/clamp need a layout basis
+    Auto => None
+    MinContent => None
+    MaxContent => None
+    FitContent(_) => None
   }
 }
 
@@ -212,9 +212,9 @@ fn math_arg_lp(arg : String, ctx : ComputeContext) -> (Double, Double)? {
     return if n == 0.0 { Some((0.0, 0.0)) } else { None }
   }
   match resolve_dimension(arg, ctx) {
-    @types.Length(px) => Some((px, 0.0))
-    @types.Percent(p) => Some((0.0, p))
-    @types.Calc(px, pct) => Some((px, pct))
+    Length(px) => Some((px, 0.0))
+    Percent(p) => Some((0.0, p))
+    Calc(px, pct) => Some((px, pct))
     _ => None
   }
 }
@@ -224,11 +224,11 @@ fn math_arg_lp(arg : String, ctx : ComputeContext) -> (Double, Double)? {
 /// Dimension. Mirrors parse_calc_string's pure-vs-mixed classification.
 fn lp_to_dimension(px : Double, pct : Double) -> @types.Dimension {
   if pct.abs() < 0.0001 {
-    @types.Length(px)
+    Length(px)
   } else if px.abs() < 0.0001 {
-    @types.Percent(pct)
+    Percent(pct)
   } else {
-    @types.Calc(px, pct)
+    Calc(px, pct)
   }
 }
 
@@ -252,9 +252,9 @@ fn parse_css_math_function(
   let (op, prefix_len) = if v.has_prefix("min(") {
     (@types.MathOp::Min, 4)
   } else if v.has_prefix("max(") {
-    (@types.MathOp::Max, 4)
+    (Max, 4)
   } else if v.has_prefix("clamp(") {
-    (@types.MathOp::Clamp, 6)
+    (Clamp, 6)
   } else {
     return None
   }
@@ -268,7 +268,7 @@ fn parse_css_math_function(
   if raw_args.is_empty() {
     return None
   }
-  if op == @types.MathOp::Clamp && raw_args.length() != 3 {
+  if op == Clamp && raw_args.length() != 3 {
     return None
   }
   let lps : Array[(Double, Double)] = []
@@ -294,12 +294,12 @@ fn parse_css_math_function(
     }
   }
   if all_px {
-    Some(@types.Length(@types.apply_math_op(op, lps.map(fn(lp) { lp.0 }))))
+    Some(Length(@types.apply_math_op(op, lps.map(fn(lp) { lp.0 }))))
   } else if all_pct {
-    Some(@types.Percent(@types.apply_math_op(op, lps.map(fn(lp) { lp.1 }))))
+    Some(Percent(@types.apply_math_op(op, lps.map(fn(lp) { lp.1 }))))
   } else {
     // Mixed length + percentage: defer to layout via MathFn.
-    Some(@types.MathFn(op, lps))
+    Some(MathFn(op, lps))
   }
 }
 
@@ -474,8 +474,8 @@ fn calc_unit_value(
     return Some(calc_lp(0.0, value))
   }
   match resolve_dimension("\{value}\{unit}", ctx) {
-    @types.Length(px) => Some(calc_lp(px, 0.0))
-    @types.Percent(p) => Some(calc_lp(0.0, p * 100.0))
+    Length(px) => Some(calc_lp(px, 0.0))
+    Percent(p) => Some(calc_lp(0.0, p * 100.0))
     _ => None
   }
 }
@@ -800,11 +800,11 @@ fn parse_calc_string(expr : String, ctx : ComputeContext) -> @types.Dimension? {
   match parse_calc_terms(expr, ctx) {
     Some((result_px, result_percent)) =>
       if result_percent.abs() < 0.0001 {
-        Some(@types.Length(result_px))
+        Some(Length(result_px))
       } else if result_px.abs() < 0.0001 {
-        Some(@types.Percent(result_percent))
+        Some(Percent(result_percent))
       } else {
-        Some(@types.Calc(result_px, result_percent))
+        Some(Calc(result_px, result_percent))
       }
     None => None
   }
@@ -817,8 +817,8 @@ fn mixed_calc_width_reference(ctx : ComputeContext) -> Double {
   match ctx.parent_style {
     Some(parent) =>
       match parent.width {
-        @types.Length(w) => w
-        @types.Percent(p) => ctx.viewport_width * p
+        Length(w) => w
+        Percent(p) => ctx.viewport_width * p
         _ => ctx.viewport_width
       }
     None => ctx.viewport_width
@@ -834,7 +834,7 @@ fn resolve_dimension_with_calc_percent_fallback(
 ) -> @types.Dimension {
   let dim = resolve_dimension(value, ctx)
   match dim {
-    @types.Auto =>
+    Auto =>
       if value.trim().has_prefix("calc(") {
         match parse_calc_terms(value, ctx) {
           Some((length_px, percent_ratio)) =>
@@ -852,15 +852,15 @@ fn resolve_dimension_with_calc_percent_fallback(
                 // Preserve mixed calc() losslessly (px + percent) so layout
                 // can resolve it against the correct containing-block basis,
                 // e.g. table column widths, as required by CSS Values.
-                @types.Calc(length_px, percent_for_resolution)
+                Calc(length_px, percent_for_resolution)
               } else {
                 let basis = mixed_calc_width_reference(ctx)
-                @types.Length(basis * percent_for_resolution + length_px)
+                Length(basis * percent_for_resolution + length_px)
               }
             } else if length_px.abs() >= 0.0001 {
-              @types.Length(length_px)
+              Length(length_px)
             } else {
-              @types.Length(0.0)
+              Length(0.0)
             }
           None => dim
         }
@@ -881,7 +881,7 @@ fn resolve_dimension_with_mixed_calc_fallback(
 ) -> @types.Dimension {
   let dim = resolve_dimension(value, ctx)
   match dim {
-    @types.Auto =>
+    Auto =>
       if value.trim().has_prefix("calc(") {
         match parse_calc_terms(value, ctx) {
           Some((length_px, percent_ratio)) =>
@@ -889,7 +889,7 @@ fn resolve_dimension_with_mixed_calc_fallback(
               // Preserve mixed calc() losslessly; resolved at layout time
               // against the property's containing-block basis.
               ignore(property)
-              @types.Calc(length_px, percent_ratio)
+              Calc(length_px, percent_ratio)
             } else {
               dim
             }
@@ -1117,8 +1117,8 @@ fn find_matching_function_end(value : String, index : Int) -> Int {
 ///|
 fn dimension_to_grid_token(dim : @types.Dimension) -> String? {
   match dim {
-    @types.Length(v) => Some(v.to_string() + "px")
-    @types.Percent(p) => Some((p * 100.0).to_string() + "%")
+    Length(v) => Some(v.to_string() + "px")
+    Percent(p) => Some((p * 100.0).to_string() + "%")
     _ => None
   }
 }
@@ -1223,26 +1223,26 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // safe for the matching below.
   let v = strip_css_ascii_whitespace(raw_v.to_owned()).to_lower()
   if v == "auto" || v == "none" {
-    return @types.Dimension::Auto
+    return Auto
   }
 
   // Handle intrinsic sizing keywords
   if v == "min-content" {
-    return @types.Dimension::MinContent
+    return MinContent
   }
   if v == "max-content" {
-    return @types.Dimension::MaxContent
+    return MaxContent
   }
   if v == "fit-content" {
     // fit-content without argument is equivalent to fit-content(max-content)
-    return @types.Dimension::FitContent(1.0e10)
+    return FitContent(1.0e10)
   }
 
   // Handle calc() expressions
   if view_starts_with(raw_v, "calc(") {
     match parse_calc_string(raw_v.to_owned(), ctx) {
       Some(dim) => return dim
-      None => return @types.Dimension::Auto // Fallback for complex calc
+      None => return Auto // Fallback for complex calc
     }
   }
 
@@ -1252,7 +1252,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
     view_starts_with(raw_v, "clamp(") {
     match parse_css_math_function(raw_v.to_owned(), ctx) {
       Some(dim) => return dim
-      None => return @types.Dimension::Auto // Fallback for complex expressions
+      None => return Auto // Fallback for complex expressions
     }
   }
 
@@ -1263,21 +1263,21 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   match split_dimension(v) {
     Some((n, unit)) => {
       let resolved : @types.Dimension? = match unit {
-        "px" => Some(@types.Length(n))
-        "%" => Some(@types.Percent(n / 100.0))
-        "rem" => Some(@types.Length(n * ctx.root_font_size))
-        "em" => Some(@types.Length(n * ctx.font_size))
+        "px" => Some(Length(n))
+        "%" => Some(Percent(n / 100.0))
+        "rem" => Some(Length(n * ctx.root_font_size))
+        "em" => Some(Length(n * ctx.font_size))
         "vw" | "dvw" | "svw" | "lvw" | "vi" =>
-          Some(@types.Length(n * ctx.viewport_width / 100.0))
+          Some(Length(n * ctx.viewport_width / 100.0))
         "vh" | "dvh" | "svh" | "lvh" | "vb" =>
-          Some(@types.Length(n * ctx.viewport_height / 100.0))
+          Some(Length(n * ctx.viewport_height / 100.0))
         "vmin" => {
           let base = if ctx.viewport_width < ctx.viewport_height {
             ctx.viewport_width
           } else {
             ctx.viewport_height
           }
-          Some(@types.Length(n * base / 100.0))
+          Some(Length(n * base / 100.0))
         }
         "vmax" => {
           let base = if ctx.viewport_width > ctx.viewport_height {
@@ -1285,16 +1285,16 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
           } else {
             ctx.viewport_height
           }
-          Some(@types.Length(n * base / 100.0))
+          Some(Length(n * base / 100.0))
         }
-        "ch" => Some(@types.Length(n * ctx.font_size * ch_unit_ratio(ctx)))
-        "ex" => Some(@types.Length(n * ctx.font_size * 0.5))
-        "pt" => Some(@types.Length(n * 96.0 / 72.0))
-        "pc" => Some(@types.Length(n * 16.0))
-        "in" => Some(@types.Length(n * 96.0))
-        "cm" => Some(@types.Length(n * 96.0 / 2.54))
-        "mm" => Some(@types.Length(n * 96.0 / 25.4))
-        "q" => Some(@types.Length(n * 96.0 / 101.6))
+        "ch" => Some(Length(n * ctx.font_size * ch_unit_ratio(ctx)))
+        "ex" => Some(Length(n * ctx.font_size * 0.5))
+        "pt" => Some(Length(n * 96.0 / 72.0))
+        "pc" => Some(Length(n * 16.0))
+        "in" => Some(Length(n * 96.0))
+        "cm" => Some(Length(n * 96.0 / 2.54))
+        "mm" => Some(Length(n * 96.0 / 25.4))
+        "q" => Some(Length(n * 96.0 / 101.6))
         _ => None
       }
       match resolved {

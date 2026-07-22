@@ -20,7 +20,7 @@ fn parse_clip_path_from_attrs(
   }
   let units = match get_attr(attrs, "clipPathUnits") {
     Some(v) => parse_clip_path_units(v)
-    None => ClipPathUnits::UserSpaceOnUse
+    None => UserSpaceOnUse
   }
   let clip = ClipPath::{
     id,
@@ -65,7 +65,7 @@ fn parse_clip_path(
   }
   let units = match get_attr(attrs, "clipPathUnits") {
     Some(v) => parse_clip_path_units(v)
-    None => ClipPathUnits::UserSpaceOnUse
+    None => UserSpaceOnUse
   }
   let mut shape : Shape = Group
   for child in temp.children {
@@ -489,15 +489,15 @@ fn parse_filter_primitive_children(
   let children : Array[FilterPrimitiveChild] = []
   while !parser.is_end() {
     match parser.advance_event() {
-      @xml.Event::Start(element) => {
+      Start(element) => {
         let tag = element.name
         children.push({ tag, attrs: element.attributes })
         skip_to_end_tag(parser, tag)
       }
-      @xml.Event::Empty(element) =>
+      Empty(element) =>
         children.push({ tag: element.name, attrs: element.attributes })
-      @xml.Event::End(name) => if name == parent_tag { break }
-      @xml.Event::Eof => break
+      End(name) => if name == parent_tag { break }
+      Eof => break
       _ => ()
     }
   }
@@ -514,7 +514,7 @@ fn parse_filter_graph(
   let primitives : Array[FilterGraphPrimitive] = []
   while !parser.is_end() {
     match parser.advance_event() {
-      @xml.Event::Start(element) => {
+      Start(element) => {
         let primitive_tag = element.name
         let primitive_children = parse_filter_primitive_children(
           parser, primitive_tag,
@@ -529,13 +529,13 @@ fn parse_filter_graph(
           None => ()
         }
       }
-      @xml.Event::Empty(element) =>
+      Empty(element) =>
         match parse_filter_primitive(element.name, element.attributes, []) {
           Some(primitive) => primitives.push(primitive)
           None => ()
         }
-      @xml.Event::End(name) => if name == tag_name { break }
-      @xml.Event::Eof => break
+      End(name) => if name == tag_name { break }
+      Eof => break
       _ => ()
     }
   }
@@ -545,15 +545,15 @@ fn parse_filter_graph(
   }
   let units = match get_attr(attrs, "filterUnits") {
     Some(value) => parse_mask_units(value)
-    None => MaskUnits::ObjectBoundingBox
+    None => ObjectBoundingBox
   }
   let primitive_units = match get_attr(attrs, "primitiveUnits") {
     Some(value) => parse_mask_units(value)
-    None => MaskUnits::UserSpaceOnUse
+    None => UserSpaceOnUse
   }
   let (default_x, default_y, default_width, default_height) = match units {
-    MaskUnits::ObjectBoundingBox => (-0.1, -0.1, 1.2, 1.2)
-    MaskUnits::UserSpaceOnUse => (-0.1, -0.1, 1.2, 1.2)
+    ObjectBoundingBox => (-0.1, -0.1, 1.2, 1.2)
+    UserSpaceOnUse => (-0.1, -0.1, 1.2, 1.2)
   }
   let (x, x_is_percent) = match get_attr(attrs, "x") {
     Some(value) => parse_mask_length(value, units)
@@ -631,11 +631,11 @@ fn parse_mask_with_content(
   }
   let mask_units = match get_attr(attrs, "maskUnits") {
     Some(v) => parse_mask_units(v)
-    None => MaskUnits::ObjectBoundingBox
+    None => ObjectBoundingBox
   }
   let mask_content_units = match get_attr(attrs, "maskContentUnits") {
     Some(v) => parse_mask_units(v)
-    None => MaskUnits::UserSpaceOnUse
+    None => UserSpaceOnUse
   }
   let mask_type = match get_attr(attrs, "mask-type") {
     Some(v) => parse_mask_type(v)

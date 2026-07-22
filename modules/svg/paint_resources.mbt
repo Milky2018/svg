@@ -251,9 +251,9 @@ fn GradientRegistry::resolve_inner(
   }
   let specified = self.specified.get(id).unwrap_or(0)
   match (current, parent) {
-    (Gradient::Linear(child), Gradient::Linear(base)) =>
+    (Linear(child), Linear(base)) =>
       Some(
-        Gradient::Linear({
+        Linear({
           x1: if (specified & 1) != 0 {
             child.x1
           } else {
@@ -296,9 +296,9 @@ fn GradientRegistry::resolve_inner(
           },
         }),
       )
-    (Gradient::Radial(child), Gradient::Radial(base)) =>
+    (Radial(child), Radial(base)) =>
       Some(
-        Gradient::Radial({
+        Radial({
           cx: if (specified & 1) != 0 {
             child.cx
           } else {

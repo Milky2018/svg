@@ -10,7 +10,7 @@ fn parse_declaration(
 
   // Get property name
   let property_name = match tokens[0] {
-    @token.Token::Ident(name) => name
+    Ident(name) => name
     _ => return None
   }
 
@@ -18,8 +18,8 @@ fn parse_declaration(
   let mut pos = 1
   while pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::Whitespace => pos += 1
-      @token.Token::Colon => {
+      Whitespace => pos += 1
+      Colon => {
         pos += 1
         break
       }
@@ -31,7 +31,7 @@ fn parse_declaration(
   let value_start = pos
   while pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::Semicolon | @token.Token::EOF => break
+      Semicolon | EOF => break
       _ => pos += 1
     }
   }

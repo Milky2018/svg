@@ -10,8 +10,8 @@ test "media_query_max_width_evaluation" {
   let mq : MediaQuery = {
     negated: false,
     only: false,
-    media_type: Some(MediaType::Screen),
-    conditions: [MediaFeature::MaxWidth(MediaValue::Dimension(800.0, "px"))],
+    media_type: Some(Screen),
+    conditions: [MaxWidth(Dimension(800.0, "px"))],
   }
 
   // Mobile should match max-width: 800px
@@ -30,7 +30,7 @@ test "media_query_min_width_evaluation" {
     negated: false,
     only: false,
     media_type: None,
-    conditions: [MediaFeature::MinWidth(MediaValue::Dimension(768.0, "px"))],
+    conditions: [MinWidth(Dimension(768.0, "px"))],
   }
 
   // Mobile should NOT match min-width: 768px
@@ -48,7 +48,7 @@ test "media_query_prefers_color_scheme_light" {
     negated: false,
     only: false,
     media_type: None,
-    conditions: [MediaFeature::PrefersColorScheme("light")],
+    conditions: [PrefersColorScheme("light")],
   }
 
   // Light mode should match prefers-color-scheme: light
@@ -66,7 +66,7 @@ test "media_query_prefers_color_scheme_dark" {
     negated: false,
     only: false,
     media_type: None,
-    conditions: [MediaFeature::PrefersColorScheme("dark")],
+    conditions: [PrefersColorScheme("dark")],
   }
 
   // Light mode should NOT match prefers-color-scheme: dark
@@ -102,7 +102,7 @@ test "media_query_list_or_semantics" {
       {
         negated: false,
         only: false,
-        media_type: Some(MediaType::Screen),
+        media_type: Some(Screen),
         conditions: [],
       },
       {
@@ -110,7 +110,7 @@ test "media_query_list_or_semantics" {
         only: false,
         media_type: None,
         conditions: [
-          MediaFeature::MinWidth(MediaValue::Dimension(1000.0, "px")),
+          MinWidth(Dimension(1000.0, "px")),
         ],
       },
     ],
@@ -142,7 +142,7 @@ test "MediaQuery negated and only" {
     negated: true,
     only: false,
     media_type: None,
-    conditions: [MediaFeature::MinWidth(MediaValue::Dimension(1000.0, "px"))],
+    conditions: [MinWidth(Dimension(1000.0, "px"))],
   }
   // negated: min-width 1000 fails on 800 -> negation is true
   inspect(mq.evaluate(env), content="true")
@@ -154,14 +154,14 @@ test "MediaQuery print and speech are rejected" {
   let mq_print : MediaQuery = {
     negated: false,
     only: false,
-    media_type: Some(MediaType::Print),
+    media_type: Some(Print),
     conditions: [],
   }
   inspect(mq_print.evaluate(env), content="false")
   let mq_speech : MediaQuery = {
     negated: false,
     only: false,
-    media_type: Some(MediaType::Speech),
+    media_type: Some(Speech),
     conditions: [],
   }
   inspect(mq_speech.evaluate(env), content="false")
@@ -173,7 +173,7 @@ test "MediaQuery All matches" {
   let mq : MediaQuery = {
     negated: false,
     only: false,
-    media_type: Some(MediaType::All),
+    media_type: Some(All),
     conditions: [],
   }
   inspect(mq.evaluate(env), content="true")
@@ -212,7 +212,7 @@ test "aspect ratio - exact, min, max" {
     negated: false,
     only: false,
     media_type: None,
-    conditions: [MediaFeature::MinAspectRatio(MediaValue::Ratio(16, 9))],
+    conditions: [MinAspectRatio(Ratio(16, 9))],
   }
   inspect(mq_min.evaluate(env_wide), content="true")
   inspect(mq_min.evaluate(env_square), content="false")
@@ -220,7 +220,7 @@ test "aspect ratio - exact, min, max" {
     negated: false,
     only: false,
     media_type: None,
-    conditions: [MediaFeature::MaxAspectRatio(MediaValue::Ratio(1, 1))],
+    conditions: [MaxAspectRatio(Ratio(1, 1))],
   }
   inspect(mq_max.evaluate(env_wide), content="false")
   inspect(mq_max.evaluate(env_square), content="true")
@@ -238,16 +238,16 @@ test "boolean media features" {
     }
     q.evaluate(env)
   }
-  inspect(make_query(MediaFeature::Color), content="true")
-  inspect(make_query(MediaFeature::ColorGamut), content="true")
-  inspect(make_query(MediaFeature::ColorIndex), content="false")
-  inspect(make_query(MediaFeature::Grid), content="false")
-  inspect(make_query(MediaFeature::Hover), content="true")
-  inspect(make_query(MediaFeature::Monochrome), content="false")
-  inspect(make_query(MediaFeature::Pointer), content="true")
-  inspect(make_query(MediaFeature::Scripting), content="true")
-  inspect(make_query(MediaFeature::Update), content="true")
-  inspect(make_query(MediaFeature::Custom("unknown", None)), content="true")
+  inspect(make_query(Color), content="true")
+  inspect(make_query(ColorGamut), content="true")
+  inspect(make_query(ColorIndex), content="false")
+  inspect(make_query(Grid), content="false")
+  inspect(make_query(Hover), content="true")
+  inspect(make_query(Monochrome), content="false")
+  inspect(make_query(Pointer), content="true")
+  inspect(make_query(Scripting), content="true")
+  inspect(make_query(Update), content="true")
+  inspect(make_query(Custom("unknown", None)), content="true")
 }
 
 ///|

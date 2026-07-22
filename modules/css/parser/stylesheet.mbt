@@ -11,9 +11,9 @@ let css_max_input_size : Int = 10 * 1024 * 1024
 pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
   // Security: reject excessively large CSS inputs
   if css.length() > css_max_input_size {
-    return @cascade.Stylesheet::new(@cascade.Author)
+    return @cascade.Stylesheet::new(Author)
   }
-  let stylesheet = @cascade.Stylesheet::new(@cascade.Author)
+  let stylesheet = @cascade.Stylesheet::new(Author)
   let tokens = @token.tokenize(css)
   let mut pos = 0
   while pos < tokens.length() {
@@ -23,8 +23,8 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
       break
     }
     match tokens[pos] {
-      @token.Token::EOF => break
-      @token.Token::AtKeyword(name) =>
+      EOF => break
+      AtKeyword(name) =>
         if name.to_lower() == "media" {
           // Parse @media rule
           pos = parse_media_rule(stylesheet, tokens, pos)
@@ -80,8 +80,8 @@ fn parse_media_rule(
   let query_start = pos
   while pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::LeftBrace => break
-      @token.Token::EOF => return pos
+      LeftBrace => break
+      EOF => return pos
       _ => pos = pos + 1
     }
   }
@@ -104,20 +104,20 @@ fn parse_media_rule(
       break
     }
     match tokens[pos] {
-      @token.Token::RightBrace => {
+      RightBrace => {
         brace_depth = brace_depth - 1
         pos = pos + 1
         if brace_depth <= 0 {
           break
         }
       }
-      @token.Token::LeftBrace => {
+      LeftBrace => {
         // This shouldn't happen at top level, skip past it
         brace_depth = brace_depth + 1
         pos = pos + 1
       }
-      @token.Token::EOF => break
-      @token.Token::AtKeyword(at_name) =>
+      EOF => break
+      AtKeyword(at_name) =>
         if at_name.to_lower() == "supports" {
           // Parse @supports inside @media — rules get the media query
           pos = parse_supports_rule_with_media(
@@ -183,15 +183,15 @@ fn parse_supports_rule_with_media(
       break
     }
     match tokens[pos] {
-      @token.Token::RightBrace => {
+      RightBrace => {
         brace_depth -= 1
         pos = pos + 1
         if brace_depth <= 0 {
           break
         }
       }
-      @token.Token::EOF => break
-      @token.Token::AtKeyword(_) => pos = skip_at_rule(tokens, pos)
+      EOF => break
+      AtKeyword(_) => pos = skip_at_rule(tokens, pos)
       _ =>
         match parse_style_rule(tokens, pos) {
           Some((selectors, declarations, new_pos)) => {
@@ -246,15 +246,15 @@ fn parse_supports_rule(
       break
     }
     match tokens[pos] {
-      @token.Token::RightBrace => {
+      RightBrace => {
         brace_depth -= 1
         pos = pos + 1
         if brace_depth <= 0 {
           break
         }
       }
-      @token.Token::EOF => break
-      @token.Token::AtKeyword(name) =>
+      EOF => break
+      AtKeyword(name) =>
         if name.to_lower() == "media" {
           pos = parse_media_rule(stylesheet, tokens, pos)
         } else if name.to_lower() == "supports" {
@@ -295,7 +295,7 @@ fn skip_ws(tokens : Array[@token.Token], pos : Int) -> Int {
   let mut p = pos
   while p < tokens.length() {
     match tokens[p] {
-      @token.Token::Whitespace => p = p + 1
+      Whitespace => p = p + 1
       _ => break
     }
   }
@@ -311,18 +311,18 @@ fn skip_supports_condition_to_block(
   let mut paren_depth = 0
   while pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::Function(_) | @token.Token::LeftParen => {
+      Function(_) | LeftParen => {
         paren_depth += 1
         pos = pos + 1
       }
-      @token.Token::RightParen => {
+      RightParen => {
         if paren_depth > 0 {
           paren_depth -= 1
         }
         pos = pos + 1
       }
-      @token.Token::LeftBrace if paren_depth == 0 => break
-      @token.Token::EOF => return pos
+      LeftBrace if paren_depth == 0 => break
+      EOF => return pos
       _ => pos = pos + 1
     }
   }
@@ -386,11 +386,11 @@ fn parse_keyframes_rule(
   let mut pos = skip_ws(tokens, start + 1)
   // Animation name: a custom-ident or a string.
   let name = match tokens[pos] {
-    @token.Token::Ident(n) => {
+    Ident(n) => {
       pos = pos + 1
       n
     }
-    @token.Token::String(n) => {
+    String(n) => {
       pos = pos + 1
       n
     }
@@ -398,18 +398,18 @@ fn parse_keyframes_rule(
   }
   pos = skip_ws(tokens, pos)
   match tokens[pos] {
-    @token.Token::LeftBrace => pos = pos + 1
+    LeftBrace => pos = pos + 1
     _ => return skip_at_rule(tokens, start)
   }
   let blocks : Array[@cascade.KeyframeBlock] = []
   while pos < tokens.length() {
     pos = skip_ws(tokens, pos)
     match tokens[pos] {
-      @token.Token::RightBrace => {
+      RightBrace => {
         pos = pos + 1
         break
       }
-      @token.Token::EOF => break
+      EOF => break
       _ => {
         // Keyframe selector list: from | to | <percentage> (comma-separated),
         // up to the block's '{'.
@@ -417,21 +417,21 @@ fn parse_keyframes_rule(
         while pos < tokens.length() {
           pos = skip_ws(tokens, pos)
           match tokens[pos] {
-            @token.Token::LeftBrace => break
-            @token.Token::EOF => break
-            @token.Token::RightBrace => break
-            @token.Token::Percentage(v) => {
+            LeftBrace => break
+            EOF => break
+            RightBrace => break
+            Percentage(v) => {
               offsets.push(v / 100.0)
               pos = pos + 1
             }
-            @token.Token::Number(v, _) => {
+            Number(v, _) => {
               // Only `0` is a valid unitless keyframe selector (= 0%).
               if v == 0.0 {
                 offsets.push(0.0)
               }
               pos = pos + 1
             }
-            @token.Token::Ident(s) => {
+            Ident(s) => {
               let ls = s.to_lower()
               if ls == "from" {
                 offsets.push(0.0)
@@ -440,7 +440,7 @@ fn parse_keyframes_rule(
               }
               pos = pos + 1
             }
-            @token.Token::Comma => pos = pos + 1
+            Comma => pos = pos + 1
             _ => pos = pos + 1
           }
         }
@@ -448,7 +448,7 @@ fn parse_keyframes_rule(
           break
         }
         match tokens[pos] {
-          @token.Token::LeftBrace => pos = pos + 1
+          LeftBrace => pos = pos + 1
           _ => break
         }
         // Declarations for this block, until '}'.
@@ -457,18 +457,18 @@ fn parse_keyframes_rule(
         while pos < tokens.length() {
           pos = skip_ws(tokens, pos)
           match tokens[pos] {
-            @token.Token::RightBrace => {
+            RightBrace => {
               pos = pos + 1
               break
             }
-            @token.Token::EOF => break
+            EOF => break
             _ =>
               match parse_rule_declaration(tokens, pos) {
                 Some((property, value, importance, new_pos)) => {
                   declarations.push({
                     property,
                     value: @cascade.PropertyValue::from_css_text(value),
-                    origin: @cascade.Author,
+                    origin: Author,
                     importance,
                     specificity: { a: 0, b: 0, c: 0 },
                     source_order: decl_order,
@@ -504,25 +504,25 @@ fn skip_at_rule(tokens : Array[@token.Token], start : Int) -> Int {
   let mut brace_depth = 0
   while pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::LeftBrace => {
+      LeftBrace => {
         brace_depth = brace_depth + 1
         pos = pos + 1
       }
-      @token.Token::RightBrace => {
+      RightBrace => {
         brace_depth = brace_depth - 1
         pos = pos + 1
         if brace_depth <= 0 {
           break
         }
       }
-      @token.Token::Semicolon => {
+      Semicolon => {
         if brace_depth == 0 {
           pos = pos + 1
           break
         }
         pos = pos + 1
       }
-      @token.Token::EOF => break
+      EOF => break
       _ => pos = pos + 1
     }
   }
@@ -545,8 +545,8 @@ fn parse_style_rule(
   let selector_start = pos
   while pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::LeftBrace => break
-      @token.Token::EOF => return None
+      LeftBrace => break
+      EOF => return None
       _ => pos = pos + 1
     }
   }
@@ -570,12 +570,12 @@ fn parse_style_rule(
   while pos < tokens.length() {
     pos = skip_ws(tokens, pos)
     match tokens[pos] {
-      @token.Token::RightBrace => {
+      RightBrace => {
         pos = pos + 1
         break
       }
-      @token.Token::EOF => break
-      @token.Token::Delim('&') =>
+      EOF => break
+      Delim('&') =>
         match skip_nested_rule_block(tokens, pos) {
           Some(next_pos) => pos = next_pos
           None => pos = pos + 1
@@ -587,7 +587,7 @@ fn parse_style_rule(
             let decl : @cascade.Declaration = {
               property,
               value: @cascade.PropertyValue::from_css_text(value),
-              origin: @cascade.Author,
+              origin: Author,
               importance,
               specificity: { a: 0, b: 0, c: 0 }, // Will be set during cascade
               source_order: decl_order,
@@ -613,7 +613,7 @@ fn parse_rule_declaration(
 
   // Get property name
   let property = match tokens[pos] {
-    @token.Token::Ident(name) => name
+    Ident(name) => name
     _ => return None
   }
   pos = pos + 1
@@ -621,7 +621,7 @@ fn parse_rule_declaration(
 
   // Expect colon
   match tokens[pos] {
-    @token.Token::Colon => pos = pos + 1
+    Colon => pos = pos + 1
     _ => return None
   }
   pos = skip_ws(tokens, pos)
@@ -631,13 +631,13 @@ fn parse_rule_declaration(
   let mut has_important = false
   while pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::Semicolon | @token.Token::RightBrace => break
-      @token.Token::EOF => break
-      @token.Token::Delim('!') => {
+      Semicolon | RightBrace => break
+      EOF => break
+      Delim('!') => {
         // Check for !important
         let next_pos = skip_ws(tokens, pos + 1)
         match tokens[next_pos] {
-          @token.Token::Ident(s) if s.to_lower() == "important" => {
+          Ident(s) if s.to_lower() == "important" => {
             has_important = true
             pos = next_pos + 1
             continue
@@ -655,7 +655,7 @@ fn parse_rule_declaration(
     let mut end = value_start
     while end < pos {
       match tokens[end] {
-        @token.Token::Delim('!') => break
+        Delim('!') => break
         _ => end = end + 1
       }
     }
@@ -668,14 +668,14 @@ fn parse_rule_declaration(
   // Skip semicolon if present
   if pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::Semicolon => pos = pos + 1
+      Semicolon => pos = pos + 1
       _ => ()
     }
   }
   let importance = if has_important {
     @cascade.Important
   } else {
-    @cascade.Normal
+    Normal
   }
   Some((property, value, importance, pos))
 }
@@ -691,21 +691,21 @@ fn find_matching_right_brace(
     return None
   }
   match tokens[left_brace_pos] {
-    @token.Token::LeftBrace => ()
+    LeftBrace => ()
     _ => return None
   }
   let mut depth = 1
   let mut pos = left_brace_pos + 1
   while pos < tokens.length() && pos < limit {
     match tokens[pos] {
-      @token.Token::LeftBrace => depth = depth + 1
-      @token.Token::RightBrace => {
+      LeftBrace => depth = depth + 1
+      RightBrace => {
         depth = depth - 1
         if depth == 0 {
           return Some(pos)
         }
       }
-      @token.Token::EOF => return None
+      EOF => return None
       _ => ()
     }
     pos = pos + 1
@@ -719,12 +719,12 @@ fn skip_nested_rule_block(tokens : Array[@token.Token], start : Int) -> Int? {
   let mut pos = start
   while pos < tokens.length() {
     match tokens[pos] {
-      @token.Token::LeftBrace =>
+      LeftBrace =>
         match find_matching_right_brace(tokens, pos, tokens.length()) {
           Some(close) => return Some(close + 1)
           None => return None
         }
-      @token.Token::RightBrace | @token.Token::EOF => return None
+      RightBrace | EOF => return None
       _ => pos = pos + 1
     }
   }
@@ -763,7 +763,7 @@ fn extract_ampersand_nested_rules(
   let mut i = rule_start
   while i < rule_end {
     match tokens[i] {
-      @token.Token::LeftBrace => {
+      LeftBrace => {
         body_start = i
         break
       }
@@ -781,13 +781,13 @@ fn extract_ampersand_nested_rules(
       break
     }
     match tokens[pos] {
-      @token.Token::Delim('&') => {
+      Delim('&') => {
         let nested_selector_start = pos
         while pos < rule_end - 1 {
           match tokens[pos] {
-            @token.Token::LeftBrace
-            | @token.Token::RightBrace
-            | @token.Token::EOF => break
+            LeftBrace
+            | RightBrace
+            | EOF => break
             _ => pos = pos + 1
           }
         }
@@ -795,7 +795,7 @@ fn extract_ampersand_nested_rules(
           break
         }
         match tokens[pos] {
-          @token.Token::LeftBrace => {
+          LeftBrace => {
             let nested_selector_text = tokens_to_string(
                 tokens, nested_selector_start, pos,
               )
@@ -816,7 +816,7 @@ fn extract_ampersand_nested_rules(
                       let decl : @cascade.Declaration = {
                         property,
                         value: @cascade.PropertyValue::from_css_text(value),
-                        origin: @cascade.Author,
+                        origin: Author,
                         importance,
                         specificity: { a: 0, b: 0, c: 0 },
                         source_order: decl_order,
@@ -864,12 +864,12 @@ fn extract_ampersand_nested_rules(
           _ => pos = pos + 1
         }
       }
-      @token.Token::LeftBrace =>
+      LeftBrace =>
         match find_matching_right_brace(tokens, pos, rule_end) {
           Some(close) => pos = close + 1
           None => break
         }
-      @token.Token::RightBrace | @token.Token::EOF => break
+      RightBrace | EOF => break
       _ => pos = pos + 1
     }
   }
@@ -886,34 +886,34 @@ fn tokens_to_string(
   let buf = StringBuilder::new()
   for i = start; i < end; i = i + 1 {
     match tokens[i] {
-      @token.Token::Ident(s) => buf.write_string(s)
-      @token.Token::Hash(s, _) => {
+      Ident(s) => buf.write_string(s)
+      Hash(s, _) => {
         buf.write_char('#')
         buf.write_string(s)
       }
-      @token.Token::Delim(c) => buf.write_char(c)
-      @token.Token::Colon => buf.write_char(':')
-      @token.Token::Comma => buf.write_char(',')
-      @token.Token::Whitespace => buf.write_char(' ')
-      @token.Token::Dimension(n, u) => {
+      Delim(c) => buf.write_char(c)
+      Colon => buf.write_char(':')
+      Comma => buf.write_char(',')
+      Whitespace => buf.write_char(' ')
+      Dimension(n, u) => {
         buf.write_string(n.to_string())
         buf.write_string(u)
       }
-      @token.Token::Number(n, _) => buf.write_string(n.to_string())
-      @token.Token::Percentage(n) => {
+      Number(n, _) => buf.write_string(n.to_string())
+      Percentage(n) => {
         buf.write_string(n.to_string())
         buf.write_char('%')
       }
-      @token.Token::String(s) => {
+      String(s) => {
         buf.write_char('"')
         buf.write_string(s)
         buf.write_char('"')
       }
-      @token.Token::LeftParen => buf.write_char('(')
-      @token.Token::RightParen => buf.write_char(')')
-      @token.Token::LeftBracket => buf.write_char('[')
-      @token.Token::RightBracket => buf.write_char(']')
-      @token.Token::Function(name) => {
+      LeftParen => buf.write_char('(')
+      RightParen => buf.write_char(')')
+      LeftBracket => buf.write_char('[')
+      RightBracket => buf.write_char(']')
+      Function(name) => {
         buf.write_string(name)
         buf.write_char('(')
       }
@@ -939,15 +939,15 @@ fn parse_selector_list_from_tokens(
   let mut i = start
   while i < end {
     match tokens[i] {
-      @token.Token::EOF => break
-      @token.Token::Function(_)
-      | @token.Token::LeftParen
-      | @token.Token::LeftBracket => depth = depth + 1
-      @token.Token::RightParen | @token.Token::RightBracket =>
+      EOF => break
+      Function(_)
+      | LeftParen
+      | LeftBracket => depth = depth + 1
+      RightParen | RightBracket =>
         if depth > 0 {
           depth = depth - 1
         }
-      @token.Token::Comma =>
+      Comma =>
         if depth == 0 {
           push_selector(result, tokens, seg_start, i)
           seg_start = i + 1

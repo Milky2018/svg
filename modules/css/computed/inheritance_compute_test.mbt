@@ -6,9 +6,9 @@ fn compute_inheriting(prop : String, parent : @style.Style) -> @style.Style {
   let ctx = @computed.ComputeContext::with_parent(parent)
   let decl : @cascade.Declaration = {
     property: prop,
-    value: @cascade.Inherit,
-    origin: @cascade.Author,
-    importance: @cascade.Normal,
+    value: Inherit,
+    origin: Author,
+    importance: Normal,
     specificity: { a: 0, b: 0, c: 0 },
     source_order: 0,
   }
@@ -20,24 +20,24 @@ test "Inherit - display variants" {
   for
     d in [
       @types.Inline,
-      @types.InlineBlock,
-      @types.Flex,
-      @types.InlineFlex,
-      @types.Grid,
-      @types.InlineGrid,
-      @types.Table,
-      @types.InlineTable,
-      @types.TableRow,
-      @types.TableCell,
-      @types.TableCaption,
-      @types.TableRowGroup,
-      @types.TableHeaderGroup,
-      @types.TableFooterGroup,
-      @types.TableColumn,
-      @types.TableColumnGroup,
-      @types.Display::None,
-      @types.Contents,
-      @types.FlowRoot,
+      InlineBlock,
+      Flex,
+      InlineFlex,
+      Grid,
+      InlineGrid,
+      Table,
+      InlineTable,
+      TableRow,
+      TableCell,
+      TableCaption,
+      TableRowGroup,
+      TableHeaderGroup,
+      TableFooterGroup,
+      TableColumn,
+      TableColumnGroup,
+      None,
+      Contents,
+      FlowRoot,
     ] {
     let parent : @style.Style = { ..@style.Style::default(), display: d }
     let s = compute_inheriting("display", parent)
@@ -50,8 +50,8 @@ test "Inherit - position variants" {
   for
     p in [
       @types.Position::Relative,
-      @types.Position::Absolute,
-      @types.Position::Fixed,
+      Absolute,
+      Fixed,
     ] {
     let parent : @style.Style = { ..@style.Style::default(), position: p }
     let s = compute_inheriting("position", parent)
@@ -62,7 +62,7 @@ test "Inherit - position variants" {
 ///|
 test "Inherit - flex-direction variants" {
   for
-    d in [@types.RowReverse, @types.FlexDirection::Column, @types.ColumnReverse] {
+    d in [@types.RowReverse, Column, ColumnReverse] {
     let parent : @style.Style = { ..@style.Style::default(), flex_direction: d }
     let s = compute_inheriting("flex-direction", parent)
     inspect(s.flex_direction, content=d.to_string())
@@ -71,7 +71,7 @@ test "Inherit - flex-direction variants" {
 
 ///|
 test "Inherit - flex-wrap variants" {
-  for w in [@types.Wrap, @types.WrapReverse] {
+  for w in [@types.Wrap, WrapReverse] {
     let parent : @style.Style = { ..@style.Style::default(), flex_wrap: w }
     let s = compute_inheriting("flex-wrap", parent)
     inspect(s.flex_wrap, content=w.to_string())
@@ -82,12 +82,12 @@ test "Inherit - flex-wrap variants" {
 test "Inherit - dimensions" {
   let parent : @style.Style = {
     ..@style.Style::default(),
-    width: @types.Length(100.0),
-    height: @types.Percent(0.5),
-    min_width: @types.Length(50.0),
-    min_height: @types.Length(20.0),
-    max_width: @types.Length(200.0),
-    max_height: @types.Length(150.0),
+    width: Length(100.0),
+    height: Percent(0.5),
+    min_width: Length(50.0),
+    min_height: Length(20.0),
+    max_width: Length(200.0),
+    max_height: Length(150.0),
   }
   inspect(compute_inheriting("width", parent).width, content="Length(100)")
   inspect(compute_inheriting("height", parent).height, content="Percent(0.5)")
@@ -114,16 +114,16 @@ test "Inherit - margin/padding individual sides" {
   let parent : @style.Style = {
     ..@style.Style::default(),
     margin: {
-      top: @types.Length(1.0),
-      right: @types.Length(2.0),
-      bottom: @types.Length(3.0),
-      left: @types.Length(4.0),
+      top: Length(1.0),
+      right: Length(2.0),
+      bottom: Length(3.0),
+      left: Length(4.0),
     },
     padding: {
-      top: @types.Length(5.0),
-      right: @types.Length(6.0),
-      bottom: @types.Length(7.0),
-      left: @types.Length(8.0),
+      top: Length(5.0),
+      right: Length(6.0),
+      bottom: Length(7.0),
+      left: Length(8.0),
     },
   }
   inspect(
@@ -165,11 +165,11 @@ test "Inherit - margin-trim variants" {
   for
     mt in [
       @style.MarginTrim::BlockStart,
-      @style.MarginTrim::BlockEnd,
-      @style.MarginTrim::Block,
-      @style.MarginTrim::InlineStart,
-      @style.MarginTrim::InlineEnd,
-      @style.MarginTrim::Inline,
+      BlockEnd,
+      Block,
+      InlineStart,
+      InlineEnd,
+      Inline,
     ] {
     let parent : @style.Style = { ..@style.Style::default(), margin_trim: mt }
     let s = compute_inheriting("margin-trim", parent)
@@ -182,12 +182,12 @@ test "Inherit - column-* values" {
   let parent : @style.Style = {
     ..@style.Style::default(),
     column_count: Some(3),
-    column_width: @types.Length(100.0),
-    column_fill: @style.ColumnFill::Auto,
-    break_before: @style.BreakBefore::Column,
-    break_after: @style.BreakBefore::Avoid,
-    break_inside: @style.BreakInside::Avoid,
-    column_span: @style.ColumnSpan::All,
+    column_width: Length(100.0),
+    column_fill: Auto,
+    break_before: Column,
+    break_after: Avoid,
+    break_inside: Avoid,
+    column_span: All,
   }
   debug_inspect(
     compute_inheriting("column-count", parent).column_count,
@@ -199,7 +199,7 @@ test "Inherit - column-* values" {
   )
   let parent_calc : @style.Style = {
     ..@style.Style::default(),
-    column_width: @types.Calc(-10.0, 0.5),
+    column_width: Calc(-10.0, 0.5),
   }
   inspect(
     compute_inheriting("column-width", parent_calc).column_width,
@@ -227,16 +227,16 @@ test "Inherit - text and color properties" {
     ..@style.Style::default(),
     flex_grow: 2.5,
     flex_shrink: 0.5,
-    flex_basis: @types.Length(50.0),
+    flex_basis: Length(50.0),
     color: @types.Color::rgb(10, 20, 30),
     background_color: @types.Color::rgb(40, 50, 60),
     font_size: 18.0,
     font_weight: 700.0,
     line_height: 27.0,
-    text_overflow: @style.TextOverflow::Ellipsis,
-    text_align: @style.TextAlign::Center,
-    white_space: @style.WhiteSpace::PreWrap,
-    pointer_events: @style.PointerEvents::None,
+    text_overflow: Ellipsis,
+    text_align: Center,
+    white_space: PreWrap,
+    pointer_events: None,
   }
   inspect(compute_inheriting("flex-grow", parent).flex_grow, content="2.5")
   inspect(compute_inheriting("flex-shrink", parent).flex_shrink, content="0.5")
@@ -266,12 +266,12 @@ test "Inherit - text and color properties" {
 test "Inherit - table properties" {
   let parent : @style.Style = {
     ..@style.Style::default(),
-    caption_side: @style.CaptionSide::Bottom,
-    border_collapse: @style.BorderCollapse::Collapse,
+    caption_side: Bottom,
+    border_collapse: Collapse,
     border_spacing: 4.0,
     border_spacing_vertical: 8.0,
-    writing_mode: @style.WritingMode::VerticalRl,
-    direction: @style.Direction::Rtl,
+    writing_mode: VerticalRl,
+    direction: Rtl,
   }
   inspect(
     compute_inheriting("caption-side", parent).caption_side,
@@ -321,9 +321,9 @@ test "Initial keyword - all properties" {
   let make_decl = fn(prop : String) {
     let d : @cascade.Declaration = {
       property: prop,
-      value: @cascade.Initial,
-      origin: @cascade.Author,
-      importance: @cascade.Normal,
+      value: Initial,
+      origin: Author,
+      importance: Normal,
       specificity: { a: 0, b: 0, c: 0 },
       source_order: 0,
     }
@@ -350,9 +350,9 @@ test "Unset keyword on inherited property uses parent" {
   let ctx = @computed.ComputeContext::with_parent(parent)
   let decl : @cascade.Declaration = {
     property: "color",
-    value: @cascade.Unset,
-    origin: @cascade.Author,
-    importance: @cascade.Normal,
+    value: Unset,
+    origin: Author,
+    importance: Normal,
     specificity: { a: 0, b: 0, c: 0 },
     source_order: 0,
   }
@@ -364,14 +364,14 @@ test "Unset keyword on inherited property uses parent" {
 test "Unset keyword on non-inherited property uses initial" {
   let parent : @style.Style = {
     ..@style.Style::default(),
-    display: @types.Flex,
+    display: Flex,
   }
   let ctx = @computed.ComputeContext::with_parent(parent)
   let decl : @cascade.Declaration = {
     property: "display",
-    value: @cascade.Unset,
-    origin: @cascade.Author,
-    importance: @cascade.Normal,
+    value: Unset,
+    origin: Author,
+    importance: Normal,
     specificity: { a: 0, b: 0, c: 0 },
     source_order: 0,
   }
@@ -385,9 +385,9 @@ test "Revert keyword falls back to initial" {
   let ctx = @computed.ComputeContext::new()
   let decl : @cascade.Declaration = {
     property: "display",
-    value: @cascade.Revert,
-    origin: @cascade.Author,
-    importance: @cascade.Normal,
+    value: Revert,
+    origin: Author,
+    importance: Normal,
     specificity: { a: 0, b: 0, c: 0 },
     source_order: 0,
   }
@@ -492,9 +492,9 @@ test "RevertLayer keyword falls back to initial" {
   let ctx = @computed.ComputeContext::new()
   let decl : @cascade.Declaration = {
     property: "position",
-    value: @cascade.RevertLayer,
-    origin: @cascade.Author,
-    importance: @cascade.Normal,
+    value: RevertLayer,
+    origin: Author,
+    importance: Normal,
     specificity: { a: 0, b: 0, c: 0 },
     source_order: 0,
   }

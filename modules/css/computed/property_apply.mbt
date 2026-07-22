@@ -19,9 +19,9 @@ fn apply_property(
       builder.clear = parse_clear_with_direction(value, builder.direction)
     "box-sizing" =>
       builder.box_sizing = match value.trim().to_lower() {
-        "border-box" => @types.BoxSizing::BorderBox
-        "content-box" | "initial" | "inherit" => @types.BoxSizing::ContentBox
-        _ => @types.BoxSizing::ContentBox
+        "border-box" => BorderBox
+        "content-box" | "initial" | "inherit" => ContentBox
+        _ => ContentBox
       }
     // Sizing
     "width" =>
@@ -274,7 +274,7 @@ fn apply_property(
       let bs = extract_border_style_from_shorthand(value)
       builder.border_style_top = bs
       builder.border_top = if is_none_border_style_enum(bs) {
-        @types.Length(0.0)
+        Length(0.0)
       } else {
         resolve_border_width(value, ctx)
       }
@@ -284,7 +284,7 @@ fn apply_property(
       let bs = extract_border_style_from_shorthand(value)
       builder.border_style_right = bs
       builder.border_right = if is_none_border_style_enum(bs) {
-        @types.Length(0.0)
+        Length(0.0)
       } else {
         resolve_border_width(value, ctx)
       }
@@ -296,7 +296,7 @@ fn apply_property(
       let bs = extract_border_style_from_shorthand(value)
       builder.border_style_bottom = bs
       builder.border_bottom = if is_none_border_style_enum(bs) {
-        @types.Length(0.0)
+        Length(0.0)
       } else {
         resolve_border_width(value, ctx)
       }
@@ -308,7 +308,7 @@ fn apply_property(
       let bs = extract_border_style_from_shorthand(value)
       builder.border_style_left = bs
       builder.border_left = if is_none_border_style_enum(bs) {
-        @types.Length(0.0)
+        Length(0.0)
       } else {
         resolve_border_width(value, ctx)
       }
@@ -337,10 +337,10 @@ fn apply_property(
         builder.border_style_bottom = s
         builder.border_style_left = s
         if is_none_border_style(parts[0]) {
-          builder.border_top = @types.Length(0.0)
-          builder.border_right = @types.Length(0.0)
-          builder.border_bottom = @types.Length(0.0)
-          builder.border_left = @types.Length(0.0)
+          builder.border_top = Length(0.0)
+          builder.border_right = Length(0.0)
+          builder.border_bottom = Length(0.0)
+          builder.border_left = Length(0.0)
         }
       } else if parts.length() == 2 {
         let v = parse_border_style_value(parts[0])
@@ -350,12 +350,12 @@ fn apply_property(
         builder.border_style_right = h
         builder.border_style_left = h
         if is_none_border_style(parts[0]) {
-          builder.border_top = @types.Length(0.0)
-          builder.border_bottom = @types.Length(0.0)
+          builder.border_top = Length(0.0)
+          builder.border_bottom = Length(0.0)
         }
         if is_none_border_style(parts[1]) {
-          builder.border_right = @types.Length(0.0)
-          builder.border_left = @types.Length(0.0)
+          builder.border_right = Length(0.0)
+          builder.border_left = Length(0.0)
         }
       } else if parts.length() >= 4 {
         builder.border_style_top = parse_border_style_value(parts[0])
@@ -363,41 +363,41 @@ fn apply_property(
         builder.border_style_bottom = parse_border_style_value(parts[2])
         builder.border_style_left = parse_border_style_value(parts[3])
         if is_none_border_style(parts[0]) {
-          builder.border_top = @types.Length(0.0)
+          builder.border_top = Length(0.0)
         }
         if is_none_border_style(parts[1]) {
-          builder.border_right = @types.Length(0.0)
+          builder.border_right = Length(0.0)
         }
         if is_none_border_style(parts[2]) {
-          builder.border_bottom = @types.Length(0.0)
+          builder.border_bottom = Length(0.0)
         }
         if is_none_border_style(parts[3]) {
-          builder.border_left = @types.Length(0.0)
+          builder.border_left = Length(0.0)
         }
       }
     }
     "border-top-style" => {
       builder.border_style_top = parse_border_style_value(value)
       if is_none_border_style(value) {
-        builder.border_top = @types.Length(0.0)
+        builder.border_top = Length(0.0)
       }
     }
     "border-right-style" => {
       builder.border_style_right = parse_border_style_value(value)
       if is_none_border_style(value) {
-        builder.border_right = @types.Length(0.0)
+        builder.border_right = Length(0.0)
       }
     }
     "border-bottom-style" => {
       builder.border_style_bottom = parse_border_style_value(value)
       if is_none_border_style(value) {
-        builder.border_bottom = @types.Length(0.0)
+        builder.border_bottom = Length(0.0)
       }
     }
     "border-left-style" => {
       builder.border_style_left = parse_border_style_value(value)
       if is_none_border_style(value) {
-        builder.border_left = @types.Length(0.0)
+        builder.border_left = Length(0.0)
       }
     }
     "border-color" => {
@@ -439,12 +439,12 @@ fn apply_property(
         }
       }
       if parts.length() > 0 && is_none_border_style(parts[0]) {
-        builder.border_top = @types.Length(0.0)
+        builder.border_top = Length(0.0)
       }
       if parts.length() > 1 && is_none_border_style(parts[1]) {
-        builder.border_bottom = @types.Length(0.0)
+        builder.border_bottom = Length(0.0)
       } else if parts.length() == 1 && is_none_border_style(parts[0]) {
-        builder.border_bottom = @types.Length(0.0)
+        builder.border_bottom = Length(0.0)
       }
     }
     "border-block-start" | "border-block-start-width" =>
@@ -472,21 +472,21 @@ fn apply_property(
       }
       if builder.writing_mode.is_vertical() {
         if parts.length() > 0 && is_none_border_style(parts[0]) {
-          builder.border_top = @types.Length(0.0)
+          builder.border_top = Length(0.0)
         }
         if parts.length() > 1 && is_none_border_style(parts[1]) {
-          builder.border_bottom = @types.Length(0.0)
+          builder.border_bottom = Length(0.0)
         } else if parts.length() == 1 && is_none_border_style(parts[0]) {
-          builder.border_bottom = @types.Length(0.0)
+          builder.border_bottom = Length(0.0)
         }
       } else {
         if parts.length() > 0 && is_none_border_style(parts[0]) {
-          builder.border_left = @types.Length(0.0)
+          builder.border_left = Length(0.0)
         }
         if parts.length() > 1 && is_none_border_style(parts[1]) {
-          builder.border_right = @types.Length(0.0)
+          builder.border_right = Length(0.0)
         } else if parts.length() == 1 && is_none_border_style(parts[0]) {
-          builder.border_right = @types.Length(0.0)
+          builder.border_right = Length(0.0)
         }
       }
     }
@@ -516,7 +516,7 @@ fn apply_property(
       let (alignment, is_unsafe) = if normalized == "normal" {
         (@types.Alignment::Stretch, false)
       } else if normalized == "last baseline" {
-        (@types.Alignment::Baseline, false)
+        (Baseline, false)
       } else {
         parse_alignment_with_overflow(value)
       }
@@ -570,17 +570,17 @@ fn apply_property(
       // CSS spec: negative values are invalid, keep as auto
       let dim = resolve_dimension(value, ctx)
       match dim {
-        @types.Length(v) => if v >= 0.0 { builder.flex_basis = dim }
-        @types.Percent(v) => if v >= 0.0 { builder.flex_basis = dim }
-        @types.Calc(px, pct) =>
+        Length(v) => if v >= 0.0 { builder.flex_basis = dim }
+        Percent(v) => if v >= 0.0 { builder.flex_basis = dim }
+        Calc(px, pct) =>
           if px > 0.0 || pct > 0.0 {
             builder.flex_basis = dim
           }
-        @types.MathFn(_, _) => builder.flex_basis = dim
-        @types.Auto => builder.flex_basis = dim
-        @types.MinContent => builder.flex_basis = dim
-        @types.MaxContent => builder.flex_basis = dim
-        @types.FitContent(_) => builder.flex_basis = dim
+        MathFn(_, _) => builder.flex_basis = dim
+        Auto => builder.flex_basis = dim
+        MinContent => builder.flex_basis = dim
+        MaxContent => builder.flex_basis = dim
+        FitContent(_) => builder.flex_basis = dim
       }
     }
     "order" => builder.order = parse_integer(value)
@@ -592,15 +592,15 @@ fn apply_property(
       if v == "none" {
         builder.flex_grow = 0.0
         builder.flex_shrink = 0.0
-        builder.flex_basis = @types.Dimension::Auto
+        builder.flex_basis = Auto
       } else if v == "auto" {
         builder.flex_grow = 1.0
         builder.flex_shrink = 1.0
-        builder.flex_basis = @types.Dimension::Auto
+        builder.flex_basis = Auto
       } else if v == "initial" {
         builder.flex_grow = 0.0
         builder.flex_shrink = 1.0
-        builder.flex_basis = @types.Dimension::Auto
+        builder.flex_basis = Auto
       } else {
         // Try to parse as number(s) and optionally a basis
         let parts : Array[StringView] = v
@@ -639,7 +639,7 @@ fn apply_property(
                 // flex: <number> = <number> 1 0%
                 builder.flex_grow = parse_number(parts[0].to_owned())
                 builder.flex_shrink = 1.0
-                builder.flex_basis = @types.Dimension::Percent(0.0)
+                builder.flex_basis = Percent(0.0)
               } else if basis_found {
                 // flex: <basis> = 1 1 <basis>
                 builder.flex_grow = 1.0
@@ -651,7 +651,7 @@ fn apply_property(
                 // flex: <grow> <shrink> = <grow> <shrink> 0%
                 builder.flex_grow = parse_number(parts[0].to_owned())
                 builder.flex_shrink = parse_number(parts[1].to_owned())
-                builder.flex_basis = @types.Dimension::Percent(0.0)
+                builder.flex_basis = Percent(0.0)
               } else if num_count == 1 && basis_found {
                 // flex: <grow> <basis>
                 builder.flex_grow = parse_number(parts[0].to_owned())
@@ -683,20 +683,20 @@ fn apply_property(
         let p = part.to_owned()
         // Check flex-direction values
         if p == "row" {
-          builder.flex_direction = @types.FlexDirection::Row
+          builder.flex_direction = Row
         } else if p == "row-reverse" {
-          builder.flex_direction = @types.FlexDirection::RowReverse
+          builder.flex_direction = RowReverse
         } else if p == "column" {
-          builder.flex_direction = @types.FlexDirection::Column
+          builder.flex_direction = Column
         } else if p == "column-reverse" {
-          builder.flex_direction = @types.FlexDirection::ColumnReverse
+          builder.flex_direction = ColumnReverse
           // Check flex-wrap values
         } else if p == "nowrap" {
-          builder.flex_wrap = @types.FlexWrap::NoWrap
+          builder.flex_wrap = NoWrap
         } else if p == "wrap" {
-          builder.flex_wrap = @types.FlexWrap::Wrap
+          builder.flex_wrap = Wrap
         } else if p == "wrap-reverse" {
-          builder.flex_wrap = @types.FlexWrap::WrapReverse
+          builder.flex_wrap = WrapReverse
         }
       }
     }
@@ -930,9 +930,9 @@ fn apply_property(
       let (start, end) = parse_grid_line_shorthand(value)
       builder.grid_column_start = start
       match end {
-        @types.GridPlacement::Auto =>
+        Auto =>
           match builder.grid_column_end {
-            @types.GridPlacement::Auto => builder.grid_column_end = end
+            Auto => builder.grid_column_end = end
             _ => ()
           }
         _ => builder.grid_column_end = end
@@ -942,9 +942,9 @@ fn apply_property(
       let (start, end) = parse_grid_line_shorthand(value)
       builder.grid_row_start = start
       match end {
-        @types.GridPlacement::Auto =>
+        Auto =>
           match builder.grid_row_end {
-            @types.GridPlacement::Auto => builder.grid_row_end = end
+            Auto => builder.grid_row_end = end
             _ => ()
           }
         _ => builder.grid_row_end = end
@@ -1211,8 +1211,8 @@ fn apply_property(
     }
     "text-overflow" =>
       builder.text_overflow = match value.trim().to_lower() {
-        "ellipsis" => @style.TextOverflow::Ellipsis
-        _ => @style.TextOverflow::Clip
+        "ellipsis" => Ellipsis
+        _ => Clip
       }
     "letter-spacing" => {
       let v = value.trim().to_lower()

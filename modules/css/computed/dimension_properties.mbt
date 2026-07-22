@@ -3,14 +3,14 @@
 pub fn parse_dimension(value : String) -> @types.Dimension {
   let v = value.trim()
   if v == "auto" || v == "none" {
-    return @types.Dimension::Auto
+    return Auto
   }
   // Intrinsic sizing keywords
   if v == "min-content" {
-    return @types.Dimension::MinContent
+    return MinContent
   }
   if v == "max-content" {
-    return @types.Dimension::MaxContent
+    return MaxContent
   }
   // fit-content(<length-percentage>)
   if v.has_prefix("fit-content(") && v.has_suffix(")") {
@@ -21,9 +21,9 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
     match inner.strip_suffix("px") {
       Some(num_str) => {
         let n = @string.parse_double(num_str.to_owned()) catch {
-          _ => return @types.Dimension::Auto
+          _ => return Auto
         }
-        return @types.Dimension::FitContent(n)
+        return FitContent(n)
       }
       None => ()
     }
@@ -31,23 +31,23 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
     match inner.strip_suffix("%") {
       Some(num_str) => {
         let n = @string.parse_double(num_str.to_owned()) catch {
-          _ => return @types.Dimension::Auto
+          _ => return Auto
         }
         // For fit-content, percentage is relative to available space
         // Store as negative to differentiate from length
-        return @types.Dimension::FitContent(n)
+        return FitContent(n)
       }
       None => ()
     }
-    return @types.Dimension::Auto
+    return Auto
   }
   // Try to parse as length (px)
   match v.strip_suffix("px") {
     Some(num_str) => {
       let n = @string.parse_double(num_str.to_owned()) catch {
-        _ => return @types.Dimension::Auto
+        _ => return Auto
       }
-      return @types.Dimension::Length(n)
+      return Length(n)
     }
     None => ()
   }
@@ -55,17 +55,17 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
   match v.strip_suffix("%") {
     Some(num_str) => {
       let n = @string.parse_double(num_str.to_owned()) catch {
-        _ => return @types.Dimension::Auto
+        _ => return Auto
       }
-      return @types.Dimension::Percent(n / 100.0)
+      return Percent(n / 100.0)
     }
     None => ()
   }
   // Try to parse as plain number (treated as px)
   let n = @string.parse_double(v.to_owned()) catch {
-    _ => return @types.Dimension::Auto
+    _ => return Auto
   }
-  @types.Dimension::Length(n)
+  Length(n)
 }
 
 ///|
@@ -76,7 +76,7 @@ pub fn extract_border_width(value : String) -> @types.Dimension {
 
   // Handle "none" case
   if v == "none" || v == "0" {
-    return @types.Dimension::Length(0.0)
+    return Length(0.0)
   }
 
   // Split by whitespace and look for a dimension value
@@ -85,9 +85,9 @@ pub fn extract_border_width(value : String) -> @types.Dimension {
   for part in parts {
     let lower = part.to_lower()
     match lower {
-      "thin" => return @types.Dimension::Length(1.0)
-      "medium" => return @types.Dimension::Length(3.0)
-      "thick" => return @types.Dimension::Length(5.0)
+      "thin" => return Length(1.0)
+      "medium" => return Length(3.0)
+      "thick" => return Length(5.0)
       "solid"
       | "dotted"
       | "dashed"
@@ -109,7 +109,7 @@ pub fn extract_border_width(value : String) -> @types.Dimension {
           let n = @string.parse_double(num_str.to_owned()) catch {
             _ => continue
           }
-          return @types.Dimension::Length(n)
+          return Length(n)
         }
         None => continue
       }
@@ -118,16 +118,16 @@ pub fn extract_border_width(value : String) -> @types.Dimension {
     let first_char = part[0].to_int()
     if first_char >= '0'.to_int() && first_char <= '9'.to_int() {
       let n = @string.parse_double(part) catch { _ => continue }
-      return @types.Dimension::Length(n)
+      return Length(n)
     }
   }
 
   // Compatible default for style-only shorthand like "border: solid".
   if has_visible_style {
-    @types.Dimension::Length(1.5)
+    Length(1.5)
   } else {
     // Default: no border
-    @types.Dimension::Length(0.0)
+    Length(0.0)
   }
 }
 

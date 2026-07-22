@@ -133,7 +133,7 @@ fn make_paint_server_setter(
 ) -> ColorSink? {
   let bbox = get_shape_bounds(shape)
   match paint {
-    ResolvedPaint::LinearGrad(gradient) => {
+    LinearGrad(gradient) => {
       let inverse = transform.inverse()
       Some({
         set: (x, y, coverage_color) => {
@@ -158,7 +158,7 @@ fn make_paint_server_setter(
         },
       })
     }
-    ResolvedPaint::RadialGrad(gradient) => {
+    RadialGrad(gradient) => {
       let inverse = transform.inverse()
       Some({
         set: (x, y, coverage_color) => {
@@ -183,7 +183,7 @@ fn make_paint_server_setter(
         },
       })
     }
-    ResolvedPaint::Pattern(pattern) =>
+    Pattern(pattern) =>
       make_pattern_setter(
         pattern, bbox, transform, ctx, resources, opacity, sampling,
       )

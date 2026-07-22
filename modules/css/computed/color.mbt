@@ -692,19 +692,19 @@ pub fn parse_linear_gradient(value : String) -> @types.BackgroundImage {
   let v = value.trim().to_lower().to_owned()
   // Must start with "linear-gradient("
   if !v.has_prefix("linear-gradient(") {
-    return @types.None
+    return None
   }
   // Extract content between parens
   let start = 16 // "linear-gradient(".length()
   let end = v.length() - 1
   if end <= start || v[end] != ')' {
-    return @types.None
+    return None
   }
   let inner = v.unsafe_substring(start~, end~).to_string()
   // Split by commas, respecting parentheses
   let parts = split_gradient_args(inner)
   if parts.length() < 2 {
-    return @types.None
+    return None
   }
   // Parse direction (first argument, if it's not a color)
   let mut angle = 180.0 // default: to bottom
@@ -741,9 +741,9 @@ pub fn parse_linear_gradient(value : String) -> @types.BackgroundImage {
     stops.push({ color, position: pos })
   }
   if stops.length() < 2 {
-    return @types.None
+    return None
   }
-  @types.Gradient({ angle_deg: angle, stops })
+  Gradient({ angle_deg: angle, stops })
 }
 
 ///|

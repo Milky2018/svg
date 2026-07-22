@@ -119,8 +119,8 @@ test "Show for SingleTrackSizing" {
   )
   inspect(
     SingleTrackSizing::MinMax(
-      MinTrackSizing::Length(10.0),
-      MaxTrackSizing::Fr(1.0),
+      Length(10.0),
+      Fr(1.0),
     ),
     content="MinMax(Length(10), Fr(1))",
   )
@@ -143,23 +143,23 @@ test "Show for TrackSizingFunction" {
     content="FitContentPercent(0.25)",
   )
   let mm = TrackSizingFunction::MinMax(
-    MinTrackSizing::Auto,
-    MaxTrackSizing::Fr(1.0),
+    Auto,
+    Fr(1.0),
   )
   inspect(mm, content="MinMax(Auto, Fr(1))")
   inspect(RepeatCount::Count(3), content="Count(3)")
   inspect(RepeatCount::AutoFill, content="AutoFill")
   inspect(RepeatCount::AutoFit, content="AutoFit")
   let rep = TrackSizingFunction::Repeat(
-    RepeatCount::Count(2),
-    [SingleTrackSizing::Fr(1.0), SingleTrackSizing::Auto],
+    Count(2),
+    [Fr(1.0), Auto],
     [],
   )
   inspect(rep, content="Repeat(Count(2), [Fr(1), Auto])")
   // With inner line names, the third component is rendered.
   let rep2 = TrackSizingFunction::Repeat(
-    RepeatCount::Count(3),
-    [SingleTrackSizing::Fr(1.0)],
+    Count(3),
+    [Fr(1.0)],
     [["a"], ["b"]],
   )
   inspect(rep2, content="Repeat(Count(3), [Fr(1)], [[\"a\"], [\"b\"]])")

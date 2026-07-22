@@ -14,7 +14,7 @@ test "parse stylesheet with flex properties" {
   let decl_strs : Array[String] = []
   for decl in rule0.declarations {
     match decl.value {
-      @cascade.Value(v) => decl_strs.push(decl.property + ": " + v)
+      Value(v) => decl_strs.push(decl.property + ": " + v)
       _ => ()
     }
   }
@@ -140,7 +140,7 @@ test "parse calc value" {
   inspect(stylesheet.rules.length(), content="1")
   let decl = stylesheet.rules[0].declarations[0]
   match decl.value {
-    @cascade.Value(v) => inspect(v, content="calc(100% - 20px)")
+    Value(v) => inspect(v, content="calc(100% - 20px)")
     _ => ()
   }
 }
@@ -159,7 +159,7 @@ test "parse var function" {
   inspect(stylesheet.rules.length(), content="1")
   let decl = stylesheet.rules[0].declarations[0]
   match decl.value {
-    @cascade.Value(v) => inspect(v, content="var(--primary-color)")
+    Value(v) => inspect(v, content="var(--primary-color)")
     _ => ()
   }
 }
@@ -370,7 +370,7 @@ test "parse rgb color value" {
   inspect(stylesheet.rules.length(), content="1")
   let decl = stylesheet.rules[0].declarations[0]
   match decl.value {
-    @cascade.Value(v) => inspect(v, content="rgb(255, 128, 0)")
+    Value(v) => inspect(v, content="rgb(255, 128, 0)")
     _ => ()
   }
 }
@@ -382,7 +382,7 @@ test "parse rgba color value" {
   inspect(stylesheet.rules.length(), content="1")
   let decl = stylesheet.rules[0].declarations[0]
   match decl.value {
-    @cascade.Value(v) => inspect(v, content="rgba(255, 128, 0, 0.5)")
+    Value(v) => inspect(v, content="rgba(255, 128, 0, 0.5)")
     _ => ()
   }
 }
@@ -394,7 +394,7 @@ test "parse url function" {
   inspect(stylesheet.rules.length(), content="1")
   let decl = stylesheet.rules[0].declarations[0]
   match decl.value {
-    @cascade.Value(v) => inspect(v, content="url(\"image.png\")")
+    Value(v) => inspect(v, content="url(\"image.png\")")
     _ => ()
   }
 }
@@ -440,7 +440,7 @@ test "parse repeat function value" {
   inspect(stylesheet.rules.length(), content="1")
   let decl = stylesheet.rules[0].declarations[0]
   match decl.value {
-    @cascade.Value(v) => inspect(v, content="repeat(3, 1fr)")
+    Value(v) => inspect(v, content="repeat(3, 1fr)")
     _ => ()
   }
 }
@@ -624,14 +624,14 @@ test "parse @media prefers-color-scheme and verify media query" {
       let light_env = @media.MediaEnvironment::with_color_scheme(
         375.0,
         600.0,
-        @media.ColorScheme::Light,
+        Light,
       )
       inspect(mq.evaluate(light_env), content="false")
       // Evaluate against dark mode - should match
       let dark_env = @media.MediaEnvironment::with_color_scheme(
         375.0,
         600.0,
-        @media.ColorScheme::Dark,
+        Dark,
       )
       inspect(mq.evaluate(dark_env), content="true")
     }
@@ -764,7 +764,7 @@ test "parse border-collapse property" {
   let decl_strs : Array[String] = []
   for decl in rule.declarations {
     match decl.value {
-      @cascade.Value(v) => decl_strs.push(decl.property + ": " + v)
+      Value(v) => decl_strs.push(decl.property + ": " + v)
       _ => ()
     }
   }
@@ -908,7 +908,7 @@ test "parse url with svg data uri" {
   inspect(stylesheet.rules.length(), content="1")
   let decl = stylesheet.rules[0].declarations[0]
   match decl.value {
-    @cascade.Value(v) =>
+    Value(v) =>
       inspect(
         v,
         content="url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><rect/></svg>\")",
@@ -924,7 +924,7 @@ test "parse url with encoded svg data uri" {
   inspect(stylesheet.rules.length(), content="1")
   let decl = stylesheet.rules[0].declarations[0]
   match decl.value {
-    @cascade.Value(v) =>
+    Value(v) =>
       inspect(v, content="url(\"data:image/svg+xml,%3Csvg%3E%3C/svg%3E\")")
     _ => ()
   }

@@ -22,7 +22,7 @@ fn render_path(
   }
   fn draw_fill() -> Unit {
     match resolve_paint_for_render(node.fill, node_color, resources) {
-      ResolvedPaint::SolidColor(color) =>
+      SolidColor(color) =>
         if node.fill_opacity > 0.0 {
           let fill_color = apply_opacity(
             color,
@@ -39,7 +39,7 @@ fn render_path(
             )
           }
         }
-      ResolvedPaint::LinearGrad(gradient) =>
+      LinearGrad(gradient) =>
         if node.fill_opacity > 0.0 {
           let bbox = get_shape_bounds(node.shape)
           let inverse = transform.inverse()
@@ -74,7 +74,7 @@ fn render_path(
             ctx.height,
           )
         }
-      ResolvedPaint::RadialGrad(gradient) =>
+      RadialGrad(gradient) =>
         if node.fill_opacity > 0.0 {
           let bbox = get_shape_bounds(node.shape)
           let inverse = transform.inverse()
@@ -109,7 +109,7 @@ fn render_path(
             ctx.height,
           )
         }
-      ResolvedPaint::Pattern(pattern) =>
+      Pattern(pattern) =>
         if node.fill_opacity > 0.0 {
           let bbox = get_shape_bounds(node.shape)
           match
@@ -145,7 +145,7 @@ fn render_path(
       resources,
     )
     match stroke_paint {
-      ResolvedPaint::SolidColor(color) =>
+      SolidColor(color) =>
         for index, polyline in polylines {
           if node.stroke_opacity > 0.0 && node.stroke.width > 0.0 {
             let stroke_color = apply_opacity(
@@ -166,9 +166,9 @@ fn render_path(
             )
           }
         }
-      ResolvedPaint::LinearGrad(_)
-      | ResolvedPaint::RadialGrad(_)
-      | ResolvedPaint::Pattern(_) =>
+      LinearGrad(_)
+      | RadialGrad(_)
+      | Pattern(_) =>
         if node.stroke_opacity > 0.0 && node.stroke.width > 0.0 {
           match
             make_paint_server_setter(
@@ -229,9 +229,9 @@ fn render_text(
   // Fill color for text
   let fill_paint = resolve_paint_for_render(node.fill, node_color, resources)
   let paint_server_setter = match fill_paint {
-    ResolvedPaint::LinearGrad(_)
-    | ResolvedPaint::RadialGrad(_)
-    | ResolvedPaint::Pattern(_) =>
+    LinearGrad(_)
+    | RadialGrad(_)
+    | Pattern(_) =>
       if node.fill_opacity > 0.0 {
         make_paint_server_setter(
           fill_paint,
@@ -251,15 +251,15 @@ fn render_text(
     Some(to_paths) => {
       // Use font callback: render each character as path commands
       let fill_color : Color? = match fill_paint {
-        ResolvedPaint::SolidColor(color) =>
+        SolidColor(color) =>
           if node.fill_opacity > 0.0 {
             Some(apply_opacity(color, node.fill_opacity * node.opacity))
           } else {
             None
           }
-        ResolvedPaint::LinearGrad(_)
-        | ResolvedPaint::RadialGrad(_)
-        | ResolvedPaint::Pattern(_) =>
+        LinearGrad(_)
+        | RadialGrad(_)
+        | Pattern(_) =>
           match paint_server_setter {
             Some(_) => Some(Color::white())
             None => None
@@ -294,7 +294,7 @@ fn render_text(
     None =>
       // Fallback: bitmap font
       match fill_paint {
-        ResolvedPaint::SolidColor(color) =>
+        SolidColor(color) =>
           if node.fill_opacity > 0.0 {
             let fill_color = apply_opacity(
               color,
@@ -309,9 +309,9 @@ fn render_text(
               ctx.setter,
             )
           }
-        ResolvedPaint::LinearGrad(_)
-        | ResolvedPaint::RadialGrad(_)
-        | ResolvedPaint::Pattern(_) =>
+        LinearGrad(_)
+        | RadialGrad(_)
+        | Pattern(_) =>
           if node.fill_opacity > 0.0 {
             match paint_server_setter {
               Some(setter) =>

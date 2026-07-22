@@ -245,7 +245,7 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
       _ => 0.0
     }
   }
-  let num_type : NumType = if is_integer { Integer } else { NumType::Number }
+  let num_type : NumType = if is_integer { Integer } else { Number }
   (value, num_type)
 }
 
@@ -261,14 +261,14 @@ fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
     if c == quote {
       let s = self.input.unsafe_substring(start~, end=self.pos)
       self.pos += 1
-      return Token::String(s)
+      return String(s)
     } else if c == '\\' || c == '\n' || c == '\r' {
       break
     }
     self.pos += 1
   }
   if self.is_eof() {
-    return Token::String(self.input.unsafe_substring(start~, end=self.pos))
+    return String(self.input.unsafe_substring(start~, end=self.pos))
   }
   // Slow path: seed the builder with the run scanned so far, then handle
   // escapes / bad-string termination char-by-char.
@@ -276,7 +276,7 @@ fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
   buf.write_string(self.input.unsafe_substring(start~, end=self.pos))
   while !self.is_eof() {
     match self.consume() {
-      Some(c) if c == quote => return Token::String(buf.to_string())
+      Some(c) if c == quote => return String(buf.to_string())
       Some('\n') | Some('\r') => return BadString
       Some('\\') =>
         match self.peek() {
@@ -316,10 +316,10 @@ fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
           None => ()
         }
       Some(c) => buf.write_char(c)
-      None => return Token::String(buf.to_string())
+      None => return String(buf.to_string())
     }
   }
-  Token::String(buf.to_string())
+  String(buf.to_string())
 }
 
 ///|
