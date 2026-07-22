@@ -276,7 +276,7 @@ fn parse_gradient_stops(
       @xml.Event::Start(element) => (Some(element), true)
       @xml.Event::Empty(element) => (Some(element), false)
       @xml.Event::End(name) => {
-        if local_xml_name(name) == parent_tag {
+        if name == parent_tag {
           break
         }
         (None, false)
@@ -286,7 +286,7 @@ fn parse_gradient_stops(
     }
     match element {
       Some(element) => {
-        let tag_name = local_xml_name(element.name)
+        let tag_name = element.name
         let attrs = element.attributes
         let current_index = ctx.sibling_index_stack.length() - 1
         ctx.sibling_index_stack[current_index] += 1

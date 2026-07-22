@@ -295,11 +295,126 @@ fn SVGParser::advance_event(self : SVGParser) -> @xml.Event {
 }
 
 ///|
-fn local_xml_name(name : String) -> String {
-  match name.find(":") {
-    Some(index) => name[index + 1:].to_owned()
-    None => name
+let svg_namespace_uri = "http://www.w3.org/2000/svg"
+
+///|
+let xml_namespace_uri = "http://www.w3.org/XML/1998/namespace"
+
+///|
+priv struct XmlNamespaceScope {
+  default_uri : String?
+  default_declared : Bool
+  prefixes : Map[String, String]
+}
+
+///|
+fn XmlNamespaceScope::root() -> XmlNamespaceScope {
+  {
+    default_uri: None,
+    default_declared: false,
+    prefixes: { "xml": xml_namespace_uri },
   }
+}
+
+///|
+fn XmlNamespaceScope::with_declarations(
+  self : XmlNamespaceScope,
+  attrs : Array[(String, String)],
+) -> XmlNamespaceScope {
+  let mut default_uri = self.default_uri
+  let mut default_declared = self.default_declared
+  let prefixes = self.prefixes.copy()
+  for attr in attrs {
+    let (name, value) = attr
+    if name == "xmlns" {
+      default_declared = true
+      default_uri = if value == "" { None } else { Some(value) }
+    } else if name.has_prefix("xmlns:") {
+      let prefix = name[6:].to_owned()
+      if value == "" {
+        prefixes.remove(prefix)
+      } else {
+        prefixes[prefix] = value
+      }
+    }
+  }
+  { default_uri, default_declared, prefixes }
+}
+
+///|
+fn XmlNamespaceScope::normalize_element_name(
+  self : XmlNamespaceScope,
+  qualified_name : String,
+) -> String {
+  let (local_name, namespace_uri, prefix_bound, legacy_unqualified) = match
+    qualified_name.find(":") {
+    Some(index) => {
+      let prefix = qualified_name[:index].to_owned()
+      let local_name = qualified_name[index + 1:].to_owned()
+      match self.prefixes.get(prefix) {
+        Some(uri) => (local_name, Some(uri), true, false)
+        None => (local_name, None, false, false)
+      }
+    }
+    None => (qualified_name, self.default_uri, true, !self.default_declared)
+  }
+  if !prefix_bound {
+    // An unbound prefix must never gain SVG semantics merely from its local
+    // name. Curly braces cannot occur in an XML name, so this marker cannot
+    // collide with an authored SVG element name.
+    "{unbound-prefix}" + local_name
+  } else {
+    match namespace_uri {
+      // Preserve the library's historical support for unqualified SVG
+      // fragments such as `<rect/>` while respecting any declared namespace.
+      None if legacy_unqualified => local_name
+      None => "{no-namespace}" + local_name
+      Some(uri) if uri == svg_namespace_uri => local_name
+      Some(uri) => "{" + uri + "}" + local_name
+    }
+  }
+}
+
+///|
+fn normalize_xml_namespaces(events : Array[@xml.Event]) -> Array[@xml.Event] {
+  let normalized : Array[@xml.Event] = []
+  let scopes : Array[XmlNamespaceScope] = [XmlNamespaceScope::root()]
+  for event in events {
+    let current = scopes[scopes.length() - 1]
+    match event {
+      @xml.Event::Start(element) => {
+        let scope = current.with_declarations(element.attributes)
+        normalized.push(
+          @xml.Event::Start(
+            @xml.XmlElement::with_attrs(
+              scope.normalize_element_name(element.name),
+              element.attributes,
+            ),
+          ),
+        )
+        scopes.push(scope)
+      }
+      @xml.Event::Empty(element) => {
+        let scope = current.with_declarations(element.attributes)
+        normalized.push(
+          @xml.Event::Empty(
+            @xml.XmlElement::with_attrs(
+              scope.normalize_element_name(element.name),
+              element.attributes,
+            ),
+          ),
+        )
+      }
+      @xml.Event::End(name) => {
+        normalized.push(@xml.Event::End(current.normalize_element_name(name)))
+        if scopes.length() > 1 {
+          let _ = scopes.pop()
+        }
+      }
+      _ => normalized.push(event)
+    }
+  }
+  normalized
 }
 
 ///|
@@ -314,7 +429,7 @@ fn read_xml_events(svg_str : String) -> Array[@xml.Event]? {
         break
       }
     }
-    Some(events)
+    Some(normalize_xml_namespaces(events))
   } catch {
     _ => None
   }
@@ -368,7 +483,7 @@ fn parse_element(
     Some(element) => element
     None => return None
   }
-  let tag_name = local_xml_name(element.name)
+  let tag_name = element.name
   let attrs = element.attributes
   let _ = ctx.record_selector_element(tag_name, attrs)
   match tag_name {
@@ -652,7 +767,7 @@ fn skip_to_end_tag(parser : SVGParser, tag_name : String) -> Unit {
       @xml.Event::Start(_) => depth += 1
       @xml.Event::Empty(_) => ()
       @xml.Event::End(name) => {
-        if depth == 0 && local_xml_name(name) == tag_name {
+        if depth == 0 && name == tag_name {
           return
         }
         if depth > 0 {
@@ -675,11 +790,11 @@ fn parse_plain_text_content(parser : SVGParser, tag_name : String) -> String? {
         content.write_string(text)
       @xml.Event::Start(element) => {
         has_nested_element = true
-        skip_to_end_tag(parser, local_xml_name(element.name))
+        skip_to_end_tag(parser, element.name)
       }
       @xml.Event::Empty(_) => has_nested_element = true
       @xml.Event::End(name) =>
-        if local_xml_name(name) == tag_name {
+        if name == tag_name {
           return if has_nested_element {
             None
           } else {
@@ -708,7 +823,7 @@ fn count_direct_child_elements(parser : SVGParser, parent_tag : String) -> Int {
       }
       @xml.Event::Empty(_) => if depth == 0 { count += 1 }
       @xml.Event::End(name) => {
-        if depth == 0 && local_xml_name(name) == parent_tag {
+        if depth == 0 && name == parent_tag {
           break
         }
         if depth > 0 {
@@ -771,7 +886,7 @@ fn parse_children(
     match parser.peek_event() {
       @xml.Event::End(name) => {
         let _ = parser.advance_event()
-        if local_xml_name(name) == parent_tag {
+        if name == parent_tag {
           break
         }
       }

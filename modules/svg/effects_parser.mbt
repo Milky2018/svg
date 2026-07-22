@@ -490,16 +490,13 @@ fn parse_filter_primitive_children(
   while !parser.is_end() {
     match parser.advance_event() {
       @xml.Event::Start(element) => {
-        let tag = local_xml_name(element.name)
+        let tag = element.name
         children.push({ tag, attrs: element.attributes })
         skip_to_end_tag(parser, tag)
       }
       @xml.Event::Empty(element) =>
-        children.push({
-          tag: local_xml_name(element.name),
-          attrs: element.attributes,
-        })
-      @xml.Event::End(name) => if local_xml_name(name) == parent_tag { break }
+        children.push({ tag: element.name, attrs: element.attributes })
+      @xml.Event::End(name) => if name == parent_tag { break }
       @xml.Event::Eof => break
       _ => ()
     }
@@ -518,7 +515,7 @@ fn parse_filter_graph(
   while !parser.is_end() {
     match parser.advance_event() {
       @xml.Event::Start(element) => {
-        let primitive_tag = local_xml_name(element.name)
+        let primitive_tag = element.name
         let primitive_children = parse_filter_primitive_children(
           parser, primitive_tag,
         )
@@ -533,16 +530,11 @@ fn parse_filter_graph(
         }
       }
       @xml.Event::Empty(element) =>
-        match
-          parse_filter_primitive(
-            local_xml_name(element.name),
-            element.attributes,
-            [],
-          ) {
+        match parse_filter_primitive(element.name, element.attributes, []) {
           Some(primitive) => primitives.push(primitive)
           None => ()
         }
-      @xml.Event::End(name) => if local_xml_name(name) == tag_name { break }
+      @xml.Event::End(name) => if name == tag_name { break }
       @xml.Event::Eof => break
       _ => ()
     }

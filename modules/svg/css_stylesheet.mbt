@@ -13,12 +13,12 @@ fn parse_embedded_stylesheets(
   for event in events {
     match event {
       @xml.Event::Start(element) =>
-        if local_xml_name(element.name) == "style" {
+        if element.name == "style" {
           content.reset()
           in_style = true
         }
       @xml.Event::Empty(element) =>
-        if local_xml_name(element.name) == "style" {
+        if element.name == "style" {
           stylesheets.push(@css.parse_stylesheet(""))
         }
       @xml.Event::Text(text) | @xml.Event::CData(text) =>
@@ -26,7 +26,7 @@ fn parse_embedded_stylesheets(
           content.write_string(text)
         }
       @xml.Event::End(name) =>
-        if in_style && local_xml_name(name) == "style" {
+        if in_style && name == "style" {
           stylesheets.push(
             @css.parse_stylesheet(trim_string(content.to_string())),
           )
