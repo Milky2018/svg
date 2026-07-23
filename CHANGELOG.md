@@ -3,6 +3,27 @@
 This workspace releases `Milky2018/css` and `Milky2018/svg` with matching
 versions.
 
+## Milky2018/svg 0.5.2 - 2026-07-23
+
+### Fixed
+
+- Render an empty SVG filter as transparent while continuing to ignore missing
+  filter references.
+- Implement the CSS non-separable `hue`, `saturation`, `color`, and
+  `luminosity` blend formulas without substituting ordinary HSL conversion.
+
+### Changed
+
+- Lower validated XML events directly into namespace-resolved SVG parser events
+  in one pass, replacing the intermediate compatibility adapter.
+
+## Milky2018/css 0.5.2 - 2026-07-23
+
+### Changed
+
+- Publish a lockstep patch release with `Milky2018/svg`; CSS behavior is
+  unchanged from 0.5.1.
+
 ## Milky2018/svg 0.5.1 - 2026-07-23
 
 ### Changed
