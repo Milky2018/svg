@@ -210,6 +210,41 @@ test "mix-blend-mode composites against the current backdrop" {
 }
 
 ///|
+test "non-separable blend modes follow CSS component formulas" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"4\">" +
+    "<rect x=\"0\" width=\"4\" height=\"4\" fill=\"#c86432\"/>" +
+    "<rect x=\"0\" width=\"4\" height=\"4\" fill=\"#6496c8\" style=\"mix-blend-mode: hue\"/>" +
+    "<rect x=\"4\" width=\"4\" height=\"4\" fill=\"#c86432\"/>" +
+    "<rect x=\"4\" width=\"4\" height=\"4\" fill=\"#6496c8\" style=\"mix-blend-mode: saturation\"/>" +
+    "<rect x=\"8\" width=\"4\" height=\"4\" fill=\"#c86432\"/>" +
+    "<rect x=\"8\" width=\"4\" height=\"4\" fill=\"#6496c8\" style=\"mix-blend-mode: color\"/>" +
+    "<rect x=\"12\" width=\"4\" height=\"4\" fill=\"#c86432\"/>" +
+    "<rect x=\"12\" width=\"4\" height=\"4\" fill=\"#6496c8\" style=\"mix-blend-mode: luminosity\"/>" +
+    "</svg>"
+  let image = render_svg_to_image(svg, 16, 4).unwrap_or(Image::new(16, 4))
+  let hue = image.get_pixel(2, 2)
+  inspect(hue.r, content="64")
+  inspect(hue.g, content="139")
+  inspect(hue.b, content="214")
+  inspect(hue.a, content="255")
+  let saturation = image.get_pixel(6, 2)
+  inspect(saturation.r, content="175")
+  inspect(saturation.g, content="108")
+  inspect(saturation.b, content="75")
+  inspect(saturation.a, content="255")
+  let color = image.get_pixel(10, 2)
+  inspect(color.r, content="84")
+  inspect(color.g, content="134")
+  inspect(color.b, content="184")
+  inspect(color.a, content="255")
+  let luminosity = image.get_pixel(14, 2)
+  inspect(luminosity.r, content="216")
+  inspect(luminosity.g, content="116")
+  inspect(luminosity.b, content="66")
+  inspect(luminosity.a, content="255")
+}
+
+///|
 test "isolation prevents descendants from blending with outside backdrop" {
   let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
     "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +

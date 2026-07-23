@@ -722,6 +722,8 @@ fn parse_element(
     "filter" => {
       if !self_closing {
         parse_filter_graph(parser, attrs, ctx, tag_name)
+      } else {
+        register_filter_graph(attrs, ctx, [])
       }
       Group |> SVGNode::new |> Some
     }

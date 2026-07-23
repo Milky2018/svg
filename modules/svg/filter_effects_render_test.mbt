@@ -4,6 +4,26 @@ fn render_filter_fixture(svg : String, width : Int, height : Int) -> Image {
 }
 
 ///|
+test "empty filter suppresses its host while a missing filter is ignored" {
+  let self_closing = render_filter_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"4\" height=\"4\"><defs><filter id=\"f\"/></defs><rect width=\"4\" height=\"4\" fill=\"red\" filter=\"url(#f)\"/></svg>",
+    4, 4,
+  )
+  let explicit_close = render_filter_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"4\" height=\"4\"><defs><filter id=\"f\"></filter></defs><rect width=\"4\" height=\"4\" fill=\"red\" filter=\"url(#f)\"/></svg>",
+    4, 4,
+  )
+  let missing = render_filter_fixture(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"4\" height=\"4\"><rect width=\"4\" height=\"4\" fill=\"red\" filter=\"url(#missing)\"/></svg>",
+    4, 4,
+  )
+  inspect(self_closing.get_pixel(2, 2).a, content="0")
+  inspect(explicit_close.get_pixel(2, 2).a, content="0")
+  inspect(missing.get_pixel(2, 2).r, content="255")
+  inspect(missing.get_pixel(2, 2).a, content="255")
+}
+
+///|
 test "filter Gaussian blur supports separate horizontal and vertical deviations" {
   let image = render_filter_fixture(
     "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\"><defs><filter id=\"f\" filterUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"8\" height=\"8\"><feGaussianBlur stdDeviation=\"0 1\"/></filter></defs><rect x=\"3\" y=\"3\" width=\"1\" height=\"1\" fill=\"red\" filter=\"url(#f)\"/></svg>",

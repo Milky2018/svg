@@ -912,6 +912,9 @@ fn evaluate_filter_graph(
   origin_x : Int,
   origin_y : Int,
 ) -> Image {
+  if graph.primitives.is_empty() {
+    return Image::new(source.width, source.height)
+  }
   let target_bounds = {
     min_x: target_bounds.min_x - origin_x.to_double(),
     min_y: target_bounds.min_y - origin_y.to_double(),

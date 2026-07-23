@@ -238,95 +238,32 @@ fn sqrt_approx(x : Double) -> Double {
 }
 
 ///|
-/// Convert RGB to HSL
-fn rgb_to_hsl(r : Double, g : Double, b : Double) -> (Double, Double, Double) {
-  let max_val = if r > g {
-    if r > b {
-      r
-    } else {
-      b
-    }
-  } else if g > b {
-    g
-  } else {
-    b
-  }
-  let min_val = if r < g {
-    if r < b {
-      r
-    } else {
-      b
-    }
-  } else if g < b {
-    g
-  } else {
-    b
-  }
-  let l = (max_val + min_val) / 2.0
-  if max_val - min_val < 0.001 {
-    return (0.0, 0.0, l) // Achromatic
-  }
-  let d = max_val - min_val
-  let s = if l > 0.5 {
-    d / (2.0 - max_val - min_val)
-  } else {
-    d / (max_val + min_val)
-  }
-  let h = if max_val - r < 0.001 {
-    let h_raw = (g - b) / d
-    if g < b {
-      h_raw + 6.0
-    } else {
-      h_raw
-    }
-  } else if max_val - g < 0.001 {
-    (b - r) / d + 2.0
-  } else {
-    (r - g) / d + 4.0
-  }
-  (h / 6.0, s, l)
-}
-
-///|
-/// Convert HSL to RGB
-fn hsl_to_rgb(h : Double, s : Double, l : Double) -> (Double, Double, Double) {
-  if s < 0.001 {
-    return (l, l, l)
-  }
-  let q = if l < 0.5 { l * (1.0 + s) } else { l + s - l * s }
-  let p = 2.0 * l - q
-  (
-    hue_to_rgb(p, q, h + 1.0 / 3.0),
-    hue_to_rgb(p, q, h),
-    hue_to_rgb(p, q, h - 1.0 / 3.0),
-  )
-}
-
-///|
-fn hue_to_rgb(p : Double, q : Double, t_raw : Double) -> Double {
-  let mut t = t_raw
-  if t < 0.0 {
-    t = t + 1.0
-  }
-  if t > 1.0 {
-    t = t - 1.0
-  }
-  if t < 1.0 / 6.0 {
-    return p + (q - p) * 6.0 * t
-  }
-  if t < 0.5 {
-    return q
-  }
-  if t < 2.0 / 3.0 {
-    return p + (q - p) * (2.0 / 3.0 - t) * 6.0
-  }
-  p
-}
-
-///|
 /// Get luminosity of RGB
 fn get_luminosity(r : Double, g : Double, b : Double) -> Double {
   0.3 * r + 0.59 * g + 0.11 * b
+}
+
+///|
+/// Get saturation as defined for CSS non-separable blend modes
+fn get_saturation(r : Double, g : Double, b : Double) -> Double {
+  r.max(g).max(b) - r.min(g).min(b)
+}
+
+///|
+/// Set saturation as defined for CSS non-separable blend modes
+fn set_saturation(
+  r : Double,
+  g : Double,
+  b : Double,
+  target_saturation : Double,
+) -> (Double, Double, Double) {
+  let min_val = r.min(g).min(b)
+  let max_val = r.max(g).max(b)
+  if max_val == min_val {
+    return (0.0, 0.0, 0.0)
+  }
+  let scale = target_saturation / (max_val - min_val)
+  ((r - min_val) * scale, (g - min_val) * scale, (b - min_val) * scale)
 }
 
 ///|
@@ -396,9 +333,12 @@ fn blend_hue(
   src_g : Double,
   src_b : Double,
 ) -> (Double, Double, Double) {
-  let (src_h, _, _) = rgb_to_hsl(src_r, src_g, src_b)
-  let (_, bd_s, bd_l) = rgb_to_hsl(bd_r, bd_g, bd_b)
-  let (r, g, b) = hsl_to_rgb(src_h, bd_s, bd_l)
+  let (r, g, b) = set_saturation(
+    src_r,
+    src_g,
+    src_b,
+    get_saturation(bd_r, bd_g, bd_b),
+  )
   set_luminosity(r, g, b, get_luminosity(bd_r, bd_g, bd_b))
 }
 
@@ -412,9 +352,12 @@ fn blend_saturation(
   src_g : Double,
   src_b : Double,
 ) -> (Double, Double, Double) {
-  let (bd_h, _, bd_l) = rgb_to_hsl(bd_r, bd_g, bd_b)
-  let (_, src_s, _) = rgb_to_hsl(src_r, src_g, src_b)
-  let (r, g, b) = hsl_to_rgb(bd_h, src_s, bd_l)
+  let (r, g, b) = set_saturation(
+    bd_r,
+    bd_g,
+    bd_b,
+    get_saturation(src_r, src_g, src_b),
+  )
   set_luminosity(r, g, b, get_luminosity(bd_r, bd_g, bd_b))
 }
 
@@ -428,10 +371,7 @@ fn blend_color_mode(
   src_g : Double,
   src_b : Double,
 ) -> (Double, Double, Double) {
-  let (src_h, src_s, _) = rgb_to_hsl(src_r, src_g, src_b)
-  let (_, _, bd_l) = rgb_to_hsl(bd_r, bd_g, bd_b)
-  let (r, g, b) = hsl_to_rgb(src_h, src_s, bd_l)
-  set_luminosity(r, g, b, get_luminosity(bd_r, bd_g, bd_b))
+  set_luminosity(src_r, src_g, src_b, get_luminosity(bd_r, bd_g, bd_b))
 }
 
 ///|

@@ -536,6 +536,15 @@ fn parse_filter_graph(
       _ => ()
     }
   }
+  register_filter_graph(attrs, ctx, primitives)
+}
+
+///|
+fn register_filter_graph(
+  attrs : Array[(String, String)],
+  ctx : SVGParseContext,
+  primitives : Array[FilterGraphPrimitive],
+) -> Unit {
   let id = get_attr(attrs, "id").unwrap_or("")
   if id.length() == 0 {
     return
