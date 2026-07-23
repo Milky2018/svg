@@ -5,6 +5,7 @@ import {
   "Milky2018/css/media" @css_media,
   "Milky2018/css/selector" @css_selector,
   "Milky2018/css/style" @css_style,
+  "Milky2018/css/values" @css_values,
   "Milky2018/xml",
   "moonbitlang/core/debug",
   "moonbitlang/core/double",

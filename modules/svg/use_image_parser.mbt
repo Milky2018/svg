@@ -33,6 +33,9 @@ fn parse_use(
     viewport.0,
     viewport.1,
     font_size=element_style.css_style.font_size,
+    root_font_size=element_style.root_font_size,
+    css_viewport_width=ctx.css_viewport.0,
+    css_viewport_height=ctx.css_viewport.1,
   )
   let x = match geometry_value("x") {
     Some(v) => parse_length_with_context(v, Horizontal, length_context)
@@ -128,6 +131,7 @@ fn parse_use(
             ctx.current_style().custom_properties,
             ctx.current_style().stop_color,
             ctx.current_style().stop_opacity,
+            ctx.current_style().root_font_size,
           )
           let _ = resolve_element_computed_style(
             node, "use", attrs, ctx, base_style, false,
@@ -171,6 +175,7 @@ fn parse_use(
             ctx.current_style().custom_properties,
             ctx.current_style().stop_color,
             ctx.current_style().stop_opacity,
+            ctx.current_style().root_font_size,
           )
           let _ = resolve_element_computed_style(
             node, "use", attrs, ctx, base_style, false,
@@ -193,6 +198,7 @@ fn parse_use(
                 ctx.current_style().custom_properties,
                 ctx.current_style().stop_color,
                 ctx.current_style().stop_opacity,
+                ctx.current_style().root_font_size,
               )
               let _ = resolve_element_computed_style(
                 node, "use", attrs, ctx, base_style, false,

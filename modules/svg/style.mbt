@@ -195,21 +195,56 @@ fn resolve_computed_style(
   parent : InheritedStyle,
   apply_noncomputed : Bool,
   length_viewport : (Double, Double),
+  css_viewport : (Double, Double),
+  is_root? : Bool = false,
+  stylesheets? : Array[@css_cascade.Stylesheet] = [],
+  sample_time_seconds? : Double = 0.0,
 ) -> InheritedStyle {
-  let (css_style, custom_property_map) = @css.compute_style_with_vars(
-    cascaded,
-    @css_computed.ComputeContext::with_parent_and_vars(
+  let compute_context = {
+    ..@css_computed.ComputeContext::with_parent_and_vars(
       parent.css_style,
       parent.custom_properties,
     ),
+    root_font_size: parent.root_font_size,
+    font_size: parent.css_style.font_size,
+    viewport_width: css_viewport.0,
+    viewport_height: css_viewport.1,
+  }
+  let (css_style, custom_property_map) = @css.compute_style_with_vars(
+    cascaded, compute_context,
   )
-  let declarations = cascaded_style_declarations(cascaded)
+  let base_declarations = cascaded_style_declarations(cascaded)
   let custom_properties = custom_property_map
+  let root_font_size = if is_root {
+    css_style.font_size
+  } else {
+    parent.root_font_size
+  }
   let length_context = LengthContext::new(
     length_viewport.0,
     length_viewport.1,
     font_size=css_style.font_size,
+    root_font_size~,
+    css_viewport_width=css_viewport.0,
+    css_viewport_height=css_viewport.1,
   )
+  let animation_declarations = sampled_animation_declarations(
+    css_style, stylesheets, sample_time_seconds, custom_properties, length_context,
+    base_declarations, attrs, parent,
+  )
+  let declarations : Array[StyleDeclaration] = []
+  for declaration in animation_declarations {
+    let important = match cascaded.get(declaration.name) {
+      Some(winner) => winner.importance is Important
+      None => false
+    }
+    if !important {
+      declarations.push(declaration)
+    }
+  }
+  for declaration in base_declarations {
+    declarations.push(declaration)
+  }
   node.fill = parent.fill
   node.fill_rule = parent.fill_rule
   node.clip_rule = parent.clip_rule
@@ -298,6 +333,11 @@ fn resolve_computed_style(
         node.color = Some(parse_color(value))
       }
   }
+  match resolve_style_choice(declarations, custom_properties, StyleOpacity) {
+    StyleInitial => node.opacity = 1.0
+    StyleInherited => node.opacity = parent.css_style.opacity
+    StyleSpecified(value) => node.opacity = clamp_svg_opacity(value)
+  }
   match resolve_style_choice(declarations, custom_properties, StyleStopColor) {
     StyleInitial => stop_color = Color::black()
     StyleInherited => ()
@@ -385,6 +425,6 @@ fn resolve_computed_style(
   node.marker_mid_is_set = true
   node.marker_end_is_set = true
   inherited_style_from_node(
-    node, css_style, custom_property_map, stop_color, stop_opacity,
+    node, css_style, custom_property_map, stop_color, stop_opacity, root_font_size,
   )
 }

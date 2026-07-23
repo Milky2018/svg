@@ -32,6 +32,7 @@ test "computed SVG style applies cascaded stop properties" {
     InheritedStyle::default(),
     false,
     (300.0, 150.0),
+    (300.0, 150.0),
   )
   assert_eq(style.stop_color.r, 255)
   assert_eq(style.stop_color.g, 0)

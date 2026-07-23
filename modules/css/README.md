@@ -31,6 +31,10 @@ restyling, animation timeline, transition runtime, or generic browser support
 diagnostics. Static animation and transition syntax may be parsed and stored,
 but it is not executed.
 
+`@import` rules are retained as structured `Stylesheet.imports` entries. The
+CSS module never fetches them; an embedding renderer resolves the URI, applies
+its media condition, and parses the supplied text.
+
 ## SVG Integration
 
 `Milky2018/svg` is the first acceptance consumer, not the only permitted

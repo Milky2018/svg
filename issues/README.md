@@ -10,9 +10,7 @@ No ready issues.
 
 | ID | Status | Priority | Type | Assignee | Blocked by | Blocks | Title |
 | --- | --- | ---: | --- | --- | --- | --- | --- |
-| [ISS-026](ISS-026.md) | deferred | 3 | feature | unassigned | none | none | Resolve external SVG resource documents |
 | [ISS-027](ISS-027.md) | deferred | 3 | task | unassigned | none | none | Align advanced Filter Effects numerical semantics |
-| [ISS-008](ISS-008.md) | deferred | 4 | epic | unassigned | none | none | Design external and dynamic CSS integration |
 | [ISS-020](ISS-020.md) | deferred | 4 | feature | unassigned | none | none | Validate pixel parity against pinned Chromium |
 
 ## Dependency Graph
@@ -70,6 +68,9 @@ graph TD
   ISS_049["ISS-049: Replace handwritten XML parsing with Milky2018/xml"]
   ISS_050["ISS-050: Internalize leftover transform identity helpers"]
   ISS_051["ISS-051: Document the 0.4.0 rendering API migration"]
+  ISS_052["ISS-052: Resolve CSS and SVG length expressions through context"]
+  ISS_053["ISS-053: Resolve external stylesheets and static render environment"]
+  ISS_054["ISS-054: Sample CSS animations at an explicit render time"]
   ISS_002 --> ISS_001
   ISS_003 --> ISS_001
   ISS_004 --> ISS_001
@@ -98,6 +99,7 @@ graph TD
   ISS_014 --> ISS_015
   ISS_017 --> ISS_018
   ISS_018 --> ISS_019
+  ISS_053 --> ISS_026
   ISS_029 --> ISS_028
   ISS_030 --> ISS_028
   ISS_031 --> ISS_028
@@ -145,6 +147,8 @@ graph TD
   ISS_047 --> ISS_048
   ISS_049 --> ISS_048
   ISS_037 --> ISS_049
+  ISS_052 --> ISS_053
+  ISS_053 --> ISS_054
 ```
 
 ## Warnings

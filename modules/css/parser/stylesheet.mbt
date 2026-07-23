@@ -25,7 +25,9 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
     match tokens[pos] {
       EOF => break
       AtKeyword(name) =>
-        if name.to_lower() == "media" {
+        if name.to_lower() == "import" {
+          pos = parse_import_rule(stylesheet, tokens, pos)
+        } else if name.to_lower() == "media" {
           // Parse @media rule
           pos = parse_media_rule(stylesheet, tokens, pos)
         } else if name.to_lower() == "supports" {
@@ -35,7 +37,7 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
           // Parse @keyframes rule
           pos = parse_keyframes_rule(stylesheet, tokens, pos)
         } else {
-          // Skip other @-rules (e.g., @import, @font-face)
+          // Skip other @-rules (e.g., @font-face)
           pos = skip_at_rule(tokens, pos)
         }
       _ =>
@@ -65,6 +67,58 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
     }
   }
   stylesheet
+}
+
+///|
+fn parse_import_rule(
+  stylesheet : @cascade.Stylesheet,
+  tokens : Array[@token.Token],
+  start : Int,
+) -> Int {
+  let mut pos = skip_ws(tokens, start + 1)
+  let mut href : String? = None
+  match tokens[pos] {
+    String(value) => {
+      href = Some(value)
+      pos = pos + 1
+    }
+    Function(name) if name.to_lower() == "url" => {
+      pos = skip_ws(tokens, pos + 1)
+      match tokens[pos] {
+        String(value) | Ident(value) => {
+          href = Some(value)
+          pos = pos + 1
+        }
+        _ => ()
+      }
+      pos = skip_ws(tokens, pos)
+      if pos < tokens.length() && tokens[pos] is RightParen {
+        pos = pos + 1
+      }
+    }
+    _ => ()
+  }
+  let media_start = pos
+  while pos < tokens.length() {
+    match tokens[pos] {
+      Semicolon => break
+      EOF | LeftBrace => return skip_at_rule(tokens, start)
+      _ => pos = pos + 1
+    }
+  }
+  match href {
+    Some(href) =>
+      stylesheet.add_import({
+        href,
+        media: tokens_to_string(tokens, media_start, pos).trim().to_owned(),
+      })
+    None => ()
+  }
+  if pos < tokens.length() && tokens[pos] is Semicolon {
+    pos + 1
+  } else {
+    pos
+  }
 }
 
 ///|

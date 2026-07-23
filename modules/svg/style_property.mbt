@@ -251,7 +251,7 @@ fn valid_svg_transform(value : String) -> Bool {
 ///|
 fn svg_property_value_is_valid(property : String, value : String) -> Bool {
   let trimmed = trim_string(value)
-  if string_starts_with(trimmed.to_lower(), "var(") {
+  if trimmed.to_lower().contains("var(") {
     return true
   }
   match property {

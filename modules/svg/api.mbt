@@ -10,17 +10,26 @@ pub fn render_svg(
   height : Int,
   options : RenderOptions,
 ) -> RenderResult {
+  let diagnostics : Array[RenderDiagnostic] = []
   match
-    parse_svg_document_in_viewport(
+    parse_svg_document_with_options(
       svg_str,
       width.to_double(),
       height.to_double(),
+      options,
+      diagnostics,
     ) {
-    Some(document) => render_svg_document(document, width, height, options)
+    Some(document) =>
+      render_svg_document_with_diagnostics(
+        document, width, height, options, diagnostics,
+      )
     None => {
-      let diagnostics = [
-        { kind: ParseFailed, stage: Document, resource: "", node_id: "" },
-      ]
+      diagnostics.push({
+        kind: ParseFailed,
+        stage: Document,
+        resource: "",
+        node_id: "",
+      })
       { image: Image::new(width, height), diagnostics }
     }
   }
@@ -34,8 +43,18 @@ pub fn render_svg_document(
   height : Int,
   options : RenderOptions,
 ) -> RenderResult {
+  render_svg_document_with_diagnostics(document, width, height, options, [])
+}
+
+///|
+fn render_svg_document_with_diagnostics(
+  document : SVGDocument,
+  width : Int,
+  height : Int,
+  options : RenderOptions,
+  diagnostics : Array[RenderDiagnostic],
+) -> RenderResult {
   let image = Image::new(width, height)
-  let diagnostics : Array[RenderDiagnostic] = []
   let setter = make_image_compositing_setter(image)
   let ctx = {
     ..RenderState::new(setter, width, height),

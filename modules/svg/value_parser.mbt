@@ -150,6 +150,9 @@ priv struct LengthContext {
   viewport_width : Double
   viewport_height : Double
   font_size : Double
+  root_font_size : Double
+  css_viewport_width : Double
+  css_viewport_height : Double
 }
 
 ///|
@@ -157,8 +160,18 @@ fn LengthContext::new(
   viewport_width : Double,
   viewport_height : Double,
   font_size? : Double = 16.0,
+  root_font_size? : Double = 16.0,
+  css_viewport_width? : Double = viewport_width,
+  css_viewport_height? : Double = viewport_height,
 ) -> LengthContext {
-  { viewport_width, viewport_height, font_size }
+  {
+    viewport_width,
+    viewport_height,
+    font_size,
+    root_font_size,
+    css_viewport_width,
+    css_viewport_height,
+  }
 }
 
 ///|
@@ -179,22 +192,27 @@ fn parse_length_with_context(
   axis : LengthAxis,
   context : LengthContext,
 ) -> Double {
-  let value = trim_string(value)
-  let lower = value.to_lower()
-  if string_ends_with(lower, "%") {
-    return parse_number_strict(build_substring(value, 0, value.length() - 1)).unwrap_or(
-        0.0,
-      ) *
-      context.reference(axis) /
-      100.0
+  parse_length_with_context_optional(value, axis, context).unwrap_or(0.0)
+}
+
+///|
+fn parse_length_with_context_optional(
+  value : String,
+  axis : LengthAxis,
+  context : LengthContext,
+) -> Double? {
+  let compute_context : @css_computed.ComputeContext = {
+    ..@css_computed.ComputeContext::with_viewport(
+      context.css_viewport_width,
+      context.css_viewport_height,
+    ),
+    root_font_size: context.root_font_size,
+    font_size: context.font_size,
   }
-  if string_ends_with(lower, "em") {
-    return parse_number_strict(build_substring(value, 0, value.length() - 2)).unwrap_or(
-        0.0,
-      ) *
-      context.font_size
+  match @css_computed.resolve_length_dimension(value, compute_context) {
+    Some(dimension) => dimension.resolve(context.reference(axis))
+    None => None
   }
-  parse_length(value)
 }
 
 ///|
@@ -254,27 +272,13 @@ fn parse_number_strict(value : String) -> Double? {
 ///|
 fn svg_length_number_text(value : String) -> String? {
   let value = trim_string(value)
-  let lower = value.to_lower()
-  let suffix_length = if string_ends_with(lower, "px") ||
-    string_ends_with(lower, "cm") ||
-    string_ends_with(lower, "mm") ||
-    string_ends_with(lower, "in") ||
-    string_ends_with(lower, "pt") ||
-    string_ends_with(lower, "pc") ||
-    string_ends_with(lower, "em") {
-    2
-  } else if string_ends_with(lower, "q") || string_ends_with(lower, "%") {
-    1
-  } else {
-    0
-  }
-  let number = if suffix_length == 0 {
-    value
-  } else {
-    build_substring(value, 0, value.length() - suffix_length)
-  }
-  if parse_number_strict(number) is Some(_) {
-    Some(number)
+  if parse_length_with_context_optional(
+      value,
+      Diagonal,
+      LengthContext::new(100.0, 100.0),
+    )
+    is Some(_) {
+    Some(value)
   } else {
     None
   }
@@ -282,41 +286,7 @@ fn svg_length_number_text(value : String) -> String? {
 
 ///|
 fn parse_length(s : String) -> Double {
-  let s = trim_string(s)
-  if string_starts_with(s, "var(") && string_ends_with(s, ")") {
-    let inner = build_substring(s, 4, s.length() - 1)
-    let comma = find_first(inner, ',')
-    if comma >= 0 {
-      let fallback = trim_string(
-        build_substring(inner, comma + 1, inner.length()),
-      )
-      if fallback.length() > 0 {
-        return parse_length(fallback)
-      }
-    }
-    return 0.0
-  }
-  let lower = s.to_lower()
-  let (cleaned, scale) = if string_ends_with(lower, "px") {
-    (build_substring(s, 0, s.length() - 2), 1.0)
-  } else if string_ends_with(lower, "cm") {
-    (build_substring(s, 0, s.length() - 2), 96.0 / 2.54)
-  } else if string_ends_with(lower, "mm") {
-    (build_substring(s, 0, s.length() - 2), 96.0 / 25.4)
-  } else if string_ends_with(lower, "in") {
-    (build_substring(s, 0, s.length() - 2), 96.0)
-  } else if string_ends_with(lower, "pt") {
-    (build_substring(s, 0, s.length() - 2), 96.0 / 72.0)
-  } else if string_ends_with(lower, "pc") {
-    (build_substring(s, 0, s.length() - 2), 16.0)
-  } else if string_ends_with(lower, "q") {
-    (build_substring(s, 0, s.length() - 1), 96.0 / 101.6)
-  } else if string_ends_with(lower, "%") {
-    (build_substring(s, 0, s.length() - 1), 1.0)
-  } else {
-    (s, 1.0)
-  }
-  parse_number_strict(cleaned).unwrap_or(0.0) * scale
+  parse_length_with_context(s, Horizontal, LengthContext::new(100.0, 100.0))
 }
 
 ///|

@@ -126,6 +126,8 @@ pub fn resolve_custom_property_value(String, Map[String, String]) -> String?
 
 pub fn resolve_grid_line_placement(@values.GridPlacement, @values.GridPlacement, Array[Array[String]]) -> (Int?, Int?)
 
+pub fn resolve_length_dimension(String, ComputeContext) -> @values.Dimension?
+
 // Errors
 
 // Types and methods

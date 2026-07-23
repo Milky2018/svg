@@ -22,8 +22,10 @@ the corresponding [changelog entry](CHANGELOG.md#milky2018svg-040---unreleased).
 
 The renderer targets coherent SVG and CSS semantics with deterministic software
 output. It does not promise pixel-for-pixel Chromium parity. Network and file
-access, external SVG documents, and PNG/JPEG decoding are host responsibilities;
-raster images can be supplied through `RenderOptions::with_image_resolver`.
+access and PNG/JPEG decoding are host responsibilities. Raster images can be
+supplied through `RenderOptions::with_image_resolver`; external CSS and SVG
+text can be supplied through `text_resource_resolver` with an explicit
+`RenderEnvironment`.
 
 ## Development
 

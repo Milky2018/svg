@@ -244,3 +244,43 @@ test "stroke dash percentages use the normalized viewBox diagonal" {
     None => fail("expected target")
   }
 }
+
+///|
+test "CSS calc resolves percentages and relative units in SVG geometry" {
+  let svg = "<svg style=\"font-size:20px; --offset:1rem\" viewBox=\"0 0 200 100\">" +
+    "<svg viewBox=\"0 0 10 10\" width=\"100\" height=\"100\">" +
+    "<rect id=\"target\" style=\"x:calc(50% + var(--offset)); y:10vh; width:10vw; height:2ex\"/>" +
+    "</svg></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) =>
+      match node.shape {
+        Rect(x~, y~, width~, height~, ..) => {
+          // Percentages follow the nested 10x10 viewBox.
+          assert_eq(x, 25.0)
+          // Viewport units remain tied to the outer render viewport.
+          assert_eq(y, 15.0)
+          assert_eq(width, 30.0)
+          // ex uses the deterministic 0.5em fallback.
+          assert_eq(height, 20.0)
+        }
+        _ => fail("expected a rect")
+      }
+    None => fail("expected target")
+  }
+}
+
+///|
+test "root font size establishes rem for descendant geometry" {
+  let svg = "<svg style=\"font-size:24px\"><rect id=\"target\" style=\"x:2rem; width:1rem\"/></svg>"
+  match css_test_node(svg, "target") {
+    Some(node) =>
+      match node.shape {
+        Rect(x~, width~, ..) => {
+          assert_eq(x, 48.0)
+          assert_eq(width, 24.0)
+        }
+        _ => fail("expected a rect")
+      }
+    None => fail("expected target")
+  }
+}

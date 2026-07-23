@@ -1287,12 +1287,12 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
         }
         "ch" => Some(Length(n * ctx.font_size * ch_unit_ratio(ctx)))
         "ex" => Some(Length(n * ctx.font_size * 0.5))
-        "pt" => Some(Length(n * 96.0 / 72.0))
+        "pt" => Some(Length(n * (96.0 / 72.0)))
         "pc" => Some(Length(n * 16.0))
         "in" => Some(Length(n * 96.0))
-        "cm" => Some(Length(n * 96.0 / 2.54))
-        "mm" => Some(Length(n * 96.0 / 25.4))
-        "q" => Some(Length(n * 96.0 / 101.6))
+        "cm" => Some(Length(n * (96.0 / 2.54)))
+        "mm" => Some(Length(n * (96.0 / 25.4)))
+        "q" => Some(Length(n * (96.0 / 101.6)))
         _ => None
       }
       match resolved {
@@ -1305,6 +1305,21 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
 
   // Fall back for unitless, fit-content(...) and unknown units.
   parse_dimension(v.to_string())
+}
+
+///|
+/// Resolve an authored CSS length-percentage against the unit environment while
+/// preserving any percentage component for the caller's property-specific
+/// basis. Intrinsic sizing keywords and invalid values are rejected.
+pub fn resolve_length_dimension(
+  value : String,
+  ctx : ComputeContext,
+) -> @types.Dimension? {
+  match resolve_dimension(value, ctx) {
+    Length(_) | Percent(_) | Calc(_, _) | MathFn(_, _) as dimension =>
+      Some(dimension)
+    Auto | MinContent | MaxContent | FitContent(_) => None
+  }
 }
 
 ///|

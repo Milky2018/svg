@@ -4,38 +4,6 @@ fn css_is_whitespace(c : Char) -> Bool {
 }
 
 ///|
-fn parse_embedded_stylesheets(
-  events : Array[@xml.Event],
-) -> Array[@css_cascade.Stylesheet] {
-  let stylesheets : Array[@css_cascade.Stylesheet] = []
-  let content = StringBuilder::new()
-  let mut in_style = false
-  for event in events {
-    match event {
-      Start(element) =>
-        if element.name == "style" {
-          content.reset()
-          in_style = true
-        }
-      Empty(element) =>
-        if element.name == "style" {
-          stylesheets.push(@css.parse_stylesheet(""))
-        }
-      Text(text) | CData(text) => if in_style { content.write_string(text) }
-      End(name) =>
-        if in_style && name == "style" {
-          stylesheets.push(
-            @css.parse_stylesheet(trim_string(content.to_string())),
-          )
-          in_style = false
-        }
-      _ => ()
-    }
-  }
-  stylesheets
-}
-
-///|
 fn split_class_names(value : String) -> Array[String] {
   let result : Array[String] = []
   let mut start = -1
@@ -145,6 +113,7 @@ fn cascade_element_styles(
   element : @css_selector.Element,
   attrs : Array[(String, String)],
   media_environment : @css_media.MediaEnvironment,
+  forced_states? : @css_selector.ForcedPseudoStates = @css_selector.ForcedPseudoStates::none(),
 ) -> @css_cascade.CascadedValues {
   let author_stylesheets : Array[@css_cascade.Stylesheet] = []
   match presentation_stylesheet(attrs) {
@@ -154,13 +123,27 @@ fn cascade_element_styles(
   for stylesheet in stylesheets {
     author_stylesheets.push(stylesheet)
   }
-  @css.cascade_element_with_media_and_validator(
+  @css.cascade_element_with_media_forced_and_validator(
     element,
     author_stylesheets,
     inline_declarations(attrs),
     Some(media_environment),
+    forced_states,
     svg_declaration_is_valid,
   )
+}
+
+///|
+fn ElementState::to_forced_pseudo_states(
+  self : ElementState,
+) -> @css_selector.ForcedPseudoStates {
+  {
+    hover: self.hover,
+    focus: self.focus,
+    active: self.active,
+    focus_visible: self.focus_visible,
+    focus_within: self.focus_within,
+  }
 }
 
 ///|

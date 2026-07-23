@@ -157,8 +157,18 @@ pub(all) struct KeyframesRule {
 }
 
 ///|
+/// A parsed `@import` rule. Fetching and recursively parsing the referenced
+/// stylesheet remains the embedding application's responsibility.
+pub(all) struct ImportRule {
+  href : String
+  media : String
+}
+
+///|
 /// A stylesheet: collection of rules
 pub struct Stylesheet {
+  /// `@import` rules in source order.
+  imports : Array[ImportRule]
   /// Rules in source order
   rules : Array[CSSRule]
   /// `@keyframes` rules in source order.
@@ -172,7 +182,15 @@ pub struct Stylesheet {
 
 ///|
 pub fn Stylesheet::new(origin : Origin) -> Stylesheet {
-  { rules: [], keyframes: [], origin, cached_index: None }
+  { imports: [], rules: [], keyframes: [], origin, cached_index: None }
+}
+
+///|
+pub fn Stylesheet::add_import(
+  self : Stylesheet,
+  import_rule : ImportRule,
+) -> Unit {
+  self.imports.push(import_rule)
 }
 
 ///|

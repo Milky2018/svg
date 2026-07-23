@@ -101,11 +101,66 @@ Resolved images participate in `preserveAspectRatio`, affine transforms,
 clipping, opacity, and compositing. External SVG resource documents are not
 resolved by this callback.
 
+## Static Render Environment and Text Resources
+
+`RenderEnvironment` makes every non-document input to a snapshot explicit:
+the document base URI, device pixel ratio, preferred color scheme, animation
+sample time, and per-element interaction state. `text_resource_resolver`
+supplies CSS or SVG text after URI resolution. The library never reads files
+or performs network requests.
+
+```mbt check
+///|
+test "README: render with host text resources and static state" {
+  let options = RenderOptions::{
+    ..RenderOptions::default(),
+    environment: {
+      ..RenderEnvironment::default(),
+      base_uri: "mem:/document.svg",
+      color_scheme: Dark,
+      sample_time_seconds: 0.5,
+      element_state_resolver: Some(fn(id) {
+        if id == "target" {
+          { ..ElementState::none(), hover: true }
+        } else {
+          ElementState::none()
+        }
+      }),
+    },
+    text_resource_resolver: Some(fn(uri, kind) {
+      match (uri, kind) {
+        ("mem:/theme.css", Stylesheet) => Some("#target:hover { fill: red; }")
+        _ => None
+      }
+    }),
+  }
+  let source = "<?xml-stylesheet href=\"theme.css\"?><svg width=\"2\" height=\"2\"><rect id=\"target\" width=\"2\" height=\"2\"/></svg>"
+  let result = render_svg(source, 2, 2, options)
+  assert_eq(result.diagnostics.length(), 0)
+}
+```
+
+External CSS supports `xml-stylesheet` processing instructions and recursive
+`@import`. External SVG fragments used by `<use>`, paint servers, clip paths,
+masks, filters, patterns, and markers share the same bounded, cached resolver.
+Relative references use the containing document or stylesheet URI. Missing,
+cyclic, oversized, over-deep, or over-count resources fail closed and produce
+typed diagnostics. Defaults allow 16 nested resources, 64 distinct resources,
+and 16 MiB of resolved text; callers may lower these limits in `RenderOptions`.
+
+The explicit sample time evaluates CSS keyframes without a clock. The initial
+interpolation set covers geometry lengths, affine transforms, colors, opacity,
+and paint opacity; other properties are discrete. Paused animations have a
+deterministic hold time of zero because a static document has no prior running
+timeline. SMIL, scripting, DOM mutation, event dispatch, and live restyling are
+outside this API.
+
 ## Main API
 
 - Parsing: `parse_svg_document`, `parse_path`, `parse_transform`
 - Rendering: `render_svg`, `render_svg_document`, `render_svg_to_image`
-- Results: `RenderResult`, `RenderDiagnostic`, `RenderOptions`
+- Results: `RenderResult`, `RenderDiagnostic`, `RenderOptions`,
+  `RenderEnvironment`
 - Data: `SVGDocument`, `SVGNode`, `Shape`, `Image`, `Color`
 - Direct paths: `render_path_commands_to_image`
 
@@ -122,18 +177,22 @@ and CSS Color 3 named, RGB/RGBA, HSL/HSLA, and hex colors.
 
 The same computed path covers SVG paint and stroke properties, markers, paint
 order, fill and clip rules, geometry properties, transforms, gradient stops,
-and basic text `font-size`.
+and basic text `font-size`. Length expressions retain their unit and percentage
+semantics until an SVG axis, nested viewport, font context, and outer CSS
+viewport are available.
 
-This is a static-document model, not a browser DOM. External stylesheets,
-scripting, dynamic restyling, interaction-dependent pseudo-classes, cascade
-layers, and browser-driven animations are intentionally excluded.
+This is a static-document model, not a browser DOM. Host-provided external
+stylesheets, forced interaction pseudo-classes, media inputs, and sampled CSS
+keyframes are supported as immutable snapshot inputs. Scripting, dynamic
+restyling, cascade layers, SMIL, event dispatch, and a browser animation clock
+are intentionally excluded.
 
 ## Rendering Contract
 
 The implementation aims for internally consistent SVG semantics and stable
 software output. It does not guarantee pixel-for-pixel parity with Chromium,
-Skia, or platform text engines. Nested SVG text layout and external SVG resource
-documents remain outside the supported core.
+Skia, or platform text engines. Nested SVG text layout remains outside the
+supported core.
 
 ## License and Attribution
 

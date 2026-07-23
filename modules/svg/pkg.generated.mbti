@@ -111,6 +111,15 @@ pub(all) enum ComponentTransferFunction {
   TransferGamma(amplitude~ : Double, exponent~ : Double, offset~ : Double)
 } derive(@debug.Debug)
 
+pub(all) struct ElementState {
+  hover : Bool
+  focus : Bool
+  active : Bool
+  focus_visible : Bool
+  focus_within : Bool
+} derive(Eq, @debug.Debug)
+pub fn ElementState::none() -> Self
+
 pub(all) enum FillRule {
   NonZero
   EvenOdd
@@ -390,6 +399,11 @@ pub(all) enum PatternUnits {
   ObjectBoundingBox
 }
 
+pub(all) enum PreferredColorScheme {
+  Light
+  Dark
+} derive(Eq, @debug.Debug)
+
 pub(all) struct PreserveAspectRatio {
   align : Align
   meet_or_slice : MeetOrSlice
@@ -423,11 +437,26 @@ pub(all) enum RenderDiagnosticKind {
   ResourceLimitExceeded
 } derive(Eq, @debug.Debug)
 
+pub(all) struct RenderEnvironment {
+  base_uri : String
+  device_pixel_ratio : Double
+  color_scheme : PreferredColorScheme
+  sample_time_seconds : Double
+  element_state_resolver : ((String) -> ElementState)?
+}
+pub fn RenderEnvironment::default() -> Self
+
 pub(all) struct RenderOptions {
   image_resolver : ((String) -> Image?)?
+  text_resource_resolver : ((String, TextResourceKind) -> String?)?
+  environment : RenderEnvironment
+  max_external_depth : Int
+  max_external_resources : Int
+  max_external_bytes : Int
 }
 pub fn RenderOptions::default() -> Self
 pub fn RenderOptions::with_image_resolver((String) -> Image?) -> Self
+pub fn RenderOptions::with_text_resource_resolver((String, TextResourceKind) -> String?) -> Self
 
 pub(all) struct RenderResult {
   image : Image
@@ -436,6 +465,7 @@ pub(all) struct RenderResult {
 
 pub(all) enum RenderStage {
   Document
+  Stylesheet
   Paint
   Image
   Effects
@@ -535,6 +565,11 @@ pub(all) struct Symbol {
 }
 pub fn Symbol::new(String, SVGNode) -> Self
 pub fn Symbol::with_viewbox(String, SVGNode, ViewBox) -> Self
+
+pub(all) enum TextResourceKind {
+  Stylesheet
+  SvgDocument
+} derive(Eq, @debug.Debug)
 
 pub(all) struct Transform {
   a : Double

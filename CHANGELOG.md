@@ -3,6 +3,25 @@
 This workspace releases `Milky2018/css` and `Milky2018/svg` with matching
 versions.
 
+## Unreleased
+
+### Milky2018/svg
+
+- Resolve SVG and CSS lengths with explicit viewport, percentage, font, root
+  font, and viewport-unit context, including mixed `calc()` expressions.
+- Add a deterministic static render environment for media queries, forced
+  interaction pseudo-classes, and explicit-time CSS keyframe sampling.
+- Add a bounded host text resolver for external stylesheets, recursive
+  `@import`, and document-scoped external SVG resources used by `<use>`, paint,
+  clip, mask, filter, pattern, and marker references.
+
+### Milky2018/css
+
+- Preserve parsed `@import` rules for embedding applications.
+- Expose validated cascade matching with both media and forced pseudo-class
+  state.
+- Expose shared context-aware length-dimension resolution.
+
 ## Milky2018/svg 0.4.1 - 2026-07-22
 
 ### Fixed

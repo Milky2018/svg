@@ -66,13 +66,26 @@ test "parse @media rule and following rule" {
 }
 
 ///|
-test "skip @import rule" {
+test "parse @import rule" {
   let css =
     #|@import url("styles.css");
     #|body { margin: 0; }
   let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.imports.length(), content="1")
+  inspect(stylesheet.imports[0].href, content="styles.css")
+  inspect(stylesheet.imports[0].media, content="")
   inspect(stylesheet.rules.length(), content="1")
   inspect(stylesheet.rules[0].selector_text, content="body")
+}
+
+///|
+test "parse string @import with media query" {
+  let stylesheet = @parser.parse_stylesheet(
+    "@import \"print.css\" print and (min-width: 10px);",
+  )
+  inspect(stylesheet.imports.length(), content="1")
+  inspect(stylesheet.imports[0].href, content="print.css")
+  inspect(stylesheet.imports[0].media, content="print and (min-width: 10px)")
 }
 
 ///|
@@ -352,7 +365,9 @@ test "parse multiple @rules before content" {
     #|@media print { .no-print { display: none; } }
     #|.main { display: block; }
   let stylesheet = @parser.parse_stylesheet(css)
-  // @charset and @import are skipped, @media is parsed, then .main
+  // @charset is skipped, @import is retained, @media is parsed, then .main.
+  inspect(stylesheet.imports.length(), content="1")
+  inspect(stylesheet.imports[0].href, content="base.css")
   inspect(stylesheet.rules.length(), content="2")
   inspect(stylesheet.rules[0].selector_text, content=".no-print")
   match stylesheet.rules[0].media_query {

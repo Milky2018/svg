@@ -158,6 +158,20 @@ pub fn cascade_element_with_media_and_validator(
 }
 
 ///|
+pub fn cascade_element_with_media_forced_and_validator(
+  element : @selector.Element,
+  stylesheets : Array[@cascade.Stylesheet],
+  inline_style : Array[@cascade.Declaration],
+  media_env : @media.MediaEnvironment?,
+  forced : @selector.ForcedPseudoStates,
+  declaration_is_valid : (String, @cascade.PropertyValue) -> Bool,
+) -> @cascade.CascadedValues {
+  @cascade.cascade_element_with_media_forced_and_validator(
+    element, stylesheets, inline_style, media_env, forced, declaration_is_valid,
+  )
+}
+
+///|
 pub fn cascade_element_indexed(
   element : @selector.Element,
   stylesheets : Array[@cascade.IndexedStylesheet],

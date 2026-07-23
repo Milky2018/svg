@@ -29,13 +29,22 @@ priv struct SVGParseContext {
   style_stack : Array[InheritedStyle]
   viewport_stack : Array[(Double, Double)]
   length_viewport_stack : Array[(Double, Double)]
+  css_viewport : (Double, Double)
+  media_environment : @css_media.MediaEnvironment
+  element_state_resolver : ((String) -> ElementState)?
+  sample_time_seconds : Double
 }
 
 ///|
 fn SVGParseContext::new(
   stylesheets : Array[@css_cascade.Stylesheet],
   initial_length_viewport? : (Double, Double) = (300.0, 150.0),
+  environment? : RenderEnvironment = RenderEnvironment::default(),
 ) -> SVGParseContext {
+  let color_scheme = match environment.color_scheme {
+    Light => @css_media.Light
+    Dark => @css_media.Dark
+  }
   {
     symbols: SymbolRegistry::new(),
     defs: DefsRegistry::new(),
@@ -54,6 +63,15 @@ fn SVGParseContext::new(
     style_stack: [],
     viewport_stack: [],
     length_viewport_stack: [initial_length_viewport],
+    css_viewport: initial_length_viewport,
+    media_environment: {
+      viewport_width: initial_length_viewport.0,
+      viewport_height: initial_length_viewport.1,
+      device_pixel_ratio: environment.device_pixel_ratio,
+      color_scheme,
+    },
+    element_state_resolver: environment.element_state_resolver,
+    sample_time_seconds: environment.sample_time_seconds,
   }
 }
 
@@ -75,6 +93,7 @@ priv struct InheritedStyle {
   stop_opacity : Double
   css_style : @css_style.Style
   custom_properties : Map[String, String]
+  root_font_size : Double
 }
 
 ///|
@@ -96,6 +115,7 @@ fn InheritedStyle::default() -> InheritedStyle {
     stop_opacity: 1.0,
     css_style: @css_style.Style::default(),
     custom_properties: Map([]),
+    root_font_size: 16.0,
   }
 }
 
@@ -171,19 +191,17 @@ fn SVGParseContext::cascaded_style(
   attrs : Array[(String, String)],
 ) -> @css_cascade.CascadedValues {
   let element = self.record_selector_element(tag, attrs)
-  let viewport = match self.current_viewport() {
-    Some(viewport) => viewport
-    None =>
-      (
-        get_attr(attrs, "width").map(parse_length).unwrap_or(300.0),
-        get_attr(attrs, "height").map(parse_length).unwrap_or(150.0),
-      )
+  let state = match self.element_state_resolver {
+    Some(resolve) =>
+      resolve(get_attr(attrs, "id").unwrap_or("")).to_forced_pseudo_states()
+    None => @css_selector.ForcedPseudoStates::none()
   }
   cascade_element_styles(
     self.stylesheets,
     element,
     attrs,
-    @css_media.MediaEnvironment::new(viewport.0, viewport.1),
+    self.media_environment,
+    forced_states=state,
   )
 }
 
@@ -204,6 +222,10 @@ fn resolve_element_computed_style(
     parent,
     apply_noncomputed,
     length_viewport,
+    ctx.css_viewport,
+    is_root=ctx.element_stack.length() == 0,
+    stylesheets=ctx.stylesheets,
+    sample_time_seconds=ctx.sample_time_seconds,
   )
 }
 
@@ -224,6 +246,7 @@ fn inherited_style_from_node(
   custom_properties : Map[String, String],
   stop_color : Color,
   stop_opacity : Double,
+  root_font_size : Double,
 ) -> InheritedStyle {
   {
     fill: node.fill,
@@ -242,6 +265,7 @@ fn inherited_style_from_node(
     stop_opacity,
     css_style,
     custom_properties,
+    root_font_size,
   }
 }
 
@@ -498,15 +522,79 @@ fn parse_svg_document_in_viewport(
   viewport_width : Double,
   viewport_height : Double,
 ) -> SVGDocument? {
-  let events = match read_xml_events(svg_str) {
+  parse_svg_document_in_environment(
+    svg_str,
+    viewport_width,
+    viewport_height,
+    RenderEnvironment::default(),
+  )
+}
+
+///|
+fn parse_svg_document_in_environment(
+  svg_str : String,
+  viewport_width : Double,
+  viewport_height : Double,
+  environment : RenderEnvironment,
+) -> SVGDocument? {
+  parse_svg_document_with_options(
+    svg_str,
+    viewport_width,
+    viewport_height,
+    { ..RenderOptions::default(), environment, },
+    [],
+  )
+}
+
+///|
+fn parse_svg_document_with_options(
+  svg_str : String,
+  viewport_width : Double,
+  viewport_height : Double,
+  options : RenderOptions,
+  diagnostics : Array[RenderDiagnostic],
+) -> SVGDocument? {
+  let state = TextResourceLoadState::new(
+    options, diagnostics, viewport_width, viewport_height,
+  )
+  parse_svg_document_with_state(
+    svg_str,
+    viewport_width,
+    viewport_height,
+    options,
+    state,
+    options.environment.base_uri,
+  )
+}
+
+///|
+fn parse_svg_document_with_state(
+  svg_str : String,
+  viewport_width : Double,
+  viewport_height : Double,
+  options : RenderOptions,
+  resource_state : TextResourceLoadState,
+  base_uri : String,
+) -> SVGDocument? {
+  let raw_events = match read_xml_events(svg_str) {
     Some(events) => events
     None => return None
   }
+  let events = canonicalize_svg_reference_events(raw_events, base_uri)
   let parser = SVGParser::new(events)
+  let stylesheets = load_document_stylesheets(events, resource_state, base_uri)
   let ctx = SVGParseContext::new(
-    parse_embedded_stylesheets(events),
+    stylesheets,
     initial_length_viewport=(viewport_width, viewport_height),
+    environment=options.environment,
   )
+  for uri in collect_external_document_uris(events, stylesheets) {
+    match
+      resource_state.load_svg_document(uri, viewport_width, viewport_height) {
+      Some(document) => merge_external_document(ctx, document, uri)
+      None => ()
+    }
+  }
   match parse_element(parser, ctx, "") {
     Some(root) =>
       Some({
@@ -741,6 +829,9 @@ fn parse_element(
             viewport.0,
             viewport.1,
             font_size=computed_style.css_style.font_size,
+            root_font_size=computed_style.root_font_size,
+            css_viewport_width=ctx.css_viewport.0,
+            css_viewport_height=ctx.css_viewport.1,
           )
           let x = get_attr(attrs, "x")
             .map(fn(value) {
@@ -787,6 +878,9 @@ fn parse_element(
         parent_length_viewport.0,
         parent_length_viewport.1,
         font_size=computed_style.css_style.font_size,
+        root_font_size=computed_style.root_font_size,
+        css_viewport_width=ctx.css_viewport.0,
+        css_viewport_height=ctx.css_viewport.1,
       )
       let element_declarations = cascaded_style_declarations(
         ctx.cascaded_style(tag_name, attrs),

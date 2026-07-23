@@ -23,6 +23,7 @@ test "detailed rendering reports unresolved raster images" {
 ///|
 test "detailed rendering accepts a resolved raster image" {
   let options = RenderOptions::{
+    ..RenderOptions::default(),
     image_resolver: Some(fn(href) {
       if href == "asset.png" {
         let image = Image::new(1, 1)

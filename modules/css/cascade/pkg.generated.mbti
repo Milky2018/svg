@@ -19,6 +19,8 @@ pub fn cascade_element_with_media(@selector.Element, Array[Stylesheet], Array[De
 
 pub fn cascade_element_with_media_and_validator(@selector.Element, Array[Stylesheet], Array[Declaration], @media.MediaEnvironment?, (String, PropertyValue) -> Bool) -> CascadedValues
 
+pub fn cascade_element_with_media_forced_and_validator(@selector.Element, Array[Stylesheet], Array[Declaration], @media.MediaEnvironment?, @selector.ForcedPseudoStates, (String, PropertyValue) -> Bool) -> CascadedValues
+
 // Errors
 
 // Types and methods
@@ -52,6 +54,11 @@ pub fn Declaration::from_inline(String, String, Importance) -> Self
 pub fn Declaration::new(String, String) -> Self
 pub fn Declaration::with_metadata(String, PropertyValue, Origin, Importance, @selector.Specificity, Int) -> Self
 pub impl Show for Declaration
+
+pub(all) struct ImportRule {
+  href : String
+  media : String
+}
 
 pub(all) enum Importance {
   Normal
@@ -112,11 +119,13 @@ pub fn SelectorIndex::get_candidates(Self, @selector.Element) -> Array[Int]
 pub fn SelectorIndex::new() -> Self
 
 pub struct Stylesheet {
+  imports : Array[ImportRule]
   rules : Array[CSSRule]
   keyframes : Array[KeyframesRule]
   origin : Origin
   mut cached_index : SelectorIndex?
 }
+pub fn Stylesheet::add_import(Self, ImportRule) -> Unit
 pub fn Stylesheet::add_keyframes(Self, KeyframesRule) -> Unit
 pub fn Stylesheet::add_rule(Self, String, @selector.ComplexSelector, Array[Declaration]) -> Unit
 pub fn Stylesheet::add_rule_with_media(Self, String, @selector.ComplexSelector, Array[Declaration], @media.MediaQueryList) -> Unit

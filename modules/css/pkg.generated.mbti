@@ -22,6 +22,8 @@ pub fn cascade_element_with_media(@selector.Element, Array[@cascade.Stylesheet],
 
 pub fn cascade_element_with_media_and_validator(@selector.Element, Array[@cascade.Stylesheet], Array[@cascade.Declaration], @media.MediaEnvironment?, (String, @cascade.PropertyValue) -> Bool) -> @cascade.CascadedValues
 
+pub fn cascade_element_with_media_forced_and_validator(@selector.Element, Array[@cascade.Stylesheet], Array[@cascade.Declaration], @media.MediaEnvironment?, @selector.ForcedPseudoStates, (String, @cascade.PropertyValue) -> Bool) -> @cascade.CascadedValues
+
 pub fn compute_inline_raw(String, @computed.ComputeContext) -> @style.Style
 
 pub fn compute_inline_style(String, @computed.ComputeContext) -> @style.Style
