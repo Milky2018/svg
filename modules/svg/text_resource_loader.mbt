@@ -20,7 +20,7 @@ fn TextResourceLoadState::new(
 ) -> TextResourceLoadState {
   let color_scheme = match options.environment.color_scheme {
     Light => @css_media.Light
-    Dark => @css_media.Dark
+    Dark => Dark
   }
   {
     options,

@@ -37,7 +37,7 @@ fn animation_easing(
   index : Int,
 ) -> @css_values.Easing {
   if style.animation_timing_function.is_empty() {
-    @css_values.Ease
+    Ease
   } else {
     style.animation_timing_function[animation_list_index(
       style.animation_timing_function.length(),
@@ -52,7 +52,7 @@ fn animation_iteration_count(
   index : Int,
 ) -> @css_values.AnimationIterationCount {
   if style.animation_iteration_count.is_empty() {
-    @css_values.Count(1.0)
+    Count(1.0)
   } else {
     style.animation_iteration_count[animation_list_index(
       style.animation_iteration_count.length(),
@@ -67,7 +67,7 @@ fn animation_direction(
   index : Int,
 ) -> @css_values.AnimationDirection {
   if style.animation_direction.is_empty() {
-    @css_values.Normal
+    Normal
   } else {
     style.animation_direction[animation_list_index(
       style.animation_direction.length(),
@@ -82,7 +82,7 @@ fn animation_fill_mode(
   index : Int,
 ) -> @css_values.AnimationFillMode {
   if style.animation_fill_mode.is_empty() {
-    @css_values.None
+    None
   } else {
     style.animation_fill_mode[animation_list_index(
       style.animation_fill_mode.length(),
@@ -97,7 +97,7 @@ fn animation_play_state(
   index : Int,
 ) -> @css_values.AnimationPlayState {
   if style.animation_play_state.is_empty() {
-    @css_values.Running
+    Running
   } else {
     style.animation_play_state[animation_list_index(
       style.animation_play_state.length(),
@@ -108,12 +108,12 @@ fn animation_play_state(
 
 ///|
 fn animation_has_backwards_fill(mode : @css_values.AnimationFillMode) -> Bool {
-  mode is @css_values.Backwards || mode is @css_values.Both
+  mode is Backwards || mode is Both
 }
 
 ///|
 fn animation_has_forwards_fill(mode : @css_values.AnimationFillMode) -> Bool {
-  mode is @css_values.Forwards || mode is @css_values.Both
+  mode is Forwards || mode is Both
 }
 
 ///|
@@ -123,10 +123,10 @@ fn directed_animation_progress(
   direction : @css_values.AnimationDirection,
 ) -> Double {
   let reverse = match direction {
-    @css_values.Normal => false
-    @css_values.Reverse => true
-    @css_values.Alternate => iteration % 2 == 1
-    @css_values.AlternateReverse => iteration % 2 == 0
+    Normal => false
+    Reverse => true
+    Alternate => iteration % 2 == 1
+    AlternateReverse => iteration % 2 == 0
   }
   if reverse {
     1.0 - progress
@@ -145,8 +145,7 @@ fn sampled_animation_progress(
   let delay = animation_delay(style, index)
   let fill = animation_fill_mode(style, index)
   let direction = animation_direction(style, index)
-  let timeline_time = if animation_play_state(style, index)
-    is @css_values.Paused {
+  let timeline_time = if animation_play_state(style, index) is Paused {
     0.0
   } else {
     sample_time_seconds
@@ -166,7 +165,7 @@ fn sampled_animation_progress(
   }
   let iteration_count = animation_iteration_count(style, index)
   match iteration_count {
-    @css_values.Count(count) => {
+    Count(count) => {
       if count <= 0.0 {
         return None
       }
@@ -185,7 +184,7 @@ fn sampled_animation_progress(
         )
       }
     }
-    @css_values.Infinite => ()
+    Infinite => ()
   }
   let iteration = (local_time / duration).floor().to_int()
   let progress = (local_time - iteration.to_double() * duration) / duration

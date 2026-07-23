@@ -31,13 +31,13 @@ fn adapt_xml_element(element : @xml.XmlElement) -> SVGXmlElement {
 ///|
 fn adapt_xml_event(event : @xml.Event) -> SVGXmlEvent {
   match event.kind {
-    @xml.Start(element) => XmlStart(adapt_xml_element(element))
-    @xml.End(name) => XmlEnd(name)
-    @xml.Empty(element) => XmlEmpty(adapt_xml_element(element))
-    @xml.Text(text) => XmlText(text)
-    @xml.CData(text) => XmlCData(text)
-    @xml.PI(target~, data~) => XmlPI(target~, data~)
-    @xml.Eof => XmlEof
-    @xml.Comment(_) | @xml.Decl(..) | @xml.DocType(_) => XmlOther
+    Start(element) => XmlStart(adapt_xml_element(element))
+    End(name) => XmlEnd(name)
+    Empty(element) => XmlEmpty(adapt_xml_element(element))
+    Text(text) => XmlText(text)
+    CData(text) => XmlCData(text)
+    PI(target~, data~) => XmlPI(target~, data~)
+    Eof => XmlEof
+    Comment(_) | Decl(..) | DocType(_) => XmlOther
   }
 }

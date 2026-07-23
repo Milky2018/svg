@@ -43,7 +43,7 @@ fn SVGParseContext::new(
 ) -> SVGParseContext {
   let color_scheme = match environment.color_scheme {
     Light => @css_media.Light
-    Dark => @css_media.Dark
+    Dark => Dark
   }
   {
     symbols: SymbolRegistry::new(),
