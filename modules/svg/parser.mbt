@@ -5,7 +5,7 @@
 ///|
 /// SVG Parser state
 priv struct SVGParser {
-  events : Array[@xml.Event]
+  events : Array[SVGXmlEvent]
   mut pos : Int
 }
 
@@ -305,32 +305,32 @@ fn SVGParseContext::current_length_viewport(
 }
 
 ///|
-fn SVGParser::new(events : Array[@xml.Event]) -> SVGParser {
+fn SVGParser::new(events : Array[SVGXmlEvent]) -> SVGParser {
   { events, pos: 0 }
 }
 
 ///|
 fn SVGParser::is_end(self : SVGParser) -> Bool {
-  self.pos >= self.events.length() || self.events[self.pos] is Eof
+  self.pos >= self.events.length() || self.events[self.pos] is XmlEof
 }
 
 ///|
-fn SVGParser::peek_event(self : SVGParser) -> @xml.Event {
+fn SVGParser::peek_event(self : SVGParser) -> SVGXmlEvent {
   if self.pos < self.events.length() {
     self.events[self.pos]
   } else {
-    Eof
+    XmlEof
   }
 }
 
 ///|
-fn SVGParser::advance_event(self : SVGParser) -> @xml.Event {
+fn SVGParser::advance_event(self : SVGParser) -> SVGXmlEvent {
   if self.pos < self.events.length() {
     let event = self.events[self.pos]
     self.pos += 1
     event
   } else {
-    Eof
+    XmlEof
   }
 }
 
@@ -451,37 +451,33 @@ fn XmlNamespaceScope::normalize_attributes(
 }
 
 ///|
-fn normalize_xml_namespaces(events : Array[@xml.Event]) -> Array[@xml.Event] {
-  let normalized : Array[@xml.Event] = []
+fn normalize_xml_namespaces(events : Array[SVGXmlEvent]) -> Array[SVGXmlEvent] {
+  let normalized : Array[SVGXmlEvent] = []
   let scopes : Array[XmlNamespaceScope] = [XmlNamespaceScope::root()]
   for event in events {
     let current = scopes[scopes.length() - 1]
     match event {
-      Start(element) => {
+      XmlStart(element) => {
         let scope = current.with_declarations(element.attributes)
         normalized.push(
-          Start(
-            @xml.XmlElement::with_attrs(
-              scope.normalize_element_name(element.name),
-              scope.normalize_attributes(element.attributes),
-            ),
-          ),
+          XmlStart({
+            name: scope.normalize_element_name(element.name),
+            attributes: scope.normalize_attributes(element.attributes),
+          }),
         )
         scopes.push(scope)
       }
-      Empty(element) => {
+      XmlEmpty(element) => {
         let scope = current.with_declarations(element.attributes)
         normalized.push(
-          Empty(
-            @xml.XmlElement::with_attrs(
-              scope.normalize_element_name(element.name),
-              scope.normalize_attributes(element.attributes),
-            ),
-          ),
+          XmlEmpty({
+            name: scope.normalize_element_name(element.name),
+            attributes: scope.normalize_attributes(element.attributes),
+          }),
         )
       }
-      End(name) => {
-        normalized.push(End(current.normalize_element_name(name)))
+      XmlEnd(name) => {
+        normalized.push(XmlEnd(current.normalize_element_name(name)))
         if scopes.length() > 1 {
           let _ = scopes.pop()
         }
@@ -493,14 +489,14 @@ fn normalize_xml_namespaces(events : Array[@xml.Event]) -> Array[@xml.Event] {
 }
 
 ///|
-fn read_xml_events(svg_str : String) -> Array[@xml.Event]? {
+fn read_xml_events(svg_str : String) -> Array[SVGXmlEvent]? {
   let reader = @xml.Reader::from_string(svg_str)
   try {
-    let events : Array[@xml.Event] = []
+    let events : Array[SVGXmlEvent] = []
     while true {
-      let event = reader.read_event()
+      let event = adapt_xml_event(reader.read_event())
       events.push(event)
-      if event is Eof {
+      if event is XmlEof {
         break
       }
     }
@@ -618,16 +614,16 @@ fn parse_element(
   ctx : SVGParseContext,
   parent_tag : String,
 ) -> SVGNode? {
-  let mut element : @xml.XmlElement? = None
+  let mut element : SVGXmlElement? = None
   let mut self_closing = false
   while !parser.is_end() && element is None {
     match parser.advance_event() {
-      Start(found) => element = Some(found)
-      Empty(found) => {
+      XmlStart(found) => element = Some(found)
+      XmlEmpty(found) => {
         element = Some(found)
         self_closing = true
       }
-      End(_) | Eof => return None
+      XmlEnd(_) | XmlEof => return None
       _ => ()
     }
   }
@@ -983,9 +979,9 @@ fn skip_to_end_tag(parser : SVGParser, tag_name : String) -> Unit {
   let mut depth = 0
   while !parser.is_end() {
     match parser.advance_event() {
-      Start(_) => depth += 1
-      Empty(_) => ()
-      End(name) => {
+      XmlStart(_) => depth += 1
+      XmlEmpty(_) => ()
+      XmlEnd(name) => {
         if depth == 0 && name == tag_name {
           return
         }
@@ -993,7 +989,7 @@ fn skip_to_end_tag(parser : SVGParser, tag_name : String) -> Unit {
           depth -= 1
         }
       }
-      Eof => return
+      XmlEof => return
       _ => ()
     }
   }
@@ -1005,13 +1001,13 @@ fn parse_plain_text_content(parser : SVGParser, tag_name : String) -> String? {
   let mut has_nested_element = false
   while !parser.is_end() {
     match parser.advance_event() {
-      Text(text) | CData(text) => content.write_string(text)
-      Start(element) => {
+      XmlText(text) | XmlCData(text) => content.write_string(text)
+      XmlStart(element) => {
         has_nested_element = true
         skip_to_end_tag(parser, element.name)
       }
-      Empty(_) => has_nested_element = true
-      End(name) =>
+      XmlEmpty(_) => has_nested_element = true
+      XmlEnd(name) =>
         if name == tag_name {
           return if has_nested_element {
             None
@@ -1019,7 +1015,7 @@ fn parse_plain_text_content(parser : SVGParser, tag_name : String) -> String? {
             Some(content.to_string())
           }
         }
-      Eof => return None
+      XmlEof => return None
       _ => ()
     }
   }
@@ -1033,14 +1029,14 @@ fn count_direct_child_elements(parser : SVGParser, parent_tag : String) -> Int {
   let mut count = 0
   while pos < parser.events.length() {
     match parser.events[pos] {
-      Start(_) => {
+      XmlStart(_) => {
         if depth == 0 {
           count += 1
         }
         depth += 1
       }
-      Empty(_) => if depth == 0 { count += 1 }
-      End(name) => {
+      XmlEmpty(_) => if depth == 0 { count += 1 }
+      XmlEnd(name) => {
         if depth == 0 && name == parent_tag {
           break
         }
@@ -1048,7 +1044,7 @@ fn count_direct_child_elements(parser : SVGParser, parent_tag : String) -> Int {
           depth -= 1
         }
       }
-      Eof => break
+      XmlEof => break
       _ => ()
     }
     pos += 1
@@ -1102,13 +1098,13 @@ fn parse_children(
   ctx.previous_sibling_stack.push(None)
   while !parser.is_end() {
     match parser.peek_event() {
-      End(name) => {
+      XmlEnd(name) => {
         let _ = parser.advance_event()
         if name == parent_tag {
           break
         }
       }
-      Start(_) | Empty(_) => {
+      XmlStart(_) | XmlEmpty(_) => {
         let current_index = ctx.sibling_index_stack.length() - 1
         ctx.sibling_index_stack[current_index] += 1
         match parse_element(parser, ctx, parent_tag) {
@@ -1126,7 +1122,7 @@ fn parse_children(
           None => break
         }
       }
-      Eof => break
+      XmlEof => break
       _ => {
         let _ = parser.advance_event()
       }

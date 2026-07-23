@@ -3,6 +3,21 @@
 This workspace releases `Milky2018/css` and `Milky2018/svg` with matching
 versions.
 
+## Milky2018/svg 0.5.1 - 2026-07-23
+
+### Changed
+
+- Upgrade `Milky2018/xml` from 0.2.0 to 0.4.0 and isolate the SVG parser from
+  the dependency's span-carrying event representation through an internal
+  adapter.
+
+## Milky2018/css 0.5.1 - 2026-07-23
+
+### Changed
+
+- Publish a lockstep patch release with `Milky2018/svg`; CSS behavior is
+  unchanged from 0.5.0.
+
 ## Milky2018/svg 0.5.0 - 2026-07-23
 
 ### Added

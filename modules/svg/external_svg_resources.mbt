@@ -129,9 +129,9 @@ fn merge_external_document(
 
 ///|
 fn canonicalize_svg_element_references(
-  element : @xml.XmlElement,
+  element : SVGXmlElement,
   base_uri : String,
-) -> @xml.XmlElement {
+) -> SVGXmlElement {
   let attrs = element.attributes.map(fn(attr) {
     let value = if attr.0 == "href" || attr.0 == xlink_href_attribute_name {
       if element.name == "use" && attr.1.find("#") is None {
@@ -144,20 +144,20 @@ fn canonicalize_svg_element_references(
     }
     (attr.0, value)
   })
-  @xml.XmlElement::with_attrs(element.name, attrs)
+  { name: element.name, attributes: attrs }
 }
 
 ///|
 fn canonicalize_svg_reference_events(
-  events : Array[@xml.Event],
+  events : Array[SVGXmlEvent],
   base_uri : String,
-) -> Array[@xml.Event] {
+) -> Array[SVGXmlEvent] {
   events.map(fn(event) {
     match event {
-      Start(element) =>
-        Start(canonicalize_svg_element_references(element, base_uri))
-      Empty(element) =>
-        Empty(canonicalize_svg_element_references(element, base_uri))
+      XmlStart(element) =>
+        XmlStart(canonicalize_svg_element_references(element, base_uri))
+      XmlEmpty(element) =>
+        XmlEmpty(canonicalize_svg_element_references(element, base_uri))
       _ => event
     }
   })
@@ -211,13 +211,13 @@ fn push_external_document_uri(
 
 ///|
 fn collect_external_document_uris(
-  events : Array[@xml.Event],
+  events : Array[SVGXmlEvent],
   stylesheets : Array[@css_cascade.Stylesheet],
 ) -> Array[String] {
   let uris : Array[String] = []
   for event in events {
     let element = match event {
-      Start(element) | Empty(element) => Some(element)
+      XmlStart(element) | XmlEmpty(element) => Some(element)
       _ => None
     }
     match element {

@@ -368,7 +368,7 @@ fn TextResourceLoadState::load_stylesheet_text(
 
 ///|
 fn load_document_stylesheets(
-  events : Array[@xml.Event],
+  events : Array[SVGXmlEvent],
   state : TextResourceLoadState,
   base_uri : String,
 ) -> Array[@css_cascade.Stylesheet] {
@@ -377,7 +377,7 @@ fn load_document_stylesheets(
   let mut in_style = false
   for event in events {
     match event {
-      PI(target~, data~) if target.to_lower() == "xml-stylesheet" => {
+      XmlPI(target~, data~) if target.to_lower() == "xml-stylesheet" => {
         let attrs = parse_pi_attributes(data)
         let css_type = attrs.get("type").unwrap_or("text/css").to_lower()
         match attrs.get("href") {
@@ -390,19 +390,22 @@ fn load_document_stylesheets(
           _ => ()
         }
       }
-      Start(element) =>
+      XmlStart(element) =>
         if element.name == "style" {
           content.reset()
           in_style = true
         }
-      Empty(element) =>
+      XmlEmpty(element) =>
         if element.name == "style" {
           for sheet in state.load_stylesheet_text("", base_uri) {
             stylesheets.push(sheet)
           }
         }
-      Text(text) | CData(text) => if in_style { content.write_string(text) }
-      End(name) =>
+      XmlText(text) | XmlCData(text) =>
+        if in_style {
+          content.write_string(text)
+        }
+      XmlEnd(name) =>
         if in_style && name == "style" {
           for
             sheet in state.load_stylesheet_text(

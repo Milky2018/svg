@@ -486,15 +486,15 @@ fn parse_filter_primitive_children(
   let children : Array[FilterPrimitiveChild] = []
   while !parser.is_end() {
     match parser.advance_event() {
-      Start(element) => {
+      XmlStart(element) => {
         let tag = element.name
         children.push({ tag, attrs: element.attributes })
         skip_to_end_tag(parser, tag)
       }
-      Empty(element) =>
+      XmlEmpty(element) =>
         children.push({ tag: element.name, attrs: element.attributes })
-      End(name) => if name == parent_tag { break }
-      Eof => break
+      XmlEnd(name) => if name == parent_tag { break }
+      XmlEof => break
       _ => ()
     }
   }
@@ -511,7 +511,7 @@ fn parse_filter_graph(
   let primitives : Array[FilterGraphPrimitive] = []
   while !parser.is_end() {
     match parser.advance_event() {
-      Start(element) => {
+      XmlStart(element) => {
         let primitive_tag = element.name
         let primitive_children = parse_filter_primitive_children(
           parser, primitive_tag,
@@ -526,13 +526,13 @@ fn parse_filter_graph(
           None => ()
         }
       }
-      Empty(element) =>
+      XmlEmpty(element) =>
         match parse_filter_primitive(element.name, element.attributes, []) {
           Some(primitive) => primitives.push(primitive)
           None => ()
         }
-      End(name) => if name == tag_name { break }
-      Eof => break
+      XmlEnd(name) => if name == tag_name { break }
+      XmlEof => break
       _ => ()
     }
   }

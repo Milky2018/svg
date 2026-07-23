@@ -265,15 +265,15 @@ fn parse_gradient_stops(
   ctx.previous_sibling_stack.push(None)
   while !parser.is_end() {
     let (element, has_children) = match parser.advance_event() {
-      Start(element) => (Some(element), true)
-      Empty(element) => (Some(element), false)
-      End(name) => {
+      XmlStart(element) => (Some(element), true)
+      XmlEmpty(element) => (Some(element), false)
+      XmlEnd(name) => {
         if name == parent_tag {
           break
         }
         (None, false)
       }
-      Eof => break
+      XmlEof => break
       _ => (None, false)
     }
     match element {
