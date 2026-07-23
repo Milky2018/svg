@@ -159,6 +159,26 @@ test "group opacity is applied after its container mask" {
 }
 
 ///|
+test "color alpha inherited paint opacity mask and group opacity multiply once" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
+    "<defs><mask id=\"half\" mask-type=\"alpha\">" +
+    "<rect width=\"8\" height=\"8\" fill=\"white\" opacity=\"0.5\"/>" +
+    "</mask></defs>" +
+    "<g fill-opacity=\"0.5\" opacity=\"0.5\" mask=\"url(#half)\">" +
+    "<rect width=\"8\" height=\"8\" fill=\"rgba(255, 0, 0, 0.5)\"/>" +
+    "</g></svg>"
+  let image = match render_svg_to_image(svg, 8, 8) {
+    Some(image) => image
+    None => Image::new(8, 8)
+  }
+  let pixel = image.get_pixel(4, 4)
+  inspect(pixel.r, content="255")
+  inspect(pixel.g, content="0")
+  inspect(pixel.b, content="0")
+  inspect(pixel.a, content="16")
+}
+
+///|
 test "container filters process the isolated group result" {
   let child = public_test_rect("child", 0.0, 0.0, 8.0, 8.0)
   child.fill = SolidColor(Color::rgb(255, 0, 0))

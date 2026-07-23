@@ -8,42 +8,51 @@ fn parse_use(
     Some(v) => v
     None => return None
   }
-  let mut x = match get_attr(attrs, "x") {
-    Some(v) => parse_length(v)
+  let style_node = SVGNode::new(Group)
+  let element_style = resolve_element_computed_style(
+    style_node,
+    "use",
+    attrs,
+    ctx,
+    ctx.current_style(),
+    false,
+  )
+  let declarations = cascaded_style_declarations(
+    ctx.cascaded_style("use", attrs),
+  )
+  fn geometry_value(name : String) -> String? {
+    resolved_element_noncomputed_value(
+      attrs,
+      declarations,
+      element_style.custom_properties,
+      name,
+    )
+  }
+  let viewport = ctx.current_length_viewport().unwrap_or((300.0, 150.0))
+  let length_context = LengthContext::new(
+    viewport.0,
+    viewport.1,
+    font_size=element_style.css_style.font_size,
+  )
+  let x = match geometry_value("x") {
+    Some(v) => parse_length_with_context(v, Horizontal, length_context)
     None => 0.0
   }
-  let mut y = match get_attr(attrs, "y") {
-    Some(v) => parse_length(v)
+  let y = match geometry_value("y") {
+    Some(v) => parse_length_with_context(v, Vertical, length_context)
     None => 0.0
   }
-  let mut width = match get_attr(attrs, "width") {
-    Some(v) => v |> parse_length |> Some
+  let width = match geometry_value("width") {
+    Some(v) => Some(parse_length_with_context(v, Horizontal, length_context))
     None => None
   }
-  let mut height = match get_attr(attrs, "height") {
-    Some(v) => v |> parse_length |> Some
+  let height = match geometry_value("height") {
+    Some(v) => Some(parse_length_with_context(v, Vertical, length_context))
     None => None
   }
-  let mut transform = match get_attr(attrs, "transform") {
+  let transform = match geometry_value("transform") {
     Some(v) => parse_transform(v)
     None => Transform::identity()
-  }
-  if get_attr(attrs, "style") is Some(style) {
-    if inline_style_value(style, "x") is Some(value) {
-      x = parse_length(value)
-    }
-    if inline_style_value(style, "y") is Some(value) {
-      y = parse_length(value)
-    }
-    if inline_style_value(style, "width") is Some(value) {
-      width = value |> parse_length |> Some
-    }
-    if inline_style_value(style, "height") is Some(value) {
-      height = value |> parse_length |> Some
-    }
-    if inline_style_value(style, "transform") is Some(value) {
-      transform = parse_transform(value)
-    }
   }
   let use_elem = { ..UseElement::new(href, x, y), width, height, transform }
   let viewport_fallback = ctx.current_viewport()

@@ -10,7 +10,12 @@ pub fn render_svg(
   height : Int,
   options : RenderOptions,
 ) -> RenderResult {
-  match parse_svg_document(svg_str) {
+  match
+    parse_svg_document_in_viewport(
+      svg_str,
+      width.to_double(),
+      height.to_double(),
+    ) {
     Some(document) => render_svg_document(document, width, height, options)
     None => {
       let diagnostics = [
@@ -49,9 +54,12 @@ pub fn render_svg_to_image(
   width : Int,
   height : Int,
 ) -> Image? {
-  parse_svg_document(svg_str).map(fn(doc) {
-    render_svg_document(doc, width, height, RenderOptions::default()).image
-  })
+  parse_svg_document_in_viewport(svg_str, width.to_double(), height.to_double()).map(fn(
+      doc,
+    ) {
+      render_svg_document(doc, width, height, RenderOptions::default()).image
+    },
+  )
 }
 
 ///|

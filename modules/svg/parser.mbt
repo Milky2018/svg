@@ -28,11 +28,13 @@ priv struct SVGParseContext {
   selector_element_slots : Array[@css_selector.Element?]
   style_stack : Array[InheritedStyle]
   viewport_stack : Array[(Double, Double)]
+  length_viewport_stack : Array[(Double, Double)]
 }
 
 ///|
 fn SVGParseContext::new(
   stylesheets : Array[@css_cascade.Stylesheet],
+  initial_length_viewport? : (Double, Double) = (300.0, 150.0),
 ) -> SVGParseContext {
   {
     symbols: SymbolRegistry::new(),
@@ -51,6 +53,7 @@ fn SVGParseContext::new(
     selector_element_slots: [],
     style_stack: [],
     viewport_stack: [],
+    length_viewport_stack: [initial_length_viewport],
   }
 }
 
@@ -193,12 +196,14 @@ fn resolve_element_computed_style(
   parent : InheritedStyle,
   apply_noncomputed : Bool,
 ) -> InheritedStyle {
+  let length_viewport = ctx.current_length_viewport().unwrap_or((300.0, 150.0))
   resolve_computed_style(
     node,
     attrs,
     ctx.cascaded_style(tag, attrs),
     parent,
     apply_noncomputed,
+    length_viewport,
   )
 }
 
@@ -261,6 +266,17 @@ fn SVGParseContext::current_viewport(
     None
   } else {
     Some(self.viewport_stack[self.viewport_stack.length() - 1])
+  }
+}
+
+///|
+fn SVGParseContext::current_length_viewport(
+  self : SVGParseContext,
+) -> (Double, Double)? {
+  if self.length_viewport_stack.length() == 0 {
+    None
+  } else {
+    Some(self.length_viewport_stack[self.length_viewport_stack.length() - 1])
   }
 }
 
@@ -473,12 +489,24 @@ fn read_xml_events(svg_str : String) -> Array[@xml.Event]? {
 ///|
 /// Parse SVG markup string into SVGDocument with resources
 pub fn parse_svg_document(svg_str : String) -> SVGDocument? {
+  parse_svg_document_in_viewport(svg_str, 300.0, 150.0)
+}
+
+///|
+fn parse_svg_document_in_viewport(
+  svg_str : String,
+  viewport_width : Double,
+  viewport_height : Double,
+) -> SVGDocument? {
   let events = match read_xml_events(svg_str) {
     Some(events) => events
     None => return None
   }
   let parser = SVGParser::new(events)
-  let ctx = SVGParseContext::new(parse_embedded_stylesheets(events))
+  let ctx = SVGParseContext::new(
+    parse_embedded_stylesheets(events),
+    initial_length_viewport=(viewport_width, viewport_height),
+  )
   match parse_element(parser, ctx, "") {
     Some(root) =>
       Some({
@@ -698,9 +726,7 @@ fn parse_element(
       }
       match content {
         Some(text) => {
-          let x = get_attr(attrs, "x").map(parse_length).unwrap_or(0.0)
-          let y = get_attr(attrs, "y").map(parse_length).unwrap_or(0.0)
-          let node = SVGNode::new(Text(x~, y~, text~, font_size=16.0))
+          let node = SVGNode::new(Text(x=0.0, y=0.0, text~, font_size=16.0))
           apply_attributes(node, attrs)
           let computed_style = resolve_element_computed_style(
             node,
@@ -710,6 +736,22 @@ fn parse_element(
             ctx.current_style(),
             true,
           )
+          let viewport = ctx.current_length_viewport().unwrap_or((300.0, 150.0))
+          let length_context = LengthContext::new(
+            viewport.0,
+            viewport.1,
+            font_size=computed_style.css_style.font_size,
+          )
+          let x = get_attr(attrs, "x")
+            .map(fn(value) {
+              parse_length_with_context(value, Horizontal, length_context)
+            })
+            .unwrap_or(0.0)
+          let y = get_attr(attrs, "y")
+            .map(fn(value) {
+              parse_length_with_context(value, Vertical, length_context)
+            })
+            .unwrap_or(0.0)
           node.shape = Text(
             x~,
             y~,
@@ -738,13 +780,36 @@ fn parse_element(
         ctx.current_style(),
         true,
       )
+      let parent_length_viewport = ctx
+        .current_length_viewport()
+        .unwrap_or((300.0, 150.0))
+      let element_length_context = LengthContext::new(
+        parent_length_viewport.0,
+        parent_length_viewport.1,
+        font_size=computed_style.css_style.font_size,
+      )
+      let element_declarations = cascaded_style_declarations(
+        ctx.cascaded_style(tag_name, attrs),
+      )
+      fn geometry_value(name : String) -> String? {
+        resolved_element_noncomputed_value(
+          attrs,
+          element_declarations,
+          computed_style.custom_properties,
+          name,
+        )
+      }
       if tag_name == "svg" {
         if parent_tag != "" {
-          if get_attr(attrs, "width") is Some(v) {
-            node.viewport_width = v |> parse_length |> Some
+          if geometry_value("width") is Some(v) {
+            node.viewport_width = Some(
+              parse_length_with_context(v, Horizontal, element_length_context),
+            )
           }
-          if get_attr(attrs, "height") is Some(v) {
-            node.viewport_height = v |> parse_length |> Some
+          if geometry_value("height") is Some(v) {
+            node.viewport_height = Some(
+              parse_length_with_context(v, Vertical, element_length_context),
+            )
           }
         }
         if get_attr(attrs, "overflow") is Some(v) {
@@ -752,12 +817,14 @@ fn parse_element(
             node.clip_overflow = false
           }
         }
-        let x = match get_attr(attrs, "x") {
-          Some(v) => parse_length(v)
+        let x = match geometry_value("x") {
+          Some(v) =>
+            parse_length_with_context(v, Horizontal, element_length_context)
           None => 0.0
         }
-        let y = match get_attr(attrs, "y") {
-          Some(v) => parse_length(v)
+        let y = match geometry_value("y") {
+          Some(v) =>
+            parse_length_with_context(v, Vertical, element_length_context)
           None => 0.0
         }
         if x != 0.0 || y != 0.0 {
@@ -768,13 +835,34 @@ fn parse_element(
       if tag_name == "svg" && !self_closing {
         let viewport = (
           node.viewport_width.unwrap_or(
-            get_attr(attrs, "width").map(parse_length).unwrap_or(300.0),
+            geometry_value("width")
+            .map(fn(value) {
+              parse_length_with_context(
+                value,
+                Horizontal,
+                element_length_context,
+              )
+            })
+            .unwrap_or(parent_length_viewport.0),
           ),
           node.viewport_height.unwrap_or(
-            get_attr(attrs, "height").map(parse_length).unwrap_or(150.0),
+            geometry_value("height")
+            .map(fn(value) {
+              parse_length_with_context(value, Vertical, element_length_context)
+            })
+            .unwrap_or(parent_length_viewport.1),
           ),
         )
         ctx.viewport_stack.push(viewport)
+        let child_length_viewport = match node.view_box {
+          Some(view_box) => (view_box.width, view_box.height)
+          None =>
+            (
+              node.viewport_width.unwrap_or(viewport.0),
+              node.viewport_height.unwrap_or(viewport.1),
+            )
+        }
+        ctx.length_viewport_stack.push(child_length_viewport)
         pushed = true
       }
       // Parse children (for container elements)
@@ -789,6 +877,7 @@ fn parse_element(
       }
       if pushed {
         let _ = ctx.viewport_stack.pop()
+        let _ = ctx.length_viewport_stack.pop()
       }
       Some(node)
     }

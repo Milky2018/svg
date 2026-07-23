@@ -30,6 +30,49 @@ fn find_winning_declaration(
 }
 
 ///|
+fn resolved_noncomputed_value(
+  declarations : Array[StyleDeclaration],
+  properties : Map[String, String],
+  name : String,
+) -> String? {
+  match find_winning_declaration(declarations, name) {
+    Some(declaration) =>
+      match @css.resolve_custom_property_value(declaration.value, properties) {
+        Some(value) =>
+          match trim_string(value).to_lower() {
+            "inherit" | "initial" | "unset" | "revert" | "revert-layer" => None
+            _ =>
+              if svg_property_value_is_valid(name, value) {
+                Some(trim_string(value))
+              } else {
+                None
+              }
+          }
+        None => None
+      }
+    None => None
+  }
+}
+
+///|
+fn resolved_element_noncomputed_value(
+  attrs : Array[(String, String)],
+  declarations : Array[StyleDeclaration],
+  properties : Map[String, String],
+  name : String,
+) -> String? {
+  match resolved_noncomputed_value(declarations, properties, name) {
+    Some(value) => Some(value)
+    None =>
+      if find_winning_declaration(declarations, name) is Some(_) {
+        None
+      } else {
+        get_attr(attrs, name)
+      }
+  }
+}
+
+///|
 fn declarations_are_same(
   left : StyleDeclaration,
   right : StyleDeclaration,
@@ -76,13 +119,14 @@ fn apply_resolved_noncomputed_attributes(
   attrs : Array[(String, String)],
   declarations : Array[StyleDeclaration],
   properties : Map[String, String],
+  length_context : LengthContext,
 ) -> Unit {
   for attr in attrs {
     let name = attr.0
     if name != "style" && !is_computed_style_property(name.to_lower()) {
       match @css.resolve_custom_property_value(attr.1, properties) {
         Some(value) if svg_property_value_is_valid(name, value) =>
-          apply_presentation_attribute(node, name, value)
+          apply_attribute(node, name, value, length_context~)
         Some(_) | None => ()
       }
     }
@@ -94,7 +138,7 @@ fn apply_resolved_noncomputed_attributes(
         Some(winner) if declarations_are_same(winner, declaration) =>
           match @css.resolve_custom_property_value(winner.value, properties) {
             Some(value) if svg_property_value_is_valid(winner.name, value) =>
-              apply_attribute(node, winner.name, value)
+              apply_attribute(node, winner.name, value, length_context~)
             Some(_) | None =>
               apply_initial_noncomputed_attribute(node, winner.name)
           }
@@ -150,6 +194,7 @@ fn resolve_computed_style(
   cascaded : @css_cascade.CascadedValues,
   parent : InheritedStyle,
   apply_noncomputed : Bool,
+  length_viewport : (Double, Double),
 ) -> InheritedStyle {
   let (css_style, custom_property_map) = @css.compute_style_with_vars(
     cascaded,
@@ -160,6 +205,11 @@ fn resolve_computed_style(
   )
   let declarations = cascaded_style_declarations(cascaded)
   let custom_properties = custom_property_map
+  let length_context = LengthContext::new(
+    length_viewport.0,
+    length_viewport.1,
+    font_size=css_style.font_size,
+  )
   node.fill = parent.fill
   node.fill_rule = parent.fill_rule
   node.clip_rule = parent.clip_rule
@@ -177,7 +227,7 @@ fn resolve_computed_style(
   let mut stop_opacity = parent.stop_opacity
   if apply_noncomputed {
     apply_resolved_noncomputed_attributes(
-      node, attrs, declarations, custom_properties,
+      node, attrs, declarations, custom_properties, length_context,
     )
   }
   match resolve_style_choice(declarations, custom_properties, StyleFill) {
@@ -212,7 +262,10 @@ fn resolve_computed_style(
     StyleInitial => node.stroke = { ..node.stroke, width: 1.0 }
     StyleInherited => ()
     StyleSpecified(value) =>
-      node.stroke = { ..node.stroke, width: parse_length(value) }
+      node.stroke = {
+        ..node.stroke,
+        width: parse_length_with_context(value, Diagonal, length_context),
+      }
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleStrokeLinecap) {
@@ -266,14 +319,20 @@ fn resolve_computed_style(
     StyleInitial => node.stroke = { ..node.stroke, dasharray: None }
     StyleInherited => ()
     StyleSpecified(value) =>
-      node.stroke = { ..node.stroke, dasharray: parse_dasharray(value) }
+      node.stroke = {
+        ..node.stroke,
+        dasharray: parse_dasharray(value, length_context~),
+      }
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleStrokeDashoffset) {
     StyleInitial => node.stroke = { ..node.stroke, dashoffset: 0.0 }
     StyleInherited => ()
     StyleSpecified(value) =>
-      node.stroke = { ..node.stroke, dashoffset: parse_number(value) }
+      node.stroke = {
+        ..node.stroke,
+        dashoffset: parse_length_with_context(value, Diagonal, length_context),
+      }
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleStrokeOpacity) {

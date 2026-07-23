@@ -140,15 +140,6 @@ fn parse_inline_style_declarations(value : String) -> Array[StyleDeclaration] {
 }
 
 ///|
-fn inline_style_value(value : String, name : String) -> String? {
-  find_winning_declaration(parse_inline_style_declarations(value), name).map(fn(
-    declaration,
-  ) {
-    declaration.value
-  })
-}
-
-///|
 fn cascade_element_styles(
   stylesheets : Array[@css_cascade.Stylesheet],
   element : @css_selector.Element,

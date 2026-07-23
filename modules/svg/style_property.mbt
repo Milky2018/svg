@@ -87,20 +87,10 @@ fn ComputedStyleProperty::name(self : ComputedStyleProperty) -> String {
 ///|
 fn valid_svg_number(value : String, allow_length : Bool) -> Bool {
   let trimmed = trim_string(value)
-  let number = if allow_length && string_ends_with(trimmed, "px") {
-    build_substring(trimmed, 0, trimmed.length() - 2)
-  } else if allow_length &&
-    (string_ends_with(trimmed, "em") || string_ends_with(trimmed, "pt")) {
-    build_substring(trimmed, 0, trimmed.length() - 2)
-  } else if allow_length && string_ends_with(trimmed, "%") {
-    build_substring(trimmed, 0, trimmed.length() - 1)
+  if allow_length {
+    svg_length_number_text(trimmed) is Some(_)
   } else {
-    trimmed
-  }
-  try @string.parse_double(number) catch {
-    _ => false
-  } noraise {
-    _ => true
+    parse_number_strict(trimmed) is Some(_)
   }
 }
 

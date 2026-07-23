@@ -292,6 +292,7 @@ fn parse_gradient_stops(
             stop_cascaded,
             ctx.current_style(),
             false,
+            ctx.current_length_viewport().unwrap_or((300.0, 150.0)),
           )
           stops.push(parse_gradient_stop(attrs, stop_style))
         }

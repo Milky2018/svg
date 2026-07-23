@@ -55,7 +55,18 @@ fn apply_attributes(node : SVGNode, attrs : Array[(String, String)]) -> Unit {
 }
 
 ///|
-fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
+fn apply_attribute(
+  node : SVGNode,
+  name : String,
+  value : String,
+  length_context? : LengthContext,
+) -> Unit {
+  fn length(axis : LengthAxis) -> Double {
+    match length_context {
+      Some(context) => parse_length_with_context(value, axis, context)
+      None => parse_length(value)
+    }
+  }
   match name {
     "id" => node.id = value
     "style" => apply_style_attributes(node, value)
@@ -74,7 +85,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
       match node.shape {
         Rect(..) as r =>
           node.shape = Rect(
-            x=parse_length(value),
+            x=length(Horizontal),
             y=r.y,
             width=r.width,
             height=r.height,
@@ -83,7 +94,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
           )
         Image(..) as i =>
           node.shape = Image(
-            x=parse_length(value),
+            x=length(Horizontal),
             y=i.y,
             width=i.width,
             height=i.height,
@@ -96,7 +107,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
         Rect(..) as r =>
           node.shape = Rect(
             x=r.x,
-            y=parse_length(value),
+            y=length(Vertical),
             width=r.width,
             height=r.height,
             rx=r.rx,
@@ -105,7 +116,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
         Image(..) as i =>
           node.shape = Image(
             x=i.x,
-            y=parse_length(value),
+            y=length(Vertical),
             width=i.width,
             height=i.height,
             href=i.href,
@@ -118,7 +129,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
           node.shape = Rect(
             x=r.x,
             y=r.y,
-            width=parse_length(value),
+            width=length(Horizontal),
             height=r.height,
             rx=r.rx,
             ry=r.ry,
@@ -127,7 +138,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
           node.shape = Image(
             x=i.x,
             y=i.y,
-            width=parse_length(value),
+            width=length(Horizontal),
             height=i.height,
             href=i.href,
           )
@@ -140,7 +151,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
             x=r.x,
             y=r.y,
             width=r.width,
-            height=parse_length(value),
+            height=length(Vertical),
             rx=r.rx,
             ry=r.ry,
           )
@@ -149,7 +160,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
             x=i.x,
             y=i.y,
             width=i.width,
-            height=parse_length(value),
+            height=length(Vertical),
             href=i.href,
           )
         _ => ()
@@ -162,16 +173,11 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
             y=r.y,
             width=r.width,
             height=r.height,
-            rx=parse_length(value),
+            rx=length(Horizontal),
             ry=r.ry,
           )
         Ellipse(..) as e =>
-          node.shape = Ellipse(
-            cx=e.cx,
-            cy=e.cy,
-            rx=parse_length(value),
-            ry=e.ry,
-          )
+          node.shape = Ellipse(cx=e.cx, cy=e.cy, rx=length(Horizontal), ry=e.ry)
         _ => ()
       }
     "ry" =>
@@ -183,71 +189,56 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
             width=r.width,
             height=r.height,
             rx=r.rx,
-            ry=parse_length(value),
+            ry=length(Vertical),
           )
         Ellipse(..) as e =>
-          node.shape = Ellipse(
-            cx=e.cx,
-            cy=e.cy,
-            rx=e.rx,
-            ry=parse_length(value),
-          )
+          node.shape = Ellipse(cx=e.cx, cy=e.cy, rx=e.rx, ry=length(Vertical))
         _ => ()
       }
     "cx" =>
       match node.shape {
         Circle(..) as c =>
-          node.shape = Circle(cx=parse_length(value), cy=c.cy, r=c.r)
+          node.shape = Circle(cx=length(Horizontal), cy=c.cy, r=c.r)
         Ellipse(..) as e =>
-          node.shape = Ellipse(
-            cx=parse_length(value),
-            cy=e.cy,
-            rx=e.rx,
-            ry=e.ry,
-          )
+          node.shape = Ellipse(cx=length(Horizontal), cy=e.cy, rx=e.rx, ry=e.ry)
         _ => ()
       }
     "cy" =>
       match node.shape {
         Circle(..) as c =>
-          node.shape = Circle(cx=c.cx, cy=parse_length(value), r=c.r)
+          node.shape = Circle(cx=c.cx, cy=length(Vertical), r=c.r)
         Ellipse(..) as e =>
-          node.shape = Ellipse(
-            cx=e.cx,
-            cy=parse_length(value),
-            rx=e.rx,
-            ry=e.ry,
-          )
+          node.shape = Ellipse(cx=e.cx, cy=length(Vertical), rx=e.rx, ry=e.ry)
         _ => ()
       }
     "r" =>
       match node.shape {
         Circle(..) as c =>
-          node.shape = Circle(cx=c.cx, cy=c.cy, r=parse_length(value))
+          node.shape = Circle(cx=c.cx, cy=c.cy, r=length(Diagonal))
         _ => ()
       }
     "x1" =>
       match node.shape {
         Line(..) as l =>
-          node.shape = Line(x1=parse_length(value), y1=l.y1, x2=l.x2, y2=l.y2)
+          node.shape = Line(x1=length(Horizontal), y1=l.y1, x2=l.x2, y2=l.y2)
         _ => ()
       }
     "y1" =>
       match node.shape {
         Line(..) as l =>
-          node.shape = Line(x1=l.x1, y1=parse_length(value), x2=l.x2, y2=l.y2)
+          node.shape = Line(x1=l.x1, y1=length(Vertical), x2=l.x2, y2=l.y2)
         _ => ()
       }
     "x2" =>
       match node.shape {
         Line(..) as l =>
-          node.shape = Line(x1=l.x1, y1=l.y1, x2=parse_length(value), y2=l.y2)
+          node.shape = Line(x1=l.x1, y1=l.y1, x2=length(Horizontal), y2=l.y2)
         _ => ()
       }
     "y2" =>
       match node.shape {
         Line(..) as l =>
-          node.shape = Line(x1=l.x1, y1=l.y1, x2=l.x2, y2=parse_length(value))
+          node.shape = Line(x1=l.x1, y1=l.y1, x2=l.x2, y2=length(Vertical))
         _ => ()
       }
     "d" =>
@@ -288,7 +279,7 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
       node.stroke_width_is_set = true
       node.stroke = {
         paint: node.stroke.paint,
-        width: parse_length(value),
+        width: length(Diagonal),
         linecap: node.stroke.linecap,
         linejoin: node.stroke.linejoin,
         miterlimit: node.stroke.miterlimit,
@@ -312,9 +303,15 @@ fn apply_attribute(node : SVGNode, name : String, value : String) -> Unit {
     "stroke-miterlimit" =>
       node.stroke = { ..node.stroke, miterlimit: parse_number(value) }
     "stroke-dasharray" =>
-      node.stroke = { ..node.stroke, dasharray: parse_dasharray(value) }
+      node.stroke = {
+        ..node.stroke,
+        dasharray: match length_context {
+          Some(context) => parse_dasharray(value, length_context=context)
+          None => parse_dasharray(value)
+        },
+      }
     "stroke-dashoffset" =>
-      node.stroke = { ..node.stroke, dashoffset: parse_number(value) }
+      node.stroke = { ..node.stroke, dashoffset: length(Diagonal) }
     "vector-effect" =>
       node.stroke = {
         ..node.stroke,
