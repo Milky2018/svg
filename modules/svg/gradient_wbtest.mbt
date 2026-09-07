@@ -7,8 +7,8 @@ test "linear gradient color interpolation" {
     x2: 1.0,
     y2: 0.0,
     stops: [
-      { offset: 0.0, color: Color::rgb(255, 0, 0) },
-      { offset: 1.0, color: Color::rgb(0, 0, 255) },
+      { offset: 0.0, color: Color::rgb(255, 0, 0), },
+      { offset: 1.0, color: Color::rgb(0, 0, 255), },
     ],
     spread_method: Pad,
     units: ObjectBoundingBox,
@@ -37,8 +37,8 @@ test "linear gradient rendering" {
     x2: 1.0,
     y2: 0.0,
     stops: [
-      { offset: 0.0, color: Color::rgb(255, 0, 0) },
-      { offset: 1.0, color: Color::rgb(0, 0, 255) },
+      { offset: 0.0, color: Color::rgb(255, 0, 0), },
+      { offset: 1.0, color: Color::rgb(0, 0, 255), },
     ],
     spread_method: Pad,
     units: ObjectBoundingBox,

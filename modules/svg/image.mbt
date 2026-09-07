@@ -17,7 +17,7 @@ pub fn Image::new(width : Int, height : Int) -> Image {
   let height = if height < 0 { 0 } else { height }
   let total = width * height
   let pixels = Array::make(total, Color::transparent())
-  { width, height, pixels }
+  { width, height, pixels, }
 }
 
 ///|
@@ -27,7 +27,7 @@ pub fn Image::filled(width : Int, height : Int, color : Color) -> Image {
   let height = if height < 0 { 0 } else { height }
   let total = width * height
   let pixels = Array::make(total, color)
-  { width, height, pixels }
+  { width, height, pixels, }
 }
 
 ///|
@@ -44,7 +44,7 @@ pub fn Image::from_pixels(
   for color in source {
     pixels.push(color)
   }
-  Some({ width, height, pixels })
+  Some({ width, height, pixels, })
 }
 
 ///|
@@ -81,7 +81,7 @@ fn Image::clone(self : Image) -> Image {
   for i in 0..<self.pixels.length() {
     pixels.push(self.pixels[i])
   }
-  { width: self.width, height: self.height, pixels }
+  { width: self.width, height: self.height, pixels, }
 }
 
 ///|

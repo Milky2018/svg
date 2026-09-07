@@ -386,7 +386,7 @@ fn skip_supports_condition_to_block(
 ///|
 fn compact_supports_condition(condition : String) -> String {
   let lower = condition.to_lower()
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for i = 0; i < lower.length(); i = i + 1 {
     let c = lower[i].to_int().unsafe_to_char()
     if c == ' ' || c == '\t' || c == '\n' {
@@ -524,7 +524,7 @@ fn parse_keyframes_rule(
                     value: @cascade.PropertyValue::from_css_text(value),
                     origin: Author,
                     importance,
-                    specificity: { a: 0, b: 0, c: 0 },
+                    specificity: { a: 0, b: 0, c: 0, },
                     source_order: decl_order,
                   })
                   decl_order = decl_order + 1
@@ -535,12 +535,12 @@ fn parse_keyframes_rule(
           }
         }
         if offsets.length() > 0 {
-          blocks.push({ offsets, declarations })
+          blocks.push({ offsets, declarations, })
         }
       }
     }
   }
-  stylesheet.add_keyframes({ name, blocks })
+  stylesheet.add_keyframes({ name, blocks, })
   pos
 }
 
@@ -643,7 +643,7 @@ fn parse_style_rule(
               value: @cascade.PropertyValue::from_css_text(value),
               origin: Author,
               importance,
-              specificity: { a: 0, b: 0, c: 0 }, // Will be set during cascade
+              specificity: { a: 0, b: 0, c: 0, }, // Will be set during cascade
               source_order: decl_order,
             }
             declarations.push(decl)
@@ -786,7 +786,7 @@ fn replace_ampersand(
   nested_selector : String,
   parent_selector : String,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for i = 0; i < nested_selector.length(); i = i + 1 {
     let c = nested_selector[i].to_int().unsafe_to_char()
     if c == '&' {
@@ -866,7 +866,7 @@ fn extract_ampersand_nested_rules(
                         value: @cascade.PropertyValue::from_css_text(value),
                         origin: Author,
                         importance,
-                        specificity: { a: 0, b: 0, c: 0 },
+                        specificity: { a: 0, b: 0, c: 0, },
                         source_order: decl_order,
                       }
                       nested_decls.push(decl)
@@ -931,7 +931,7 @@ fn tokens_to_string(
   start : Int,
   end : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     match tokens[i] {
       Ident(s) => buf.write_string(s)
@@ -1031,7 +1031,7 @@ fn push_selector(
 /// Split string by comma
 fn split_by_comma(s : String) -> Array[String] {
   let result : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   let mut paren_depth = 0
   let mut bracket_depth = 0
   let mut in_single_quote = false

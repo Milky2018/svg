@@ -31,9 +31,9 @@ pub(all) struct LinearEasingPoint {
 ///|
 pub impl Show for LinearEasingPoint with fn output(self, logger) {
   logger.write_string("LinearEasingPoint { input: ")
-  self.input.output(logger)
+  Show::output(self.input, logger)
   logger.write_string(", output: ")
-  self.output.output(logger)
+  Show::output(self.output, logger)
   logger.write_string(" }")
 }
 
@@ -42,7 +42,7 @@ pub fn LinearEasingPoint::new(
   input : Double,
   output : Double,
 ) -> LinearEasingPoint {
-  { input, output }
+  { input, output, }
 }
 
 ///|
@@ -100,11 +100,11 @@ pub(all) struct EasingFrame {
 ///|
 pub impl Show for EasingFrame with fn output(self, logger) {
   logger.write_string("EasingFrame { progress: ")
-  self.progress.output(logger)
+  Show::output(self.progress, logger)
   logger.write_string(", eased_progress: ")
-  self.eased_progress.output(logger)
+  Show::output(self.eased_progress, logger)
   logger.write_string(", value: ")
-  self.value.output(logger)
+  Show::output(self.value, logger)
   logger.write_string(" }")
 }
 
@@ -170,20 +170,20 @@ pub impl Show for Easing with fn output(self, logger) {
         }
         CubicBezier(x1, y1, x2, y2) => {
           logger.write_string("CubicBezier(")
-          x1.output(logger)
+          Show::output(x1, logger)
           logger.write_string(", ")
-          y1.output(logger)
+          Show::output(y1, logger)
           logger.write_string(", ")
-          x2.output(logger)
+          Show::output(x2, logger)
           logger.write_string(", ")
-          y2.output(logger)
+          Show::output(y2, logger)
           logger.write_string(")")
         }
         Steps(count, position) => {
           logger.write_string("Steps(")
-          count.output(logger)
+          Show::output(count, logger)
           logger.write_string(", ")
-          position.output(logger)
+          Show::output(position, logger)
           logger.write_string(")")
         }
         _ => ()
@@ -621,7 +621,7 @@ fn parse_linear_stop(value : String) -> LinearStop? {
     return None
   }
   match output {
-    Some(output) => Some({ output, inputs })
+    Some(output) => Some({ output, inputs, })
     None => None
   }
 }
@@ -685,7 +685,7 @@ fn create_linear_easing_function(stops : Array[LinearStop]) -> Easing? {
       } else {
         stop.inputs[0]
       }
-      pending.push({ input: Some(input), output: stop.output })
+      pending.push({ input: Some(input), output: stop.output, })
       largest_input = input
       has_largest_input = true
       if stop.inputs.length() == 2 {
@@ -694,11 +694,11 @@ fn create_linear_easing_function(stops : Array[LinearStop]) -> Easing? {
         } else {
           stop.inputs[1]
         }
-        pending.push({ input: Some(input), output: stop.output })
+        pending.push({ input: Some(input), output: stop.output, })
         largest_input = input
       }
     } else if i == 0 {
-      pending.push({ input: Some(0.0), output: stop.output })
+      pending.push({ input: Some(0.0), output: stop.output, })
       largest_input = 0.0
       has_largest_input = true
     } else if i == last_stop_index {
@@ -707,9 +707,9 @@ fn create_linear_easing_function(stops : Array[LinearStop]) -> Easing? {
       } else {
         1.0
       }
-      pending.push({ input: Some(input), output: stop.output })
+      pending.push({ input: Some(input), output: stop.output, })
     } else {
-      pending.push({ input: None, output: stop.output })
+      pending.push({ input: None, output: stop.output, })
     }
   }
   match resolve_pending_linear_points(pending) {
@@ -842,3 +842,33 @@ fn parse_named_easing(value : String) -> Easing? {
     _ => None
   }
 }
+
+///|
+pub extend Easing with Debug::{to_repr}
+
+///|
+pub extend Easing with Eq::{not_equal, equal}
+
+///|
+pub extend Easing with Show::{to_string, output}
+
+///|
+pub extend EasingFrame with Show::{to_string, output}
+
+///|
+pub extend LinearEasingPoint with Debug::{to_repr}
+
+///|
+pub extend LinearEasingPoint with Eq::{not_equal, equal}
+
+///|
+pub extend LinearEasingPoint with Show::{to_string, output}
+
+///|
+pub extend StepPosition with Debug::{to_repr}
+
+///|
+pub extend StepPosition with Eq::{not_equal, equal}
+
+///|
+pub extend StepPosition with Show::{to_string, output}

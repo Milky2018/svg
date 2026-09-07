@@ -203,7 +203,7 @@ test "compute_inline ch and ex units" {
 ///|
 test "compute_inline ch units use square advance for inherited Ahem" {
   let ctx : @computed.ComputeContext = {
-    parent_style: Some({ ..@style.Style::default(), font_family: "Ahem" }),
+    parent_style: Some({ ..@style.Style::default(), font_family: "Ahem", }),
     root_font_size: 16.0,
     font_size: 16.0,
     viewport_width: 1920.0,

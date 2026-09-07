@@ -306,7 +306,7 @@ fn SVGParseContext::current_length_viewport(
 
 ///|
 fn SVGParser::new(events : Array[SVGXmlEvent]) -> SVGParser {
-  { events, pos: 0 }
+  { events, pos: 0, }
 }
 
 ///|
@@ -525,9 +525,9 @@ fn parse_element(
             preserve_aspect_ratio: preserve,
           }
         None =>
-          { ..Symbol::new(id, symbol_node), preserve_aspect_ratio: preserve }
+          { ..Symbol::new(id, symbol_node), preserve_aspect_ratio: preserve, }
       }
-      let symbol = { ..symbol, width, height, display_none }
+      let symbol = { ..symbol, width, height, display_none, }
       ctx.symbols.add(symbol)
       Group |> SVGNode::new |> Some
     }
@@ -827,7 +827,7 @@ fn skip_to_end_tag(parser : SVGParser, tag_name : String) -> Unit {
 
 ///|
 fn parse_plain_text_content(parser : SVGParser, tag_name : String) -> String? {
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   let mut has_nested_element = false
   while !parser.is_end() {
     match parser.advance_event() {

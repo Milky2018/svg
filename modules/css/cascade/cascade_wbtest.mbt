@@ -33,7 +33,7 @@ test "compare declarations - same origin, different specificity" {
     value: Value("100px"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 0, c: 1 }, // type selector
+    specificity: { a: 0, b: 0, c: 1, }, // type selector
     source_order: 0,
   }
   let decl_high : Declaration = {
@@ -41,7 +41,7 @@ test "compare declarations - same origin, different specificity" {
     value: Value("200px"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 1, c: 0 }, // class selector
+    specificity: { a: 0, b: 1, c: 0, }, // class selector
     source_order: 0,
   }
   // Higher specificity wins
@@ -55,7 +55,7 @@ test "compare declarations - same specificity, different source order" {
     value: Value("100px"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 1, c: 0 },
+    specificity: { a: 0, b: 1, c: 0, },
     source_order: 1,
   }
   let decl_second : Declaration = {
@@ -63,7 +63,7 @@ test "compare declarations - same specificity, different source order" {
     value: Value("200px"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 1, c: 0 },
+    specificity: { a: 0, b: 1, c: 0, },
     source_order: 2,
   }
   // Later source order wins
@@ -77,7 +77,7 @@ test "compare declarations - important beats normal" {
     value: Value("100px"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 1, b: 0, c: 0 }, // ID selector
+    specificity: { a: 1, b: 0, c: 0, }, // ID selector
     source_order: 10,
   }
   let decl_important : Declaration = {
@@ -85,7 +85,7 @@ test "compare declarations - important beats normal" {
     value: Value("200px"),
     origin: Author,
     importance: Important,
-    specificity: { a: 0, b: 0, c: 1 }, // type selector
+    specificity: { a: 0, b: 0, c: 1, }, // type selector
     source_order: 1,
   }
   // Important beats even higher specificity and later source order
@@ -106,7 +106,7 @@ test "cascade - later declaration wins" {
     value: Value("100px"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 1, c: 0 },
+    specificity: { a: 0, b: 1, c: 0, },
     source_order: 1,
   }
   let decl2 : Declaration = {
@@ -114,7 +114,7 @@ test "cascade - later declaration wins" {
     value: Value("200px"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 1, c: 0 },
+    specificity: { a: 0, b: 1, c: 0, },
     source_order: 2,
   }
   let result = cascade([decl1, decl2])
@@ -128,7 +128,7 @@ test "cascade - higher specificity wins" {
     value: Value("red"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 0, c: 1 },
+    specificity: { a: 0, b: 0, c: 1, },
     source_order: 2,
   }
   let decl_class : Declaration = {
@@ -136,7 +136,7 @@ test "cascade - higher specificity wins" {
     value: Value("blue"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 1, c: 0 },
+    specificity: { a: 0, b: 1, c: 0, },
     source_order: 1,
   }
   let result = cascade([decl_type, decl_class])
@@ -151,7 +151,7 @@ test "cascade - important wins" {
     value: Value("block"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 1, b: 0, c: 0 },
+    specificity: { a: 1, b: 0, c: 0, },
     source_order: 10,
   }
   let decl_important : Declaration = {
@@ -159,7 +159,7 @@ test "cascade - important wins" {
     value: Value("flex"),
     origin: Author,
     importance: Important,
-    specificity: { a: 0, b: 0, c: 1 },
+    specificity: { a: 0, b: 0, c: 1, },
     source_order: 1,
   }
   let result = cascade([decl_normal, decl_important])
@@ -175,7 +175,7 @@ test "cascade - multiple properties" {
     value: Value("200px"),
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 1, c: 0 },
+    specificity: { a: 0, b: 1, c: 0, },
     source_order: 1,
   }
   let result = cascade([decl1, decl2, decl3])
@@ -225,7 +225,7 @@ fn collect_declarations_for_test(
       value: decl.value,
       origin: Author,
       importance: decl.importance,
-      specificity: { a: 1000, b: 0, c: 0 },
+      specificity: { a: 1000, b: 0, c: 0, },
       source_order: decl.source_order,
     })
   }
@@ -235,7 +235,7 @@ fn collect_declarations_for_test(
 ///|
 test "collect declarations - inline beats rules" {
   let rule_match : RuleMatch = {
-    specificity: { a: 1, b: 0, c: 0 }, // ID selector
+    specificity: { a: 1, b: 0, c: 0, }, // ID selector
     declarations: [Declaration::new("width", "100px")],
     source_order: 1,
   }
@@ -538,7 +538,7 @@ test "CSS-wide keywords retain their cascade meaning" {
 
 ///|
 test "Declaration::with_metadata" {
-  let spec : @selector.Specificity = { a: 1, b: 2, c: 3 }
+  let spec : @selector.Specificity = { a: 1, b: 2, c: 3, }
   let d = Declaration::with_metadata(
     "padding",
     Inherit,
@@ -583,7 +583,7 @@ test "CascadedValues::get_value returns None for non-Value (keyword)" {
     value: Inherit,
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 0, c: 0 },
+    specificity: { a: 0, b: 0, c: 0, },
     source_order: 0,
   }
   let result = cascade([decl])

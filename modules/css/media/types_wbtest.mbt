@@ -149,7 +149,7 @@ test "Show MediaQuery and MediaQueryList" {
   assert_true(s.contains("negated: true"))
   assert_true(s.contains("media_type: Some"))
   assert_true(s.contains("conditions: ["))
-  let list : MediaQueryList = { queries: [mq] }
+  let list : MediaQueryList = { queries: [mq], }
   let s2 = list.to_string()
   assert_true(s2.contains("queries: ["))
 }

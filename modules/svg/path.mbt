@@ -12,7 +12,7 @@ priv struct PathParser {
 
 ///|
 fn PathParser::new(data : String) -> PathParser {
-  { data, pos: 0, len: data.length() }
+  { data, pos: 0, len: data.length(), }
 }
 
 ///|
@@ -114,7 +114,7 @@ fn PathParser::parse_number(self : PathParser) -> Double? {
   }
   // Parse the number string
   // Build string manually
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i in start..<self.pos {
     let c = Int::unsafe_to_char(self.data[i].to_int())
     buf.write_char(c)

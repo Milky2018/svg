@@ -12,7 +12,7 @@ test "closed dash pieces join across the path seam" {
 test "zero-length strokes follow linecap shape semantics" {
   for linecap in [LineCap::Round, Square, Butt] {
     let outlines : Array[Array[(Double, Double)]] = []
-    let stroke = { ..StrokeStyle::default(), width: 4.0, linecap }
+    let stroke = { ..StrokeStyle::default(), width: 4.0, linecap, }
     append_affine_stroke_piece(
       outlines,
       [(8.0, 8.0), (8.0, 8.0)],

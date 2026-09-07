@@ -79,7 +79,7 @@ fn parse_mix_component(part : String) -> (@types.Color?, Double?) {
     return (None, percent)
   }
   // Re-join color tokens (e.g. a function whose args were space-separated).
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   for i = 0; i < color_tokens.length(); i = i + 1 {
     if i > 0 {
       sb.write_char(' ')

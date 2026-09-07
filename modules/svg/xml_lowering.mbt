@@ -69,7 +69,7 @@ fn XmlNamespaceScope::with_declarations(
       }
     }
   }
-  { default_uri, default_declared, prefixes }
+  { default_uri, default_declared, prefixes, }
 }
 
 ///|

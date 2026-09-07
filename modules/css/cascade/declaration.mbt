@@ -136,7 +136,7 @@ pub fn Declaration::with_metadata(
   specificity : @selector.Specificity,
   source_order : Int,
 ) -> Declaration {
-  { property, value, origin, importance, specificity, source_order }
+  { property, value, origin, importance, specificity, source_order, }
 }
 
 ///|
@@ -152,7 +152,7 @@ pub fn Declaration::from_inline(
     origin: Author,
     importance,
     // Inline styles have specificity (1,0,0,0) but we represent as (1,0,0) with special handling
-    specificity: { a: 1, b: 0, c: 0 },
+    specificity: { a: 1, b: 0, c: 0, },
     source_order: 0,
   }
 }
@@ -199,3 +199,15 @@ fn compare_declarations(a : Declaration, b : Declaration) -> Int {
   // 3. Compare source order (later wins)
   a.source_order - b.source_order
 }
+
+///|
+pub extend Declaration with Show::{to_string, output}
+
+///|
+pub extend Importance with Show::{to_string, output}
+
+///|
+pub extend Origin with Show::{to_string, output}
+
+///|
+pub extend PropertyValue with Show::{to_string, output}

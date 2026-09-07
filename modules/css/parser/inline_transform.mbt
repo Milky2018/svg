@@ -47,15 +47,15 @@ fn parse_contain(tokens : ArrayView[@token.Token]) -> @style.Contain {
         } else if s == "content" {
           return @style.Contain::content()
         } else if s == "size" {
-          result = { ..result, size: true }
+          result = { ..result, size: true, }
         } else if s == "inline-size" {
-          result = { ..result, inline_size: true }
+          result = { ..result, inline_size: true, }
         } else if s == "layout" {
-          result = { ..result, layout: true }
+          result = { ..result, layout: true, }
         } else if s == "paint" {
-          result = { ..result, paint: true }
+          result = { ..result, paint: true, }
         } else if s == "style" {
-          result = { ..result, style: true }
+          result = { ..result, style: true, }
         }
         remaining = skip_whitespace(remaining[1:])
       }
@@ -79,7 +79,7 @@ fn merge_contain(
     style: base.style || extra.style,
   }
   if merged.size {
-    { ..merged, inline_size: false }
+    { ..merged, inline_size: false, }
   } else {
     merged
   }
@@ -98,9 +98,9 @@ fn parse_container_type(tokens : ArrayView[@token.Token]) -> @style.Contain? {
       if s == "normal" {
         Some(@style.Contain::none())
       } else if s == "size" {
-        Some({ ..@style.Contain::none(), size: true, style: true })
+        Some({ ..@style.Contain::none(), size: true, style: true, })
       } else if s == "inline-size" {
-        Some({ ..@style.Contain::none(), inline_size: true, style: true })
+        Some({ ..@style.Contain::none(), inline_size: true, style: true, })
       } else {
         None
       }
@@ -194,7 +194,7 @@ fn parse_transform(tokens : ArrayView[@token.Token]) -> @style.Transform {
   // Reconstruct the value as string for parsing with the full transform parser
   // Since transform values like "translate(10px, 20px)" are complex,
   // we build the string and reuse the computed transform parser
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   for i = 0; i < remaining.length(); i = i + 1 {
     match remaining[i] {
       Ident(s) => sb.write_string(s)
@@ -512,7 +512,7 @@ pub fn parse_translate_property_from_string(value : String) -> @style.Transform 
   } else {
     Length(0.0)
   }
-  { ..@style.Transform::none(), translate_x: x, translate_y: y }
+  { ..@style.Transform::none(), translate_x: x, translate_y: y, }
 }
 
 ///|
@@ -525,7 +525,7 @@ pub fn parse_scale_property_from_string(value : String) -> @style.Transform {
   }
   let sx = parse_scale_value(parts[0])
   let sy = if parts.length() > 1 { parse_scale_value(parts[1]) } else { sx }
-  { ..@style.Transform::none(), scale_x: sx, scale_y: sy }
+  { ..@style.Transform::none(), scale_x: sx, scale_y: sy, }
 }
 
 ///|
@@ -538,14 +538,14 @@ pub fn parse_rotate_property_from_string(value : String) -> @style.Transform {
   }
   // The angle is the last part (an axis keyword / vector may precede it).
   let angle = parse_rotate_degrees(parts[parts.length() - 1])
-  { ..@style.Transform::none(), rotate_degrees: angle }
+  { ..@style.Transform::none(), rotate_degrees: angle, }
 }
 
 ///|
 /// Split string by comma (for transform arguments) - local version
 fn split_transform_args(s : String) -> Array[String] {
   let result : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   for c in s {
     if c == ',' {
       result.push(current.to_string())
@@ -564,7 +564,7 @@ fn split_transform_args(s : String) -> Array[String] {
 ///|
 /// Convert char array slice to string
 fn transform_chars_to_string(chars : ArrayView[Char]) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   for c in chars {
     sb.write_char(c)
   }

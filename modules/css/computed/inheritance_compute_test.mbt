@@ -9,7 +9,7 @@ fn compute_inheriting(prop : String, parent : @style.Style) -> @style.Style {
     value: Inherit,
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 0, c: 0 },
+    specificity: { a: 0, b: 0, c: 0, },
     source_order: 0,
   }
   @computed.compute(@cascade.cascade([decl]), ctx)
@@ -39,7 +39,7 @@ test "Inherit - display variants" {
       Contents,
       FlowRoot,
     ] {
-    let parent : @style.Style = { ..@style.Style::default(), display: d }
+    let parent : @style.Style = { ..@style.Style::default(), display: d, }
     let s = compute_inheriting("display", parent)
     inspect(s.display, content=d.to_string())
   }
@@ -48,7 +48,7 @@ test "Inherit - display variants" {
 ///|
 test "Inherit - position variants" {
   for p in [@types.Position::Relative, Absolute, Fixed] {
-    let parent : @style.Style = { ..@style.Style::default(), position: p }
+    let parent : @style.Style = { ..@style.Style::default(), position: p, }
     let s = compute_inheriting("position", parent)
     inspect(s.position, content=p.to_string())
   }
@@ -57,7 +57,10 @@ test "Inherit - position variants" {
 ///|
 test "Inherit - flex-direction variants" {
   for d in [@types.RowReverse, Column, ColumnReverse] {
-    let parent : @style.Style = { ..@style.Style::default(), flex_direction: d }
+    let parent : @style.Style = {
+      ..@style.Style::default(),
+      flex_direction: d,
+    }
     let s = compute_inheriting("flex-direction", parent)
     inspect(s.flex_direction, content=d.to_string())
   }
@@ -66,7 +69,7 @@ test "Inherit - flex-direction variants" {
 ///|
 test "Inherit - flex-wrap variants" {
   for w in [@types.Wrap, WrapReverse] {
-    let parent : @style.Style = { ..@style.Style::default(), flex_wrap: w }
+    let parent : @style.Style = { ..@style.Style::default(), flex_wrap: w, }
     let s = compute_inheriting("flex-wrap", parent)
     inspect(s.flex_wrap, content=w.to_string())
   }
@@ -165,7 +168,7 @@ test "Inherit - margin-trim variants" {
       InlineEnd,
       Inline,
     ] {
-    let parent : @style.Style = { ..@style.Style::default(), margin_trim: mt }
+    let parent : @style.Style = { ..@style.Style::default(), margin_trim: mt, }
     let s = compute_inheriting("margin-trim", parent)
     inspect(s.margin_trim, content=mt.to_string())
   }
@@ -304,7 +307,7 @@ test "Inherit - contain-intrinsic-size" {
 
 ///|
 test "Inherit - opacity serializes the parent computed value" {
-  let parent : @style.Style = { ..@style.Style::default(), opacity: 0.25 }
+  let parent : @style.Style = { ..@style.Style::default(), opacity: 0.25, }
   inspect(compute_inheriting("opacity", parent).opacity, content="0.25")
 }
 
@@ -318,7 +321,7 @@ test "Initial keyword - all properties" {
       value: Initial,
       origin: Author,
       importance: Normal,
-      specificity: { a: 0, b: 0, c: 0 },
+      specificity: { a: 0, b: 0, c: 0, },
       source_order: 0,
     }
     d
@@ -347,7 +350,7 @@ test "Unset keyword on inherited property uses parent" {
     value: Unset,
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 0, c: 0 },
+    specificity: { a: 0, b: 0, c: 0, },
     source_order: 0,
   }
   let s = @computed.compute(@cascade.cascade([decl]), ctx)
@@ -356,14 +359,14 @@ test "Unset keyword on inherited property uses parent" {
 
 ///|
 test "Unset keyword on non-inherited property uses initial" {
-  let parent : @style.Style = { ..@style.Style::default(), display: Flex }
+  let parent : @style.Style = { ..@style.Style::default(), display: Flex, }
   let ctx = @computed.ComputeContext::with_parent(parent)
   let decl : @cascade.Declaration = {
     property: "display",
     value: Unset,
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 0, c: 0 },
+    specificity: { a: 0, b: 0, c: 0, },
     source_order: 0,
   }
   let s = @computed.compute(@cascade.cascade([decl]), ctx)
@@ -379,7 +382,7 @@ test "Revert keyword falls back to initial" {
     value: Revert,
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 0, c: 0 },
+    specificity: { a: 0, b: 0, c: 0, },
     source_order: 0,
   }
   let s = @computed.compute(@cascade.cascade([decl]), ctx)
@@ -486,7 +489,7 @@ test "RevertLayer keyword falls back to initial" {
     value: RevertLayer,
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 0, c: 0 },
+    specificity: { a: 0, b: 0, c: 0, },
     source_order: 0,
   }
   let s = @computed.compute(@cascade.cascade([decl]), ctx)

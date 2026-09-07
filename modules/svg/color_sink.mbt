@@ -12,5 +12,5 @@ fn ColorSink::pixel(self : ColorSink, x : Int, y : Int, color : Color) -> Unit {
 ///|
 fn ColorSink::with_clip(self : ColorSink, clip : ClipRect) -> ColorSink {
   let inner_set = self.set
-  { set: (x, y, color) => if clip.contains(x, y) { inner_set(x, y, color) } }
+  { set: (x, y, color) => if clip.contains(x, y) { inner_set(x, y, color) }, }
 }

@@ -345,7 +345,7 @@ fn parse_gradient_stop(
   } else {
     color
   }
-  { offset, color: final_color }
+  { offset, color: final_color, }
 }
 
 ///|

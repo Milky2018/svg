@@ -57,7 +57,7 @@ fn apply_blur(
           a = a + c.a
         }
       }
-      output[y][x] = { r: r / div, g: g / div, b: b / div, a: a / div }
+      output[y][x] = { r: r / div, g: g / div, b: b / div, a: a / div, }
     }
   }
   output
@@ -339,7 +339,7 @@ fn apply_drop_shadow(
           let alpha = (shadow_color.a.to_double() *
           src_color.a.to_double() /
           255.0).to_int()
-          output.set_pixel(shadow_x, shadow_y, { ..shadow_color, a: alpha })
+          output.set_pixel(shadow_x, shadow_y, { ..shadow_color, a: alpha, })
         }
       }
     }

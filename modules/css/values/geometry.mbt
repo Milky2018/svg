@@ -33,7 +33,7 @@ pub struct Size[T] {
 
 ///|
 pub fn[T] Size::new(width : T, height : T) -> Size[T] {
-  { width, height }
+  { width, height, }
 }
 
 ///|
@@ -47,12 +47,12 @@ pub impl[T : Show] Show for Size[T] with fn output(self, logger) {
 
 ///|
 pub fn Size::zero() -> Size[Double] {
-  { width: 0.0, height: 0.0 }
+  { width: 0.0, height: 0.0, }
 }
 
 ///|
 pub fn[T, U] Size::map(self : Size[T], f : (T) -> U) -> Size[U] {
-  { width: f(self.width), height: f(self.height) }
+  { width: f(self.width), height: f(self.height), }
 }
 
 ///|
@@ -64,7 +64,7 @@ pub struct Point[T] {
 
 ///|
 pub fn[T] Point::new(x : T, y : T) -> Point[T] {
-  { x, y }
+  { x, y, }
 }
 
 ///|
@@ -78,12 +78,12 @@ pub impl[T : Show] Show for Point[T] with fn output(self, logger) {
 
 ///|
 pub fn Point::zero() -> Point[Double] {
-  { x: 0.0, y: 0.0 }
+  { x: 0.0, y: 0.0, }
 }
 
 ///|
 pub fn[T, U] Point::map(self : Point[T], f : (T) -> U) -> Point[U] {
-  { x: f(self.x), y: f(self.y) }
+  { x: f(self.x), y: f(self.y), }
 }
 
 ///|
@@ -98,7 +98,7 @@ pub(all) struct Rect[T] {
 
 ///|
 pub fn[T] Rect::new(left : T, right : T, top : T, bottom : T) -> Rect[T] {
-  { left, right, top, bottom }
+  { left, right, top, bottom, }
 }
 
 ///|
@@ -116,13 +116,13 @@ pub impl[T : Show] Show for Rect[T] with fn output(self, logger) {
 
 ///|
 pub fn Rect::zero() -> Rect[Double] {
-  { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
+  { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0, }
 }
 
 ///|
 /// Create a rect with all sides set to the same value
 pub fn[T] Rect::all(value : T) -> Rect[T] {
-  { left: value, right: value, top: value, bottom: value }
+  { left: value, right: value, top: value, bottom: value, }
 }
 
 ///|
@@ -156,7 +156,7 @@ pub struct Line[T] {
 
 ///|
 pub fn[T] Line::new(start : T, end : T) -> Line[T] {
-  { start, end }
+  { start, end, }
 }
 
 ///|
@@ -167,3 +167,21 @@ pub impl[T : Show] Show for Line[T] with fn output(self, logger) {
   self.end.output(logger)
   logger.write_string(" }")
 }
+
+///|
+pub extend Line with Show::{to_string, output}
+
+///|
+pub extend Point with Show::{to_string, output}
+
+///|
+pub extend Rect with Debug::{to_repr}
+
+///|
+pub extend Rect with Eq::{not_equal, equal}
+
+///|
+pub extend Rect with Show::{to_string, output}
+
+///|
+pub extend Size with Show::{to_string, output}

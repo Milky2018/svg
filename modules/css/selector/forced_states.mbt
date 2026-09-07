@@ -183,3 +183,12 @@ pub fn matches_complex_with_forced_states(
   }
   true
 }
+
+///|
+pub extend ForcedPseudoStates with Debug::{to_repr}
+
+///|
+pub extend ForcedPseudoStates with Eq::{not_equal, equal}
+
+///|
+pub extend ForcedPseudoStates with Show::{to_string, output}

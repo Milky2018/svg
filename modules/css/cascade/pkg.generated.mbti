@@ -52,6 +52,8 @@ pub(all) struct Declaration {
 }
 pub fn Declaration::from_inline(String, String, Importance) -> Self
 pub fn Declaration::new(String, String) -> Self
+pub fn Declaration::output(Self, &Logger) -> Unit
+pub fn Declaration::to_string(Self) -> String
 pub fn Declaration::with_metadata(String, PropertyValue, Origin, Importance, @selector.Specificity, Int) -> Self
 pub impl Show for Declaration
 
@@ -64,6 +66,8 @@ pub(all) enum Importance {
   Normal
   Important
 }
+pub fn Importance::output(Self, &Logger) -> Unit
+pub fn Importance::to_string(Self) -> String
 pub impl Show for Importance
 
 pub struct IndexedStylesheet {
@@ -89,6 +93,8 @@ pub(all) enum Origin {
   User
   Author
 }
+pub fn Origin::output(Self, &Logger) -> Unit
+pub fn Origin::to_string(Self) -> String
 pub impl Show for Origin
 
 pub(all) enum PropertyValue {
@@ -100,6 +106,8 @@ pub(all) enum PropertyValue {
   RevertLayer
 }
 pub fn PropertyValue::from_css_text(String) -> Self
+pub fn PropertyValue::output(Self, &Logger) -> Unit
+pub fn PropertyValue::to_string(Self) -> String
 pub impl Show for PropertyValue
 
 pub(all) struct RuleMatch {
@@ -137,4 +145,3 @@ pub fn Stylesheet::new(Origin) -> Self
 // Type aliases
 
 // Traits
-

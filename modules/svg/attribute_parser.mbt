@@ -297,11 +297,11 @@ fn apply_attribute(
     "transform" => node.transform = parse_transform(value)
     // Stroke detail attributes
     "stroke-linecap" =>
-      node.stroke = { ..node.stroke, linecap: parse_linecap(value) }
+      node.stroke = { ..node.stroke, linecap: parse_linecap(value), }
     "stroke-linejoin" =>
-      node.stroke = { ..node.stroke, linejoin: parse_linejoin(value) }
+      node.stroke = { ..node.stroke, linejoin: parse_linejoin(value), }
     "stroke-miterlimit" =>
-      node.stroke = { ..node.stroke, miterlimit: parse_number(value) }
+      node.stroke = { ..node.stroke, miterlimit: parse_number(value), }
     "stroke-dasharray" =>
       node.stroke = {
         ..node.stroke,
@@ -311,7 +311,7 @@ fn apply_attribute(
         },
       }
     "stroke-dashoffset" =>
-      node.stroke = { ..node.stroke, dashoffset: length(Diagonal) }
+      node.stroke = { ..node.stroke, dashoffset: length(Diagonal), }
     "vector-effect" =>
       node.stroke = {
         ..node.stroke,
@@ -521,13 +521,13 @@ fn parse_url_ref(value : String) -> String? {
 ///|
 fn parse_number_list(value : String) -> Array[Double] {
   let nums : Array[Double] = []
-  let mut buf = StringBuilder::new()
+  let mut buf = StringBuilder()
   for i in 0..<value.length() {
     let c = Int::unsafe_to_char(value[i].to_int())
     if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
       if buf.to_string().length() > 0 {
         nums.push(parse_number(buf.to_string()))
-        buf = StringBuilder::new()
+        buf = StringBuilder()
       }
     } else {
       buf.write_char(c)
@@ -542,13 +542,13 @@ fn parse_number_list(value : String) -> Array[Double] {
 ///|
 fn split_tokens(value : String) -> Array[String] {
   let tokens : Array[String] = []
-  let mut buf = StringBuilder::new()
+  let mut buf = StringBuilder()
   for i in 0..<value.length() {
     let c = Int::unsafe_to_char(value[i].to_int())
     if c == ' ' || c == '\n' || c == '\r' || c == '\t' {
       if buf.to_string().length() > 0 {
         tokens.push(buf.to_string())
-        buf = StringBuilder::new()
+        buf = StringBuilder()
       }
     } else {
       buf.write_char(c)
@@ -566,7 +566,7 @@ fn parse_view_box(value : String) -> ViewBox? {
   if nums.length() < 4 {
     return None
   }
-  Some({ min_x: nums[0], min_y: nums[1], width: nums[2], height: nums[3] })
+  Some({ min_x: nums[0], min_y: nums[1], width: nums[2], height: nums[3], })
 }
 
 ///|
@@ -580,7 +580,7 @@ fn parse_preserve_aspect_ratio(value : String) -> PreserveAspectRatio {
     return PreserveAspectRatio::default()
   }
   if tokens[0] == "none" {
-    return { align: None, meet_or_slice: Meet }
+    return { align: None, meet_or_slice: Meet, }
   }
   let align = match tokens[0] {
     "xMinYMin" => XMinYMin
@@ -602,7 +602,7 @@ fn parse_preserve_aspect_ratio(value : String) -> PreserveAspectRatio {
   } else {
     Meet
   }
-  { align, meet_or_slice }
+  { align, meet_or_slice, }
 }
 
 ///|

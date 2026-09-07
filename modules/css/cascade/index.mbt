@@ -23,7 +23,7 @@ pub(all) struct SelectorIndex {
 
 ///|
 pub fn SelectorIndex::new() -> SelectorIndex {
-  { by_id: Map([]), by_class: Map([]), by_tag: Map([]), universal: [] }
+  { by_id: Map([]), by_class: Map([]), by_tag: Map([]), universal: [], }
 }
 
 ///|
@@ -158,7 +158,7 @@ pub struct IndexedStylesheet {
 ///|
 pub fn IndexedStylesheet::new(stylesheet : Stylesheet) -> IndexedStylesheet {
   let index = SelectorIndex::from_stylesheet(stylesheet)
-  { stylesheet, index }
+  { stylesheet, index, }
 }
 
 ///|

@@ -208,6 +208,6 @@ test "cascade_element_with_forced_states - media query gates rule" {
 test "ForcedPseudoStates - none and is_empty" {
   let none_state = @selector.ForcedPseudoStates::none()
   assert_true(none_state.is_empty())
-  let with_hover : @selector.ForcedPseudoStates = { ..none_state, hover: true }
+  let with_hover : @selector.ForcedPseudoStates = { ..none_state, hover: true, }
   assert_false(with_hover.is_empty())
 }

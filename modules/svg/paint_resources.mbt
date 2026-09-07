@@ -56,7 +56,7 @@ priv struct PatternRegistry {
 
 ///|
 fn PatternRegistry::new() -> PatternRegistry {
-  { patterns: Map([]), references: Map([]), specified: Map([]) }
+  { patterns: Map([]), references: Map([]), specified: Map([]), }
 }
 
 ///|
@@ -194,7 +194,7 @@ priv struct GradientRegistry {
 
 ///|
 fn GradientRegistry::new() -> GradientRegistry {
-  { gradients: Map([]), references: Map([]), specified: Map([]) }
+  { gradients: Map([]), references: Map([]), specified: Map([]), }
 }
 
 ///|

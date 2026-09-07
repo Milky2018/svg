@@ -16,7 +16,7 @@ fn apply_clip_path(
     0,
   )
   if mask.width == 0 || mask.height == 0 {
-    let setter : ColorSink = { set: fn(_, _, _) { () } }
+    let setter : ColorSink = { set: fn(_, _, _) { () }, }
     return { ..ctx, setter, }
   }
   let inner = ctx.setter
@@ -93,7 +93,7 @@ fn build_clip_node_coverage(
   depth : Int,
 ) -> CoverageMask {
   if depth >= 32 {
-    return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [] }
+    return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [], }
   }
   let base_transform = parent_transform.multiply(node.transform)
   let transform = match
@@ -165,7 +165,7 @@ fn build_clip_path_coverage(
     UserSpaceOnUse => element_transform
     ObjectBoundingBox => {
       if bbox_local.is_empty() {
-        return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [] }
+        return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [], }
       }
       let translate = Transform::translate(bbox_local.min_x, bbox_local.min_y)
       let scale = Transform::scale(bbox_local.width(), bbox_local.height())

@@ -2,18 +2,18 @@
 test "Specificity::zero and add" {
   let zero = Specificity::zero()
   inspect(zero, content="(0,0,0)")
-  let a : Specificity = { a: 1, b: 2, c: 3 }
-  let b : Specificity = { a: 0, b: 1, c: 2 }
+  let a : Specificity = { a: 1, b: 2, c: 3, }
+  let b : Specificity = { a: 0, b: 1, c: 2, }
   let sum = a.add(b)
   inspect(sum, content="(1,3,5)")
 }
 
 ///|
 test "Specificity::compare_to" {
-  let s1 : Specificity = { a: 0, b: 1, c: 0 }
-  let s2 : Specificity = { a: 1, b: 0, c: 0 }
-  let s3 : Specificity = { a: 0, b: 1, c: 5 }
-  let s4 : Specificity = { a: 0, b: 1, c: 0 }
+  let s1 : Specificity = { a: 0, b: 1, c: 0, }
+  let s2 : Specificity = { a: 1, b: 0, c: 0, }
+  let s3 : Specificity = { a: 0, b: 1, c: 5, }
+  let s4 : Specificity = { a: 0, b: 1, c: 0, }
   assert_true(s1.compare_to(s2) < 0)
   assert_true(s2.compare_to(s1) > 0)
   assert_true(s3.compare_to(s1) > 0)
@@ -111,14 +111,14 @@ test "Show for PseudoClass" {
   inspect(PseudoClass::LastOfType, content=":last-of-type")
   inspect(PseudoClass::OnlyOfType, content=":only-of-type")
   inspect(PseudoClass::State("loading"), content=":state(loading)")
-  inspect(PseudoClass::NthChild({ a: 2, b: 1 }), content=":nth-child(2n+1)")
+  inspect(PseudoClass::NthChild({ a: 2, b: 1, }), content=":nth-child(2n+1)")
   inspect(
-    PseudoClass::NthLastChild({ a: 0, b: 3 }),
+    PseudoClass::NthLastChild({ a: 0, b: 3, }),
     content=":nth-last-child(3)",
   )
-  inspect(PseudoClass::NthOfType({ a: 1, b: 0 }), content=":nth-of-type(n)")
+  inspect(PseudoClass::NthOfType({ a: 1, b: 0, }), content=":nth-of-type(n)")
   inspect(
-    PseudoClass::NthLastOfType({ a: -1, b: 2 }),
+    PseudoClass::NthLastOfType({ a: -1, b: 2, }),
     content=":nth-last-of-type(-n+2)",
   )
   inspect(PseudoClass::Not([]), content=":not(...)")
@@ -129,15 +129,15 @@ test "Show for PseudoClass" {
 
 ///|
 test "NthExpr Show edge cases" {
-  inspect(NthExpr::{ a: 0, b: 5 }, content="5")
-  inspect(NthExpr::{ a: 1, b: 0 }, content="n")
-  inspect(NthExpr::{ a: 1, b: 3 }, content="n+3")
-  inspect(NthExpr::{ a: 1, b: -2 }, content="n-2")
-  inspect(NthExpr::{ a: -1, b: 4 }, content="-n+4")
-  inspect(NthExpr::{ a: -1, b: -1 }, content="-n-1")
-  inspect(NthExpr::{ a: 3, b: 0 }, content="3n")
-  inspect(NthExpr::{ a: 3, b: 2 }, content="3n+2")
-  inspect(NthExpr::{ a: 2, b: -1 }, content="2n-1")
+  inspect(NthExpr::{ a: 0, b: 5, }, content="5")
+  inspect(NthExpr::{ a: 1, b: 0, }, content="n")
+  inspect(NthExpr::{ a: 1, b: 3, }, content="n+3")
+  inspect(NthExpr::{ a: 1, b: -2, }, content="n-2")
+  inspect(NthExpr::{ a: -1, b: 4, }, content="-n+4")
+  inspect(NthExpr::{ a: -1, b: -1, }, content="-n-1")
+  inspect(NthExpr::{ a: 3, b: 0, }, content="3n")
+  inspect(NthExpr::{ a: 3, b: 2, }, content="3n+2")
+  inspect(NthExpr::{ a: 2, b: -1, }, content="2n-1")
 }
 
 ///|

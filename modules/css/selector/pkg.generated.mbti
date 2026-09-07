@@ -44,6 +44,8 @@ pub enum AttributeMatch {
   Suffix(String)
   Substring(String)
 }
+pub fn AttributeMatch::output(Self, &Logger) -> Unit
+pub fn AttributeMatch::to_string(Self) -> String
 pub impl Show for AttributeMatch
 
 pub struct AttributeSelector {
@@ -52,6 +54,8 @@ pub struct AttributeSelector {
   case_insensitive : Bool
   any_namespace : Bool
 }
+pub fn AttributeSelector::output(Self, &Logger) -> Unit
+pub fn AttributeSelector::to_string(Self) -> String
 pub impl Show for AttributeSelector
 
 pub enum Combinator {
@@ -60,13 +64,17 @@ pub enum Combinator {
   NextSibling
   SubsequentSibling
 }
+pub fn Combinator::output(Self, &Logger) -> Unit
+pub fn Combinator::to_string(Self) -> String
 pub impl Show for Combinator
 
 pub struct ComplexSelector {
   head : CompoundSelector
   tail : Array[ComplexSelectorStep]
 }
+pub fn ComplexSelector::output(Self, &Logger) -> Unit
 pub fn ComplexSelector::simple(CompoundSelector) -> Self
+pub fn ComplexSelector::to_string(Self) -> String
 pub impl Show for ComplexSelector
 
 pub struct ComplexSelectorStep {
@@ -82,6 +90,8 @@ pub struct CompoundSelector {
 pub fn CompoundSelector::from_class(String) -> Self
 pub fn CompoundSelector::from_id(String) -> Self
 pub fn CompoundSelector::from_type(String) -> Self
+pub fn CompoundSelector::output(Self, &Logger) -> Unit
+pub fn CompoundSelector::to_string(Self) -> String
 pub fn CompoundSelector::universal() -> Self
 pub impl Show for CompoundSelector
 
@@ -119,14 +129,21 @@ pub(all) struct ForcedPseudoStates {
   focus_visible : Bool
   focus_within : Bool
 } derive(Eq, @debug.Debug)
+pub fn ForcedPseudoStates::equal(Self, Self) -> Bool
 pub fn ForcedPseudoStates::is_empty(Self) -> Bool
 pub fn ForcedPseudoStates::none() -> Self
+pub fn ForcedPseudoStates::not_equal(Self, Self) -> Bool
+pub fn ForcedPseudoStates::output(Self, &Logger) -> Unit
+pub fn ForcedPseudoStates::to_repr(Self) -> @debug.Repr
+pub fn ForcedPseudoStates::to_string(Self) -> String
 pub impl Show for ForcedPseudoStates
 
 pub struct NthExpr {
   a : Int
   b : Int
 }
+pub fn NthExpr::output(Self, &Logger) -> Unit
+pub fn NthExpr::to_string(Self) -> String
 pub impl Show for NthExpr
 
 pub enum PseudoClass {
@@ -172,6 +189,8 @@ pub enum PseudoClass {
   ReadOnly
   ReadWrite
 }
+pub fn PseudoClass::output(Self, &Logger) -> Unit
+pub fn PseudoClass::to_string(Self) -> String
 pub impl Show for PseudoClass
 
 pub enum PseudoElement {
@@ -192,6 +211,8 @@ pub enum PseudoElement {
   Part(Array[String])
   Slotted(Array[CompoundSelector])
 }
+pub fn PseudoElement::output(Self, &Logger) -> Unit
+pub fn PseudoElement::to_string(Self) -> String
 pub impl Show for PseudoElement
 
 pub struct RelativeSelector {
@@ -202,6 +223,8 @@ pub struct RelativeSelector {
 pub struct SelectorList {
   selectors : Array[ComplexSelector]
 }
+pub fn SelectorList::output(Self, &Logger) -> Unit
+pub fn SelectorList::to_string(Self) -> String
 pub impl Show for SelectorList
 
 pub(all) struct ShadowContext {
@@ -222,6 +245,8 @@ pub enum SimpleSelector {
   PseudoClass(PseudoClass)
   PseudoElement(PseudoElement)
 }
+pub fn SimpleSelector::output(Self, &Logger) -> Unit
+pub fn SimpleSelector::to_string(Self) -> String
 pub impl Show for SimpleSelector
 
 pub(all) struct Specificity {
@@ -230,11 +255,19 @@ pub(all) struct Specificity {
   c : Int
 } derive(Compare, Eq)
 pub fn Specificity::add(Self, Self) -> Self
+pub fn Specificity::compare(Self, Self) -> Int
 pub fn Specificity::compare_to(Self, Self) -> Int
+pub fn Specificity::equal(Self, Self) -> Bool
+pub fn Specificity::not_equal(Self, Self) -> Bool
+pub fn Specificity::op_ge(Self, Self) -> Bool
+pub fn Specificity::op_gt(Self, Self) -> Bool
+pub fn Specificity::op_le(Self, Self) -> Bool
+pub fn Specificity::op_lt(Self, Self) -> Bool
+pub fn Specificity::output(Self, &Logger) -> Unit
+pub fn Specificity::to_string(Self) -> String
 pub fn Specificity::zero() -> Self
 pub impl Show for Specificity
 
 // Type aliases
 
 // Traits
-

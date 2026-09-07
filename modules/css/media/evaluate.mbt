@@ -49,7 +49,7 @@ pub fn MediaEnvironment::with_color_scheme(
   viewport_height : Double,
   color_scheme : ColorScheme,
 ) -> MediaEnvironment {
-  { viewport_width, viewport_height, device_pixel_ratio: 1.0, color_scheme }
+  { viewport_width, viewport_height, device_pixel_ratio: 1.0, color_scheme, }
 }
 
 ///|
@@ -306,3 +306,12 @@ fn compare_resolution(
     Ge => actual_dpr >= query_dpr
   }
 }
+
+///|
+pub extend ColorScheme with Debug::{to_repr}
+
+///|
+pub extend ColorScheme with Eq::{not_equal, equal}
+
+///|
+pub extend ColorScheme with Show::{to_string, output}

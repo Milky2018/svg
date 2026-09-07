@@ -30,7 +30,7 @@ pub fn render_svg(
         resource: "",
         node_id: "",
       })
-      { image: Image::new(width, height), diagnostics }
+      { image: Image::new(width, height), diagnostics, }
     }
   }
 }
@@ -63,7 +63,7 @@ fn render_svg_document_with_diagnostics(
     diagnostics,
   }
   document.render(ctx)
-  { image, diagnostics }
+  { image, diagnostics, }
 }
 
 ///|

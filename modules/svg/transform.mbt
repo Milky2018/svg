@@ -5,19 +5,19 @@
 ///|
 /// Identity transform (no transformation)
 fn Transform::identity() -> Transform {
-  { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: 0.0 }
+  { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: 0.0, }
 }
 
 ///|
 /// Create a translation transform
 pub fn Transform::translate(tx : Double, ty : Double) -> Transform {
-  { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: tx, f: ty }
+  { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: tx, f: ty, }
 }
 
 ///|
 /// Create a scaling transform
 pub fn Transform::scale(sx : Double, sy : Double) -> Transform {
-  { a: sx, b: 0.0, c: 0.0, d: sy, e: 0.0, f: 0.0 }
+  { a: sx, b: 0.0, c: 0.0, d: sy, e: 0.0, f: 0.0, }
 }
 
 ///|
@@ -31,7 +31,7 @@ pub fn Transform::scale_uniform(s : Double) -> Transform {
 pub fn Transform::rotate(angle : Double) -> Transform {
   let cos_a = @math.cos(angle)
   let sin_a = @math.sin(angle)
-  { a: cos_a, b: sin_a, c: -sin_a, d: cos_a, e: 0.0, f: 0.0 }
+  { a: cos_a, b: sin_a, c: -sin_a, d: cos_a, e: 0.0, f: 0.0, }
 }
 
 ///|
@@ -51,13 +51,13 @@ pub fn Transform::rotate_around(
 ///|
 /// Create a skewX transform (angle in radians)
 pub fn Transform::skew_x(angle : Double) -> Transform {
-  { a: 1.0, b: 0.0, c: @math.tan(angle), d: 1.0, e: 0.0, f: 0.0 }
+  { a: 1.0, b: 0.0, c: @math.tan(angle), d: 1.0, e: 0.0, f: 0.0, }
 }
 
 ///|
 /// Create a skewY transform (angle in radians)
 pub fn Transform::skew_y(angle : Double) -> Transform {
-  { a: 1.0, b: @math.tan(angle), c: 0.0, d: 1.0, e: 0.0, f: 0.0 }
+  { a: 1.0, b: @math.tan(angle), c: 0.0, d: 1.0, e: 0.0, f: 0.0, }
 }
 
 ///|
@@ -70,7 +70,7 @@ pub fn Transform::matrix(
   e : Double,
   f : Double,
 ) -> Transform {
-  { a, b, c, d, e, f }
+  { a, b, c, d, e, f, }
 }
 
 ///|
@@ -183,7 +183,7 @@ pub fn Transform::apply_bbox(
   let max_x = max(max(x1, x2), max(x3, x4))
   let min_y = min(min(y1, y2), min(y3, y4))
   let max_y = max(max(y1, y2), max(y3, y4))
-  { min_x, min_y, max_x, max_y }
+  { min_x, min_y, max_x, max_y, }
 }
 
 ///|

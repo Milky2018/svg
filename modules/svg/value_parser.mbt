@@ -486,7 +486,7 @@ fn parse_color(value : String) -> Color {
 
 ///|
 fn build_substring(s : String, start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i in start..<end {
     buf.write_char(Int::unsafe_to_char(s[i].to_int()))
   }
@@ -700,13 +700,13 @@ pub fn parse_transform(value : String) -> Transform {
 ///|
 fn parse_transform_args(s : String) -> Array[Double] {
   let result : Array[Double] = []
-  let mut buf = StringBuilder::new()
+  let mut buf = StringBuilder()
   for i in 0..<s.length() {
     let c = Int::unsafe_to_char(s[i].to_int())
     if c == ' ' || c == ',' {
       if buf.to_string().length() > 0 {
         result.push(parse_number(buf.to_string()))
-        buf = StringBuilder::new()
+        buf = StringBuilder()
       }
     } else {
       buf.write_char(c)

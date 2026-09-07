@@ -522,6 +522,6 @@ fn sampled_animation_declarations(
     })
   }
   let declarations : Array[StyleDeclaration] = []
-  sampled.each(fn(name, value) { declarations.push({ name, value }) })
+  sampled.each(fn(name, value) { declarations.push({ name, value, }) })
   declarations
 }

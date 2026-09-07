@@ -27,7 +27,7 @@ pub fn parse_media_query_list(input : String) -> MediaQueryList {
 /// Split media queries by comma (top-level only, not inside parentheses)
 fn split_media_queries(input : String) -> Array[String] {
   let result : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   let mut paren_depth = 0
   for i = 0; i < input.length(); i = i + 1 {
     let c = input[i].to_int().unsafe_to_char()
@@ -53,7 +53,7 @@ fn split_media_queries(input : String) -> Array[String] {
 
 ///|
 fn join_media_tokens(tokens : Array[String]) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for i = 0; i < tokens.length(); i = i + 1 {
     if i > 0 {
       out.write_char(' ')
@@ -143,14 +143,14 @@ fn parse_single_media_query(input : String) -> MediaQuery? {
     }
     pos += 1
   }
-  Some({ negated, only, media_type, conditions })
+  Some({ negated, only, media_type, conditions, })
 }
 
 ///|
 /// Tokenize media query string into tokens
 fn tokenize_media_query(input : String) -> Array[String] {
   let tokens : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   let mut in_paren = false
   let mut paren_depth = 0
   for i = 0; i < input.length(); i = i + 1 {

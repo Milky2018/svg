@@ -279,7 +279,7 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
 /// Split string by comma (for transform arguments)
 fn split_by_comma(s : String) -> Array[String] {
   let result : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   for c in s {
     if c == ',' {
       result.push(current.to_string())
@@ -298,7 +298,7 @@ fn split_by_comma(s : String) -> Array[String] {
 ///|
 /// Convert char array slice to string
 fn chars_to_string(chars : ArrayView[Char]) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   for c in chars {
     sb.write_char(c)
   }

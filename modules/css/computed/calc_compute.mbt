@@ -93,7 +93,7 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
 /// Split CSS function arguments by comma (handling nested parentheses)
 fn split_css_args(input : String) -> Array[String] {
   let result : Array[String] = []
-  let mut current = StringBuilder::new()
+  let mut current = StringBuilder()
   let mut paren_depth = 0
   for i = 0; i < input.length(); i = i + 1 {
     let c = input[i].to_int().unsafe_to_char()
@@ -108,7 +108,7 @@ fn split_css_args(input : String) -> Array[String] {
       if !s.is_empty() {
         result.push(s)
       }
-      current = StringBuilder::new()
+      current = StringBuilder()
     } else {
       current.write_char(c)
     }
@@ -313,12 +313,12 @@ priv struct CalcVal {
 
 ///|
 fn calc_num(n : Double) -> CalcVal {
-  { px: 0.0, pct: 0.0, num: n, is_num: true }
+  { px: 0.0, pct: 0.0, num: n, is_num: true, }
 }
 
 ///|
 fn calc_lp(px : Double, pct : Double) -> CalcVal {
-  { px, pct, num: 0.0, is_num: false }
+  { px, pct, num: 0.0, is_num: false, }
 }
 
 ///|
@@ -1048,7 +1048,7 @@ fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
 
 ///|
 fn strip_css_ascii_whitespace(value : String) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   for c in value.iter() {
     if !is_css_ascii_whitespace(c) {
       sb.write_char(c)
@@ -1126,7 +1126,7 @@ fn normalize_grid_template_math_functions(
   value : String,
   ctx : ComputeContext,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   let mut i = 0
   while i < value.length() {
     let prefix_len = css_math_function_prefix_len(value, i)

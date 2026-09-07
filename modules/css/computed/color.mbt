@@ -331,7 +331,7 @@ fn find_char_last(s : String, c : Char) -> Int {
 ///|
 /// Extract substring
 fn substr(s : String, start : Int, end : Int) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   for i = start; i < end && i < s.length(); i = i + 1 {
     sb.write_char(char_at(s, i))
   }
@@ -388,7 +388,7 @@ fn parse_rgb_function(value : String) -> @types.Color? {
 /// Split color function arguments (handles comma and space separation)
 fn split_color_args(s : String) -> Array[String] {
   let result : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   for c in s {
     if c == ',' || c == '/' || c == ' ' {
       let part = current.to_string().trim()
@@ -738,12 +738,12 @@ pub fn parse_linear_gradient(value : String) -> @types.BackgroundImage {
   for i = color_start; i < parts.length(); i = i + 1 {
     let part = parts[i].trim().to_owned()
     let (color, pos) = parse_gradient_stop(part, i - color_start, num_colors)
-    stops.push({ color, position: pos })
+    stops.push({ color, position: pos, })
   }
   if stops.length() < 2 {
     return None
   }
-  Gradient({ angle_deg: angle, stops })
+  Gradient({ angle_deg: angle, stops, })
 }
 
 ///|
@@ -855,3 +855,6 @@ fn split_gradient_args(s : String) -> Array[String] {
   }
   result
 }
+
+///|
+pub extend CssColorValue with Show::{to_string, output}

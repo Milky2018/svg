@@ -174,7 +174,7 @@ fn parse_font_shorthand(
 
   // Split by whitespace
   let parts : Array[String] = []
-  let mut current = StringBuilder::new()
+  let mut current = StringBuilder()
   let mut in_quotes = false
   for c in v.iter() {
     if c == '"' || c == '\'' {
@@ -185,7 +185,7 @@ fn parse_font_shorthand(
       if s.length() > 0 {
         parts.push(s)
       }
-      current = StringBuilder::new()
+      current = StringBuilder()
     } else {
       current.write_char(c)
     }
@@ -265,5 +265,5 @@ fn parse_font_shorthand(
   } else {
     ""
   }
-  { font_size, line_height, font_weight, font_family }
+  { font_size, line_height, font_weight, font_family, }
 }

@@ -56,7 +56,7 @@ priv struct MarkerRegistry {
 
 ///|
 fn MarkerRegistry::new() -> MarkerRegistry {
-  { markers: Map([]) }
+  { markers: Map([]), }
 }
 
 ///|
@@ -103,3 +103,24 @@ pub impl Show for MaskType with fn output(self, logger) {
 pub impl Show for PaintOrderItem with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
+
+///|
+pub extend Align with Show::{to_string, output}
+
+///|
+pub extend FillRule with Show::{to_string, output}
+
+///|
+pub extend LineCap with Show::{to_string, output}
+
+///|
+pub extend LineJoin with Show::{to_string, output}
+
+///|
+pub extend MaskType with Show::{to_string, output}
+
+///|
+pub extend MeetOrSlice with Show::{to_string, output}
+
+///|
+pub extend PaintOrderItem with Show::{to_string, output}

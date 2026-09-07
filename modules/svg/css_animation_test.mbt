@@ -2,7 +2,7 @@
 test "explicit sample time interpolates SVG geometry, color, and opacity" {
   let options = RenderOptions::{
     ..RenderOptions::default(),
-    environment: { ..RenderEnvironment::default(), sample_time_seconds: 1.0 },
+    environment: { ..RenderEnvironment::default(), sample_time_seconds: 1.0, },
   }
   let svg =
     #|<svg xmlns="http://www.w3.org/2000/svg" width="10" height="2">
@@ -29,7 +29,7 @@ test "explicit sample time interpolates SVG geometry, color, and opacity" {
 test "animation direction and forwards fill are sampled deterministically" {
   let options = RenderOptions::{
     ..RenderOptions::default(),
-    environment: { ..RenderEnvironment::default(), sample_time_seconds: 3.0 },
+    environment: { ..RenderEnvironment::default(), sample_time_seconds: 3.0, },
   }
   let svg =
     #|<svg xmlns="http://www.w3.org/2000/svg" width="10" height="1">
@@ -49,7 +49,7 @@ test "animation direction and forwards fill are sampled deterministically" {
 test "backwards fill applies before a positive delay" {
   let options = RenderOptions::{
     ..RenderOptions::default(),
-    environment: { ..RenderEnvironment::default(), sample_time_seconds: 0.0 },
+    environment: { ..RenderEnvironment::default(), sample_time_seconds: 0.0, },
   }
   let svg =
     #|<svg xmlns="http://www.w3.org/2000/svg" width="4" height="1">
@@ -70,7 +70,7 @@ test "backwards fill applies before a positive delay" {
 test "animation origin stays below important author declarations" {
   let options = RenderOptions::{
     ..RenderOptions::default(),
-    environment: { ..RenderEnvironment::default(), sample_time_seconds: 0.5 },
+    environment: { ..RenderEnvironment::default(), sample_time_seconds: 0.5, },
   }
   let svg =
     #|<svg xmlns="http://www.w3.org/2000/svg" width="2" height="1">
@@ -90,7 +90,7 @@ test "animation origin stays below important author declarations" {
 test "paused animation has a deterministic zero hold time" {
   let options = RenderOptions::{
     ..RenderOptions::default(),
-    environment: { ..RenderEnvironment::default(), sample_time_seconds: 10.0 },
+    environment: { ..RenderEnvironment::default(), sample_time_seconds: 10.0, },
   }
   let svg =
     #|<svg xmlns="http://www.w3.org/2000/svg" width="2" height="1">
@@ -109,7 +109,7 @@ test "paused animation has a deterministic zero hold time" {
 test "steps timing is applied within a keyframe interval" {
   let options = RenderOptions::{
     ..RenderOptions::default(),
-    environment: { ..RenderEnvironment::default(), sample_time_seconds: 0.5 },
+    environment: { ..RenderEnvironment::default(), sample_time_seconds: 0.5, },
   }
   let svg =
     #|<svg xmlns="http://www.w3.org/2000/svg" width="10" height="1">

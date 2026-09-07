@@ -97,13 +97,13 @@ fn valid_svg_number(value : String, allow_length : Bool) -> Bool {
 ///|
 fn svg_number_tokens(value : String) -> Array[String] {
   let tokens : Array[String] = []
-  let mut token = StringBuilder::new()
+  let mut token = StringBuilder()
   for c in value {
     if c == ',' || c == ' ' || c == '\t' || c == '\n' || c == '\r' {
       let current = token.to_string()
       if current.length() > 0 {
         tokens.push(current)
-        token = StringBuilder::new()
+        token = StringBuilder()
       }
     } else {
       token.write_char(c)

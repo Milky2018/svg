@@ -44,7 +44,7 @@ fn style_element(
   }
   element = element.set_sibling_info(sibling_index, sibling_count)
   match previous_sibling {
-    Some(previous) => element = { ..element, prev_sibling: Some(previous) }
+    Some(previous) => element = { ..element, prev_sibling: Some(previous), }
     None => ()
   }
   match parent {
@@ -164,7 +164,7 @@ fn cascaded_style_declarations(
 ) -> Array[StyleDeclaration] {
   let declarations : Array[StyleDeclaration] = []
   values.each(fn(name, declaration) {
-    declarations.push({ name, value: property_value_text(declaration.value) })
+    declarations.push({ name, value: property_value_text(declaration.value), })
   })
   declarations
 }

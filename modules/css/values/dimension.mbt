@@ -107,12 +107,12 @@ pub impl Show for Dimension with fn output(self, logger) {
   match self {
     Length(v) => {
       logger.write_string("Length(")
-      v.output(logger)
+      Show::output(v, logger)
       logger.write_string(")")
     }
     Percent(v) => {
       logger.write_string("Percent(")
-      v.output(logger)
+      Show::output(v, logger)
       logger.write_string(")")
     }
     Auto => logger.write_string("Auto")
@@ -120,14 +120,14 @@ pub impl Show for Dimension with fn output(self, logger) {
     MaxContent => logger.write_string("MaxContent")
     FitContent(v) => {
       logger.write_string("FitContent(")
-      v.output(logger)
+      Show::output(v, logger)
       logger.write_string(")")
     }
     Calc(px, pct) => {
       logger.write_string("Calc(")
-      px.output(logger)
+      Show::output(px, logger)
       logger.write_string(", ")
-      pct.output(logger)
+      Show::output(pct, logger)
       logger.write_string(")")
     }
     MathFn(op, args) => {
@@ -146,9 +146,9 @@ pub impl Show for Dimension with fn output(self, logger) {
         }
         let (px, pct) = args[i]
         logger.write_string("(")
-        px.output(logger)
+        Show::output(px, logger)
         logger.write_string(", ")
-        pct.output(logger)
+        Show::output(pct, logger)
         logger.write_string(")")
       }
       logger.write_string("])")
@@ -312,25 +312,25 @@ pub fn BoundingRect::new(
   width : Double,
   height : Double,
 ) -> BoundingRect {
-  { x, y, width, height }
+  { x, y, width, height, }
 }
 
 ///|
 pub impl Show for BoundingRect with fn output(self, logger) {
   logger.write_string("BoundingRect { x: ")
-  self.x.output(logger)
+  Show::output(self.x, logger)
   logger.write_string(", y: ")
-  self.y.output(logger)
+  Show::output(self.y, logger)
   logger.write_string(", width: ")
-  self.width.output(logger)
+  Show::output(self.width, logger)
   logger.write_string(", height: ")
-  self.height.output(logger)
+  Show::output(self.height, logger)
   logger.write_string(" }")
 }
 
 ///|
 pub fn BoundingRect::zero() -> BoundingRect {
-  { x: 0.0, y: 0.0, width: 0.0, height: 0.0 }
+  { x: 0.0, y: 0.0, width: 0.0, height: 0.0, }
 }
 
 ///|
@@ -361,5 +361,23 @@ pub fn BoundingRect::union(
   let y = min(self.y, other.y)
   let right = max(self.right(), other.right())
   let bottom = max(self.bottom(), other.bottom())
-  { x, y, width: right - x, height: bottom - y }
+  { x, y, width: right - x, height: bottom - y, }
 }
+
+///|
+pub extend BoundingRect with Show::{to_string, output}
+
+///|
+pub extend Dimension with Debug::{to_repr}
+
+///|
+pub extend Dimension with Eq::{not_equal, equal}
+
+///|
+pub extend Dimension with Show::{to_string, output}
+
+///|
+pub extend MathOp with Debug::{to_repr}
+
+///|
+pub extend MathOp with Eq::{not_equal, equal}

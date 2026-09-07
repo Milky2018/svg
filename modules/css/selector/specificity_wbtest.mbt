@@ -147,16 +147,16 @@ test "specificity - pseudo-element" {
 
 ///|
 test "specificity comparison" {
-  let spec1 : Specificity = { a: 1, b: 0, c: 0 }
-  let spec2 : Specificity = { a: 0, b: 10, c: 10 }
+  let spec1 : Specificity = { a: 1, b: 0, c: 0, }
+  let spec2 : Specificity = { a: 0, b: 10, c: 10, }
   // ID selector beats any number of classes/types
   assert_true(spec1.compare_to(spec2) > 0)
 }
 
 ///|
 test "specificity addition" {
-  let spec1 : Specificity = { a: 1, b: 2, c: 3 }
-  let spec2 : Specificity = { a: 0, b: 1, c: 1 }
+  let spec1 : Specificity = { a: 1, b: 2, c: 3, }
+  let spec2 : Specificity = { a: 0, b: 1, c: 1, }
   let sum = spec1.add(spec2)
   inspect(sum.a, content="1")
   inspect(sum.b, content="3")
@@ -299,14 +299,14 @@ test "specificity - :not() with multiple compound arguments picks max" {
 
 ///|
 test "specificity comparison - class beats type-count" {
-  let class_spec : Specificity = { a: 0, b: 1, c: 0 }
-  let many_types : Specificity = { a: 0, b: 0, c: 100 }
+  let class_spec : Specificity = { a: 0, b: 1, c: 0, }
+  let many_types : Specificity = { a: 0, b: 0, c: 100, }
   assert_true(class_spec.compare_to(many_types) > 0)
 }
 
 ///|
 test "specificity::zero is identity for add" {
-  let s : Specificity = { a: 2, b: 3, c: 5 }
+  let s : Specificity = { a: 2, b: 3, c: 5, }
   let sum = s.add(Specificity::zero())
   inspect(sum.a, content="2")
   inspect(sum.b, content="3")

@@ -33,7 +33,7 @@ fn split_top_level_commas(
 /// as `parse_easing`). Only the token kinds that appear in animation/transition
 /// values are handled.
 fn reconstruct_css(tokens : ArrayView[@token.Token]) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   for i = 0; i < tokens.length(); i = i + 1 {
     match tokens[i] {
       Ident(s) => sb.write_string(s)
@@ -558,7 +558,7 @@ pub fn parse_transition_shorthand(
     timing_functions.push(item.timing)
     delays.push(item.delay)
   }
-  { properties, durations, timing_functions, delays }
+  { properties, durations, timing_functions, delays, }
 }
 
 // ---- Longhand string entry points (used by the cascade/computed path) ----

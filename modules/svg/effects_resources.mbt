@@ -56,7 +56,7 @@ priv struct ClipPathRegistry {
 
 ///|
 fn ClipPathRegistry::new() -> ClipPathRegistry {
-  { clips: Map([]) }
+  { clips: Map([]), }
 }
 
 ///|
@@ -340,7 +340,7 @@ priv struct FilterGraphRegistry {
 
 ///|
 fn FilterGraphRegistry::new() -> FilterGraphRegistry {
-  { graphs: Map([]) }
+  { graphs: Map([]), }
 }
 
 ///|
@@ -430,7 +430,7 @@ priv struct MaskRegistry {
 
 ///|
 fn MaskRegistry::new() -> MaskRegistry {
-  { masks: Map([]) }
+  { masks: Map([]), }
 }
 
 ///|
@@ -588,7 +588,7 @@ fn Mask::get_mask_bounds(self : Mask, target : BoundingBox) -> BoundingBox {
       )
       let w = resolve_mask_size(self.width, self.width_is_percent, tw)
       let h = resolve_mask_size(self.height, self.height_is_percent, th)
-      { min_x, min_y, max_x: min_x + w, max_y: min_y + h }
+      { min_x, min_y, max_x: min_x + w, max_y: min_y + h, }
     }
   }
 }
@@ -631,3 +631,54 @@ fn apply_mask_to_image(
   }
   result
 }
+
+///|
+pub extend ClipPathUnits with Debug::{to_repr}
+
+///|
+pub extend ClipPathUnits with Eq::{not_equal, equal}
+
+///|
+pub extend ComponentTransferFunction with Debug::{to_repr}
+
+///|
+pub extend FilterChannel with Debug::{to_repr}
+
+///|
+pub extend FilterChannel with Eq::{not_equal, equal}
+
+///|
+pub extend FilterCompositeOperator with Debug::{to_repr}
+
+///|
+pub extend FilterCompositeOperator with Eq::{not_equal, equal}
+
+///|
+pub extend FilterEdgeMode with Debug::{to_repr}
+
+///|
+pub extend FilterEdgeMode with Eq::{not_equal, equal}
+
+///|
+pub extend FilterGraphPrimitive with Debug::{to_repr}
+
+///|
+pub extend FilterLight with Debug::{to_repr}
+
+///|
+pub extend MaskType with Debug::{to_repr}
+
+///|
+pub extend MaskType with Eq::{not_equal, equal}
+
+///|
+pub extend MaskUnits with Debug::{to_repr}
+
+///|
+pub extend MaskUnits with Eq::{not_equal, equal}
+
+///|
+pub extend MorphologyOperator with Debug::{to_repr}
+
+///|
+pub extend MorphologyOperator with Eq::{not_equal, equal}

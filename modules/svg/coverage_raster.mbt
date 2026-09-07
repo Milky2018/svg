@@ -112,7 +112,7 @@ fn make_coverage_edges(
       if y1 == y0 {
         continue
       }
-      edges.push({ x0, y0, x1, y1, winding: if y1 > y0 { 1 } else { -1 } })
+      edges.push({ x0, y0, x1, y1, winding: if y1 > y0 { 1 } else { -1 }, })
     }
   }
   edges
@@ -283,7 +283,7 @@ fn build_coverage_mask(
 ) -> CoverageMask {
   let edges = make_coverage_edges(contours)
   if edges.is_empty() || canvas_width <= 0 || canvas_height <= 0 {
-    return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [] }
+    return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [], }
   }
   let mut min_x = fixed_coverage_coordinate(edges[0].x0)
   let mut max_x = min_x
@@ -315,7 +315,7 @@ fn build_coverage_mask(
   let height = max_int(0, end_y - origin_y)
   let values = Array::make(width * height, 0)
   if width == 0 || height == 0 {
-    return { origin_x, origin_y, width, height, values }
+    return { origin_x, origin_y, width, height, values, }
   }
   for device_y in origin_y..<end_y {
     let row_start = device_y.to_double()
@@ -364,7 +364,7 @@ fn build_coverage_mask(
       let crossings : Array[CoverageCrossing] = []
       for edge in row_edges {
         if sample_y >= edge.min_y() && sample_y < edge.max_y() {
-          crossings.push({ edge, x: edge.x_at(sample_y) })
+          crossings.push({ edge, x: edge.x_at(sample_y), })
         }
       }
       sort_crossings(crossings)
@@ -417,7 +417,7 @@ fn build_coverage_mask(
       )
     }
   }
-  { origin_x, origin_y, width, height, values }
+  { origin_x, origin_y, width, height, values, }
 }
 
 ///|
@@ -464,7 +464,7 @@ fn union_coverage_masks(
       )
     }
   }
-  { origin_x, origin_y, width, height, values }
+  { origin_x, origin_y, width, height, values, }
 }
 
 ///|
@@ -492,7 +492,7 @@ fn intersect_coverage_masks(
       )
     }
   }
-  { origin_x, origin_y, width, height, values }
+  { origin_x, origin_y, width, height, values, }
 }
 
 ///|

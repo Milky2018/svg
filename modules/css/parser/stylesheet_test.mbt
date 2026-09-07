@@ -1033,7 +1033,7 @@ test "parse :has selector" {
 ///|
 test "parse_stylesheet rejects excessively large input" {
   // Cap is 10MB; build something larger.
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let unit = ".x{x:0}                              " // ~40 bytes
   for _ in 0..<300000 {
     buf.write_string(unit)

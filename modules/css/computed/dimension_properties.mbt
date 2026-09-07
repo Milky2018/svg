@@ -133,7 +133,7 @@ pub fn extract_border_width(value : String) -> @types.Dimension {
 /// Split string by whitespace into parts
 fn split_whitespace(s : String) -> Array[String] {
   let result : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   for c in s {
     if c == ' ' || c == '\t' || c == '\n' {
       if current.to_string().length() > 0 {

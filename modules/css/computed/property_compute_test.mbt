@@ -16,7 +16,7 @@ test "ComputeContext::with_viewport overrides dimensions" {
 
 ///|
 test "ComputeContext::with_parent inherits font size from parent" {
-  let parent : @style.Style = { ..@style.Style::default(), font_size: 24.0 }
+  let parent : @style.Style = { ..@style.Style::default(), font_size: 24.0, }
   let ctx = @computed.ComputeContext::with_parent(parent)
   assert_true(ctx.parent_style is Some(_))
 }
@@ -414,7 +414,7 @@ test "compute preserves border shorthand and longhand source order" {
     Value("10px solid transparent"),
     Author,
     Normal,
-    { a: 0, b: 1, c: 0 },
+    { a: 0, b: 1, c: 0, },
     0,
   )
   let left_decl = @cascade.Declaration::with_metadata(
@@ -422,7 +422,7 @@ test "compute preserves border shorthand and longhand source order" {
     Value("100px"),
     Author,
     Normal,
-    { a: 0, b: 1, c: 0 },
+    { a: 0, b: 1, c: 0, },
     1,
   )
   let style = @computed.compute(@cascade.cascade([border_decl, left_decl]), ctx)
@@ -436,7 +436,7 @@ test "compute preserves border shorthand and longhand source order" {
     Value("100px"),
     Author,
     Normal,
-    { a: 0, b: 1, c: 0 },
+    { a: 0, b: 1, c: 0, },
     0,
   )
   let border_second_decl = @cascade.Declaration::with_metadata(
@@ -444,7 +444,7 @@ test "compute preserves border shorthand and longhand source order" {
     Value("10px solid transparent"),
     Author,
     Normal,
-    { a: 0, b: 1, c: 0 },
+    { a: 0, b: 1, c: 0, },
     1,
   )
   let style2 = @computed.compute(

@@ -15,6 +15,11 @@ pub(all) enum ColorScheme {
   Light
   Dark
 } derive(Eq, @debug.Debug)
+pub fn ColorScheme::equal(Self, Self) -> Bool
+pub fn ColorScheme::not_equal(Self, Self) -> Bool
+pub fn ColorScheme::output(Self, &Logger) -> Unit
+pub fn ColorScheme::to_repr(Self) -> @debug.Repr
+pub fn ColorScheme::to_string(Self) -> String
 pub impl Show for ColorScheme
 
 pub(all) struct MediaEnvironment {
@@ -56,6 +61,11 @@ pub enum MediaFeature {
   PrefersReducedMotion(String)
   Custom(String, MediaValue?)
 } derive(Eq, @debug.Debug)
+pub fn MediaFeature::equal(Self, Self) -> Bool
+pub fn MediaFeature::not_equal(Self, Self) -> Bool
+pub fn MediaFeature::output(Self, &Logger) -> Unit
+pub fn MediaFeature::to_repr(Self) -> @debug.Repr
+pub fn MediaFeature::to_string(Self) -> String
 pub impl Show for MediaFeature
 
 pub struct MediaQuery {
@@ -65,16 +75,26 @@ pub struct MediaQuery {
   conditions : Array[MediaFeature]
 } derive(Eq, @debug.Debug)
 pub fn MediaQuery::default() -> Self
+pub fn MediaQuery::equal(Self, Self) -> Bool
 pub fn MediaQuery::evaluate(Self, MediaEnvironment) -> Bool
+pub fn MediaQuery::not_equal(Self, Self) -> Bool
+pub fn MediaQuery::output(Self, &Logger) -> Unit
+pub fn MediaQuery::to_repr(Self) -> @debug.Repr
+pub fn MediaQuery::to_string(Self) -> String
 pub impl Show for MediaQuery
 
 pub struct MediaQueryList {
   queries : Array[MediaQuery]
 } derive(Eq, @debug.Debug)
+pub fn MediaQueryList::equal(Self, Self) -> Bool
 pub fn MediaQueryList::evaluate(Self, MediaEnvironment) -> Bool
 pub fn MediaQueryList::is_empty(Self) -> Bool
 pub fn MediaQueryList::length(Self) -> Int
 pub fn MediaQueryList::new() -> Self
+pub fn MediaQueryList::not_equal(Self, Self) -> Bool
+pub fn MediaQueryList::output(Self, &Logger) -> Unit
+pub fn MediaQueryList::to_repr(Self) -> @debug.Repr
+pub fn MediaQueryList::to_string(Self) -> String
 pub impl Show for MediaQueryList
 
 pub enum MediaType {
@@ -83,6 +103,11 @@ pub enum MediaType {
   Print
   Speech
 } derive(Eq, @debug.Debug)
+pub fn MediaType::equal(Self, Self) -> Bool
+pub fn MediaType::not_equal(Self, Self) -> Bool
+pub fn MediaType::output(Self, &Logger) -> Unit
+pub fn MediaType::to_repr(Self) -> @debug.Repr
+pub fn MediaType::to_string(Self) -> String
 pub impl Show for MediaType
 
 pub enum MediaValue {
@@ -91,6 +116,11 @@ pub enum MediaValue {
   Ratio(Int, Int)
   Ident(String)
 } derive(Eq, @debug.Debug)
+pub fn MediaValue::equal(Self, Self) -> Bool
+pub fn MediaValue::not_equal(Self, Self) -> Bool
+pub fn MediaValue::output(Self, &Logger) -> Unit
+pub fn MediaValue::to_repr(Self) -> @debug.Repr
+pub fn MediaValue::to_string(Self) -> String
 pub impl Show for MediaValue
 
 pub enum RangeOp {
@@ -100,9 +130,13 @@ pub enum RangeOp {
   Gt
   Ge
 } derive(Eq, @debug.Debug)
+pub fn RangeOp::equal(Self, Self) -> Bool
+pub fn RangeOp::not_equal(Self, Self) -> Bool
+pub fn RangeOp::output(Self, &Logger) -> Unit
+pub fn RangeOp::to_repr(Self) -> @debug.Repr
+pub fn RangeOp::to_string(Self) -> String
 pub impl Show for RangeOp
 
 // Type aliases
 
 // Traits
-

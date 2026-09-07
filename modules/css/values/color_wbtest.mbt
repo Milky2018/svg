@@ -63,8 +63,8 @@ test "BackgroundImage Show" {
   let gradient : LinearGradient = {
     angle_deg: 90.0,
     stops: [
-      { color: Color::rgb(255, 0, 0), position: 0.0 },
-      { color: Color::rgb(0, 0, 255), position: 1.0 },
+      { color: Color::rgb(255, 0, 0), position: 0.0, },
+      { color: Color::rgb(0, 0, 255), position: 1.0, },
     ],
   }
   let bg = BackgroundImage::Gradient(gradient)
@@ -76,11 +76,11 @@ test "BackgroundImage Show" {
 
 ///|
 test "GradientStop and LinearGradient Show" {
-  let stop : GradientStop = { color: Color::rgb(10, 20, 30), position: 0.5 }
+  let stop : GradientStop = { color: Color::rgb(10, 20, 30), position: 0.5, }
   let s = stop.to_string()
   assert_true(s.contains("color: rgb(10, 20, 30)"))
   assert_true(s.contains("position: 0.5"))
-  let g : LinearGradient = { angle_deg: 45.0, stops: [stop] }
+  let g : LinearGradient = { angle_deg: 45.0, stops: [stop], }
   let gs = g.to_string()
   assert_true(gs.contains("angle_deg: 45"))
 }

@@ -16,12 +16,12 @@ pub(all) struct Color {
 
 ///|
 pub fn Color::rgb(r : Int, g : Int, b : Int) -> Color {
-  { r, g, b, a: 1.0 }
+  { r, g, b, a: 1.0, }
 }
 
 ///|
 pub fn Color::rgba(r : Int, g : Int, b : Int, a : Double) -> Color {
-  { r, g, b, a }
+  { r, g, b, a, }
 }
 
 ///|
@@ -30,13 +30,13 @@ pub fn Color::rgba(r : Int, g : Int, b : Int, a : Double) -> Color {
 /// avoids re-allocating these immutable values on every access (hot path in
 /// `Style::default` / `StyleBuilder`, where each default style references
 /// `transparent` five times).
-let color_transparent : Color = { r: 0, g: 0, b: 0, a: 0.0 }
+let color_transparent : Color = { r: 0, g: 0, b: 0, a: 0.0, }
 
 ///|
-let color_black : Color = { r: 0, g: 0, b: 0, a: 1.0 }
+let color_black : Color = { r: 0, g: 0, b: 0, a: 1.0, }
 
 ///|
-let color_white : Color = { r: 255, g: 255, b: 255, a: 1.0 }
+let color_white : Color = { r: 255, g: 255, b: 255, a: 1.0, }
 
 ///|
 /// Transparent color (alpha = 0)
@@ -80,7 +80,7 @@ pub fn Color::to_hex(self : Color) -> String {
   fn hex2(n : Int) -> String {
     let hi = n / 16 % 16
     let lo = n % 16
-    let sb = StringBuilder::new()
+    let sb = StringBuilder()
     sb.write_char(hex_char(hi))
     sb.write_char(hex_char(lo))
     sb.to_string()
@@ -184,3 +184,39 @@ pub impl Show for BackgroundImage with fn output(self, logger) {
     }
   }
 }
+
+///|
+pub extend BackgroundImage with Debug::{to_repr}
+
+///|
+pub extend BackgroundImage with Eq::{not_equal, equal}
+
+///|
+pub extend BackgroundImage with Show::{to_string, output}
+
+///|
+pub extend Color with Debug::{to_repr}
+
+///|
+pub extend Color with Eq::{not_equal, equal}
+
+///|
+pub extend Color with Show::{to_string, output}
+
+///|
+pub extend GradientStop with Debug::{to_repr}
+
+///|
+pub extend GradientStop with Eq::{not_equal, equal}
+
+///|
+pub extend GradientStop with Show::{to_string, output}
+
+///|
+pub extend LinearGradient with Debug::{to_repr}
+
+///|
+pub extend LinearGradient with Eq::{not_equal, equal}
+
+///|
+pub extend LinearGradient with Show::{to_string, output}

@@ -5,13 +5,13 @@
 /// Calculate specificity of a simple selector
 fn simple_specificity(sel : SimpleSelector) -> Specificity {
   match sel {
-    Type(_) => { a: 0, b: 0, c: 1 }
+    Type(_) => { a: 0, b: 0, c: 1, }
     Universal => Specificity::zero()
-    Id(_) => { a: 1, b: 0, c: 0 }
-    Class(_) => { a: 0, b: 1, c: 0 }
-    Attribute(_) => { a: 0, b: 1, c: 0 }
+    Id(_) => { a: 1, b: 0, c: 0, }
+    Class(_) => { a: 0, b: 1, c: 0, }
+    Attribute(_) => { a: 0, b: 1, c: 0, }
     PseudoClass(pc) => pseudo_class_specificity(pc)
-    PseudoElement(_) => { a: 0, b: 0, c: 1 }
+    PseudoElement(_) => { a: 0, b: 0, c: 1, }
   }
 }
 
@@ -53,7 +53,7 @@ fn pseudo_class_specificity(pc : PseudoClass) -> Specificity {
       max
     }
     // All other pseudo-classes count as one class selector
-    _ => { a: 0, b: 1, c: 0 }
+    _ => { a: 0, b: 1, c: 0, }
   }
 }
 

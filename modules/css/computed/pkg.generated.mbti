@@ -153,9 +153,10 @@ pub(all) enum CssColorValue {
 pub fn CssColorValue::get_color(Self) -> @values.Color?
 pub fn CssColorValue::is_resolved(Self) -> Bool
 pub fn CssColorValue::or_default(Self, @values.Color) -> @values.Color
+pub fn CssColorValue::output(Self, &Logger) -> Unit
+pub fn CssColorValue::to_string(Self) -> String
 pub impl Show for CssColorValue
 
 // Type aliases
 
 // Traits
-

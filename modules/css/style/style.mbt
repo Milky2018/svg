@@ -146,7 +146,7 @@ pub(all) struct ScrollSnapType {
 } derive(Debug, Eq)
 
 ///|
-let scroll_snap_type_none : ScrollSnapType = { axis: None, strictness: None }
+let scroll_snap_type_none : ScrollSnapType = { axis: None, strictness: None, }
 
 ///|
 pub fn ScrollSnapType::none() -> ScrollSnapType {
@@ -889,7 +889,7 @@ pub fn BoxShadow::new(
   spread_radius : Double,
   color : @types.Color,
 ) -> BoxShadow {
-  { inset, offset_x, offset_y, blur_radius, spread_radius, color }
+  { inset, offset_x, offset_y, blur_radius, spread_radius, color, }
 }
 
 ///|
@@ -1178,7 +1178,7 @@ pub fn Style::default() -> Style {
       top: Length(0.0),
       bottom: Length(0.0),
     },
-    border_style: { left: None, right: None, top: None, bottom: None },
+    border_style: { left: None, right: None, top: None, bottom: None, },
     border_color: {
       left: @types.Color::transparent(),
       right: @types.Color::transparent(),
@@ -1217,7 +1217,7 @@ pub fn Style::default() -> Style {
     column_width: Auto,
     column_fill: Balance,
     aspect_ratio: None,
-    inset: { left: Auto, right: Auto, top: Auto, bottom: Auto },
+    inset: { left: Auto, right: Auto, top: Auto, bottom: Auto, },
     grid_template_rows: [],
     grid_template_columns: [],
     grid_auto_rows: [],
@@ -1294,3 +1294,246 @@ pub fn Style::default() -> Style {
     word_spacing: 0.0,
   }
 }
+
+///|
+pub extend BorderCollapse with Debug::{to_repr}
+
+///|
+pub extend BorderCollapse with Eq::{not_equal, equal}
+
+///|
+pub extend BorderCollapse with Show::{to_string, output}
+
+///|
+pub extend BorderStyle with Debug::{to_repr}
+
+///|
+pub extend BorderStyle with Eq::{not_equal, equal}
+
+///|
+pub extend BorderStyle with Show::{to_string, output}
+
+///|
+pub extend BoxShadow with Debug::{to_repr}
+
+///|
+pub extend BoxShadow with Eq::{not_equal, equal}
+
+///|
+pub extend BreakBefore with Debug::{to_repr}
+
+///|
+pub extend BreakBefore with Eq::{not_equal, equal}
+
+///|
+pub extend BreakBefore with Show::{to_string, output}
+
+///|
+pub extend BreakInside with Debug::{to_repr}
+
+///|
+pub extend BreakInside with Eq::{not_equal, equal}
+
+///|
+pub extend BreakInside with Show::{to_string, output}
+
+///|
+pub extend CaptionSide with Debug::{to_repr}
+
+///|
+pub extend CaptionSide with Eq::{not_equal, equal}
+
+///|
+pub extend CaptionSide with Show::{to_string, output}
+
+///|
+pub extend ClipPath with Debug::{to_repr}
+
+///|
+pub extend ClipPath with Eq::{not_equal, equal}
+
+///|
+pub extend ColumnFill with Debug::{to_repr}
+
+///|
+pub extend ColumnFill with Eq::{not_equal, equal}
+
+///|
+pub extend ColumnFill with Show::{to_string, output}
+
+///|
+pub extend ColumnSpan with Debug::{to_repr}
+
+///|
+pub extend ColumnSpan with Eq::{not_equal, equal}
+
+///|
+pub extend ColumnSpan with Show::{to_string, output}
+
+///|
+pub extend Contain with Debug::{to_repr}
+
+///|
+pub extend Contain with Eq::{not_equal, equal}
+
+///|
+pub extend Contain with Show::{to_string, output}
+
+///|
+pub extend Direction with Debug::{to_repr}
+
+///|
+pub extend Direction with Eq::{not_equal, equal}
+
+///|
+pub extend Direction with Show::{to_string, output}
+
+///|
+pub extend MarginTrim with Debug::{to_repr}
+
+///|
+pub extend MarginTrim with Eq::{not_equal, equal}
+
+///|
+pub extend MarginTrim with Show::{to_string, output}
+
+///|
+pub extend PointerEvents with Debug::{to_repr}
+
+///|
+pub extend PointerEvents with Eq::{not_equal, equal}
+
+///|
+pub extend PointerEvents with Show::{to_string, output}
+
+///|
+pub extend ScrollSnapAlign with Debug::{to_repr}
+
+///|
+pub extend ScrollSnapAlign with Eq::{not_equal, equal}
+
+///|
+pub extend ScrollSnapAlign with Show::{to_string, output}
+
+///|
+pub extend ScrollSnapAxis with Debug::{to_repr}
+
+///|
+pub extend ScrollSnapAxis with Eq::{not_equal, equal}
+
+///|
+pub extend ScrollSnapAxis with Show::{to_string, output}
+
+///|
+pub extend ScrollSnapStrictness with Debug::{to_repr}
+
+///|
+pub extend ScrollSnapStrictness with Eq::{not_equal, equal}
+
+///|
+pub extend ScrollSnapStrictness with Show::{to_string, output}
+
+///|
+pub extend ScrollSnapType with Debug::{to_repr}
+
+///|
+pub extend ScrollSnapType with Eq::{not_equal, equal}
+
+///|
+pub extend ScrollSnapType with Show::{to_string, output}
+
+///|
+pub extend Style with Debug::{to_repr}
+
+///|
+pub extend Style with Eq::{not_equal, equal}
+
+///|
+pub extend TableLayout with Debug::{to_repr}
+
+///|
+pub extend TableLayout with Eq::{not_equal, equal}
+
+///|
+pub extend TableLayout with Show::{to_string, output}
+
+///|
+pub extend TextAlign with Debug::{to_repr}
+
+///|
+pub extend TextAlign with Eq::{not_equal, equal}
+
+///|
+pub extend TextAlign with Show::{to_string, output}
+
+///|
+pub extend TextOverflow with Debug::{to_repr}
+
+///|
+pub extend TextOverflow with Eq::{not_equal, equal}
+
+///|
+pub extend TextOverflow with Show::{to_string, output}
+
+///|
+pub extend Transform with Debug::{to_repr}
+
+///|
+pub extend Transform with Eq::{not_equal, equal}
+
+///|
+pub extend Transform with Show::{to_string, output}
+
+///|
+pub extend TranslateValue with Debug::{to_repr}
+
+///|
+pub extend TranslateValue with Eq::{not_equal, equal}
+
+///|
+pub extend TranslateValue with Show::{to_string, output}
+
+///|
+pub extend VerticalAlign with Debug::{to_repr}
+
+///|
+pub extend VerticalAlign with Eq::{not_equal, equal}
+
+///|
+pub extend VerticalAlign with Show::{to_string, output}
+
+///|
+pub extend Visibility with Debug::{to_repr}
+
+///|
+pub extend Visibility with Eq::{not_equal, equal}
+
+///|
+pub extend Visibility with Show::{to_string, output}
+
+///|
+pub extend WhiteSpace with Debug::{to_repr}
+
+///|
+pub extend WhiteSpace with Eq::{not_equal, equal}
+
+///|
+pub extend WhiteSpace with Show::{to_string, output}
+
+///|
+pub extend WritingMode with Debug::{to_repr}
+
+///|
+pub extend WritingMode with Eq::{not_equal, equal}
+
+///|
+pub extend WritingMode with Show::{to_string, output}
+
+///|
+pub extend ZIndex with Debug::{to_repr}
+
+///|
+pub extend ZIndex with Eq::{not_equal, equal}
+
+///|
+pub extend ZIndex with Show::{to_string, output}

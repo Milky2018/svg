@@ -184,15 +184,15 @@ fn parse_contain(value : String) -> @style.Contain {
   for part in parts {
     let p = part.to_owned().trim()
     if p == "size" {
-      result = { ..result, size: true }
+      result = { ..result, size: true, }
     } else if p == "inline-size" {
-      result = { ..result, inline_size: true }
+      result = { ..result, inline_size: true, }
     } else if p == "layout" {
-      result = { ..result, layout: true }
+      result = { ..result, layout: true, }
     } else if p == "paint" {
-      result = { ..result, paint: true }
+      result = { ..result, paint: true, }
     } else if p == "style" {
-      result = { ..result, style: true }
+      result = { ..result, style: true, }
     }
   }
   result
@@ -211,7 +211,7 @@ fn merge_contain(
     style: base.style || extra.style,
   }
   if merged.size {
-    { ..merged, inline_size: false }
+    { ..merged, inline_size: false, }
   } else {
     merged
   }
@@ -223,9 +223,9 @@ fn merge_contain(
 fn parse_container_type(value : String) -> @style.Contain? {
   match value.trim().to_owned() {
     "normal" => Some(@style.Contain::none())
-    "size" => Some({ ..@style.Contain::none(), size: true, style: true })
+    "size" => Some({ ..@style.Contain::none(), size: true, style: true, })
     "inline-size" =>
-      Some({ ..@style.Contain::none(), inline_size: true, style: true })
+      Some({ ..@style.Contain::none(), inline_size: true, style: true, })
     _ => None
   }
 }

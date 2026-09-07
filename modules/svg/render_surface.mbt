@@ -18,7 +18,7 @@ priv struct PremulColor16 {
 
 ///|
 fn transparent_premul16() -> PremulColor16 {
-  { r: 0, g: 0, b: 0, a: 0 }
+  { r: 0, g: 0, b: 0, a: 0, }
 }
 
 ///|
@@ -156,7 +156,7 @@ fn PremulColor16::convert_space(
     }
     multiply_channel16(unit_to_channel16(converted), alpha)
   }
-  { r: convert(self.r), g: convert(self.g), b: convert(self.b), a: alpha }
+  { r: convert(self.r), g: convert(self.g), b: convert(self.b), a: alpha, }
 }
 
 ///|

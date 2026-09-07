@@ -57,7 +57,7 @@ pub(all) struct UseElement {
 
 ///|
 pub fn UseElement::new(href : String, x : Double, y : Double) -> UseElement {
-  { href, x, y, width: None, height: None, transform: Transform::identity() }
+  { href, x, y, width: None, height: None, transform: Transform::identity(), }
 }
 
 ///|
@@ -95,7 +95,7 @@ fn hex_value(c : Char) -> Int? {
 fn decode_percent(s : String) -> String {
   let mut i = 0
   let len = s.length()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   while i < len {
     let c = Int::unsafe_to_char(s[i].to_int())
     if c == '%' && i + 2 < len {
@@ -121,7 +121,7 @@ fn decode_percent(s : String) -> String {
 /// Get the href ID (strips leading #)
 pub fn UseElement::get_id(self : UseElement) -> String {
   if self.href.length() > 0 && self.href[0].unsafe_to_char() == '#' {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     for i in 1..<self.href.length() {
       buf.write_char(self.href[i].unsafe_to_char())
     }
@@ -139,7 +139,7 @@ priv struct SymbolRegistry {
 
 ///|
 fn SymbolRegistry::new() -> SymbolRegistry {
-  { symbols: Map([]) }
+  { symbols: Map([]), }
 }
 
 ///|
@@ -160,7 +160,7 @@ priv struct DefsRegistry {
 
 ///|
 fn DefsRegistry::new() -> DefsRegistry {
-  { elements: Map([]) }
+  { elements: Map([]), }
 }
 
 ///|
@@ -191,12 +191,12 @@ fn UseElement::instantiate_definition(
         None =>
           match (node.viewport_width, node.viewport_height) {
             (Some(w), Some(h)) =>
-              (Some({ min_x: 0.0, min_y: 0.0, width: w, height: h }), true)
+              (Some({ min_x: 0.0, min_y: 0.0, width: w, height: h, }), true)
             _ =>
               match viewport_fallback {
                 Some((vw, vh)) =>
                   (
-                    Some({ min_x: 0.0, min_y: 0.0, width: vw, height: vh }),
+                    Some({ min_x: 0.0, min_y: 0.0, width: vw, height: vh, }),
                     true,
                   )
                 None => (None, false)
@@ -204,7 +204,7 @@ fn UseElement::instantiate_definition(
           }
       }
       if force_non_uniform {
-        node.preserve_aspect_ratio = { align: None, meet_or_slice: Meet }
+        node.preserve_aspect_ratio = { align: None, meet_or_slice: Meet, }
       }
       let vw = match self.width {
         Some(w) => Some(w)
@@ -261,7 +261,7 @@ fn UseElement::instantiate(
         None =>
           match (symbol.width, symbol.height) {
             (Some(w), Some(h)) =>
-              (Some({ min_x: 0.0, min_y: 0.0, width: w, height: h }), true)
+              (Some({ min_x: 0.0, min_y: 0.0, width: w, height: h, }), true)
             _ => (None, false)
           }
       }
@@ -276,7 +276,7 @@ fn UseElement::instantiate(
       // Apply viewBox scaling (if viewport is known)
       node.view_box = vb
       if force_non_uniform {
-        node.preserve_aspect_ratio = { align: None, meet_or_slice: Meet }
+        node.preserve_aspect_ratio = { align: None, meet_or_slice: Meet, }
       }
       node.viewport_width = vw
       node.viewport_height = vh

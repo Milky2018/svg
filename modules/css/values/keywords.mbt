@@ -287,7 +287,7 @@ pub(all) struct GridLine {
 } derive(Debug, Eq)
 
 ///|
-let grid_line_auto : GridLine = { start: Auto, end: Auto }
+let grid_line_auto : GridLine = { start: Auto, end: Auto, }
 
 ///|
 pub fn GridLine::auto() -> GridLine {
@@ -508,9 +508,9 @@ pub impl Show for TrackSizingFunction with fn output(self, logger) {
         }
       }
       if has_names {
-        "Repeat(\{count}, \{to_repr(tracks)}, \{to_repr(line_names)})"
+        "Repeat(\{count}, \{Repr(tracks)}, \{Repr(line_names)})"
       } else {
-        "Repeat(\{count}, \{to_repr(tracks)})"
+        "Repeat(\{count}, \{Repr(tracks)})"
       }
     }
     FitContentLength(v) => "FitContentLength(\{v})"
@@ -552,3 +552,210 @@ pub impl Show for GridLine with fn output(self, logger) {
   logger.write_string(self.end.to_string())
   logger.write_string("}")
 }
+
+///|
+pub extend AlignSelf with Debug::{to_repr}
+
+///|
+pub extend AlignSelf with Eq::{not_equal, equal}
+
+///|
+pub extend AlignSelf with Show::{to_string, output}
+
+///|
+pub extend Alignment with Debug::{to_repr}
+
+///|
+pub extend Alignment with Eq::{not_equal, equal}
+
+///|
+pub extend Alignment with Show::{to_string, output}
+
+///|
+pub extend AnimationDirection with Debug::{to_repr}
+
+///|
+pub extend AnimationDirection with Eq::{not_equal, equal}
+
+///|
+pub extend AnimationDirection with Show::{to_string, output}
+
+///|
+pub extend AnimationFillMode with Debug::{to_repr}
+
+///|
+pub extend AnimationFillMode with Eq::{not_equal, equal}
+
+///|
+pub extend AnimationFillMode with Show::{to_string, output}
+
+///|
+pub extend AnimationIterationCount with Debug::{to_repr}
+
+///|
+pub extend AnimationIterationCount with Eq::{not_equal, equal}
+
+///|
+pub extend AnimationIterationCount with Show::{to_string, output}
+
+///|
+pub extend AnimationPlayState with Debug::{to_repr}
+
+///|
+pub extend AnimationPlayState with Eq::{not_equal, equal}
+
+///|
+pub extend AnimationPlayState with Show::{to_string, output}
+
+///|
+pub extend BoxSizing with Debug::{to_repr}
+
+///|
+pub extend BoxSizing with Eq::{not_equal, equal}
+
+///|
+pub extend BoxSizing with Show::{to_string, output}
+
+///|
+pub extend Clear with Debug::{to_repr}
+
+///|
+pub extend Clear with Eq::{not_equal, equal}
+
+///|
+pub extend Clear with Show::{to_string, output}
+
+///|
+pub extend Display with Debug::{to_repr}
+
+///|
+pub extend Display with Eq::{not_equal, equal}
+
+///|
+pub extend Display with Show::{to_string, output}
+
+///|
+pub extend FlexDirection with Debug::{to_repr}
+
+///|
+pub extend FlexDirection with Eq::{not_equal, equal}
+
+///|
+pub extend FlexDirection with Show::{to_string, output}
+
+///|
+pub extend FlexWrap with Debug::{to_repr}
+
+///|
+pub extend FlexWrap with Eq::{not_equal, equal}
+
+///|
+pub extend FlexWrap with Show::{to_string, output}
+
+///|
+pub extend Float with Debug::{to_repr}
+
+///|
+pub extend Float with Eq::{not_equal, equal}
+
+///|
+pub extend Float with Show::{to_string, output}
+
+///|
+pub extend GridAutoFlow with Debug::{to_repr}
+
+///|
+pub extend GridAutoFlow with Eq::{not_equal, equal}
+
+///|
+pub extend GridAutoFlow with Show::{to_string, output}
+
+///|
+pub extend GridLine with Debug::{to_repr}
+
+///|
+pub extend GridLine with Eq::{not_equal, equal}
+
+///|
+pub extend GridLine with Show::{to_string, output}
+
+///|
+pub extend GridPlacement with Debug::{to_repr}
+
+///|
+pub extend GridPlacement with Eq::{not_equal, equal}
+
+///|
+pub extend GridPlacement with Show::{to_string, output}
+
+///|
+pub extend GridTemplateKind with Debug::{to_repr}
+
+///|
+pub extend GridTemplateKind with Eq::{not_equal, equal}
+
+///|
+pub extend GridTemplateKind with Show::{to_string, output}
+
+///|
+pub extend MaxTrackSizing with Debug::{to_repr}
+
+///|
+pub extend MaxTrackSizing with Eq::{not_equal, equal}
+
+///|
+pub extend MaxTrackSizing with Show::{to_string, output}
+
+///|
+pub extend MinTrackSizing with Debug::{to_repr}
+
+///|
+pub extend MinTrackSizing with Eq::{not_equal, equal}
+
+///|
+pub extend MinTrackSizing with Show::{to_string, output}
+
+///|
+pub extend Overflow with Debug::{to_repr}
+
+///|
+pub extend Overflow with Eq::{not_equal, equal}
+
+///|
+pub extend Overflow with Show::{to_string, output}
+
+///|
+pub extend Position with Debug::{to_repr}
+
+///|
+pub extend Position with Eq::{not_equal, equal}
+
+///|
+pub extend Position with Show::{to_string, output}
+
+///|
+pub extend RepeatCount with Debug::{to_repr}
+
+///|
+pub extend RepeatCount with Eq::{not_equal, equal}
+
+///|
+pub extend RepeatCount with Show::{to_string, output}
+
+///|
+pub extend SingleTrackSizing with Debug::{to_repr}
+
+///|
+pub extend SingleTrackSizing with Eq::{not_equal, equal}
+
+///|
+pub extend SingleTrackSizing with Show::{to_string, output}
+
+///|
+pub extend TrackSizingFunction with Debug::{to_repr}
+
+///|
+pub extend TrackSizingFunction with Eq::{not_equal, equal}
+
+///|
+pub extend TrackSizingFunction with Show::{to_string, output}

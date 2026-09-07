@@ -287,14 +287,14 @@ fn resolve_computed_style(
     StyleSpecified(value) => node.fill_opacity = clamp_svg_opacity(value)
   }
   match resolve_style_choice(declarations, custom_properties, StyleStroke) {
-    StyleInitial => node.stroke = { ..node.stroke, paint: None }
+    StyleInitial => node.stroke = { ..node.stroke, paint: None, }
     StyleInherited => ()
     StyleSpecified(value) =>
-      node.stroke = { ..node.stroke, paint: parse_paint(value) }
+      node.stroke = { ..node.stroke, paint: parse_paint(value), }
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleStrokeWidth) {
-    StyleInitial => node.stroke = { ..node.stroke, width: 1.0 }
+    StyleInitial => node.stroke = { ..node.stroke, width: 1.0, }
     StyleInherited => ()
     StyleSpecified(value) =>
       node.stroke = {
@@ -304,24 +304,24 @@ fn resolve_computed_style(
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleStrokeLinecap) {
-    StyleInitial => node.stroke = { ..node.stroke, linecap: Butt }
+    StyleInitial => node.stroke = { ..node.stroke, linecap: Butt, }
     StyleInherited => ()
     StyleSpecified(value) =>
-      node.stroke = { ..node.stroke, linecap: parse_linecap(value) }
+      node.stroke = { ..node.stroke, linecap: parse_linecap(value), }
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleStrokeLinejoin) {
-    StyleInitial => node.stroke = { ..node.stroke, linejoin: Miter }
+    StyleInitial => node.stroke = { ..node.stroke, linejoin: Miter, }
     StyleInherited => ()
     StyleSpecified(value) =>
-      node.stroke = { ..node.stroke, linejoin: parse_linejoin(value) }
+      node.stroke = { ..node.stroke, linejoin: parse_linejoin(value), }
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleStrokeMiterlimit) {
-    StyleInitial => node.stroke = { ..node.stroke, miterlimit: 4.0 }
+    StyleInitial => node.stroke = { ..node.stroke, miterlimit: 4.0, }
     StyleInherited => ()
     StyleSpecified(value) =>
-      node.stroke = { ..node.stroke, miterlimit: parse_number(value) }
+      node.stroke = { ..node.stroke, miterlimit: parse_number(value), }
   }
   match resolve_style_choice(declarations, custom_properties, StyleColor) {
     StyleInitial => node.color = Some(Color::black())
@@ -356,7 +356,7 @@ fn resolve_computed_style(
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleStrokeDasharray) {
-    StyleInitial => node.stroke = { ..node.stroke, dasharray: None }
+    StyleInitial => node.stroke = { ..node.stroke, dasharray: None, }
     StyleInherited => ()
     StyleSpecified(value) =>
       node.stroke = {
@@ -366,7 +366,7 @@ fn resolve_computed_style(
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleStrokeDashoffset) {
-    StyleInitial => node.stroke = { ..node.stroke, dashoffset: 0.0 }
+    StyleInitial => node.stroke = { ..node.stroke, dashoffset: 0.0, }
     StyleInherited => ()
     StyleSpecified(value) =>
       node.stroke = {
@@ -382,7 +382,7 @@ fn resolve_computed_style(
   }
   match
     resolve_style_choice(declarations, custom_properties, StyleVectorEffect) {
-    StyleInitial => node.stroke = { ..node.stroke, non_scaling: false }
+    StyleInitial => node.stroke = { ..node.stroke, non_scaling: false, }
     StyleInherited => ()
     StyleSpecified(value) =>
       node.stroke = {

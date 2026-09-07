@@ -460,7 +460,7 @@ test "compute - explicit inherit keyword forces inheritance" {
     value: Inherit,
     origin: Author,
     importance: Normal,
-    specificity: { a: 0, b: 0, c: 0 },
+    specificity: { a: 0, b: 0, c: 0, },
     source_order: 0,
   }
   let style = @computed.compute(@cascade.cascade([decl]), ctx)

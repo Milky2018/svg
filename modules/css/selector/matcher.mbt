@@ -19,7 +19,7 @@ pub(all) struct ShadowContext {
 
 ///|
 pub fn ShadowContext::new(host : Element) -> ShadowContext {
-  { host, host_ancestors: [], assigned_slot: None }
+  { host, host_ancestors: [], assigned_slot: None, }
 }
 
 ///|
@@ -35,7 +35,7 @@ pub fn ShadowContext::set_assigned_slot(
   self : ShadowContext,
   assigned_slot : Element,
 ) -> ShadowContext {
-  { ..self, assigned_slot: Some(assigned_slot) }
+  { ..self, assigned_slot: Some(assigned_slot), }
 }
 
 ///|
@@ -230,7 +230,7 @@ fn matches_attribute(element : Element, selector : AttributeSelector) -> Bool {
 /// Split string by whitespace
 fn split_whitespace(s : String) -> Array[String] {
   let result : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   // Track the pending segment length with a counter instead of materializing
   // `current.to_string()` on every whitespace char (and at the end) just to
   // test emptiness — that allocated a throwaway String per character.

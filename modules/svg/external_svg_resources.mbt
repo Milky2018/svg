@@ -91,19 +91,19 @@ fn merge_external_document(
     ctx.defs.elements[prefix + id] = node
   })
   document.symbols.symbols.each(fn(id, symbol) {
-    ctx.symbols.symbols[prefix + id] = { ..symbol, id: prefix + id }
+    ctx.symbols.symbols[prefix + id] = { ..symbol, id: prefix + id, }
   })
   document.clips.clips.each(fn(id, clip) {
-    ctx.clips.clips[prefix + id] = { ..clip, id: prefix + id }
+    ctx.clips.clips[prefix + id] = { ..clip, id: prefix + id, }
   })
   document.masks.masks.each(fn(id, mask) {
-    ctx.masks.masks[prefix + id] = { ..mask, id: prefix + id }
+    ctx.masks.masks[prefix + id] = { ..mask, id: prefix + id, }
   })
   document.filter_graphs.graphs.each(fn(id, graph) {
-    ctx.filter_graphs.graphs[prefix + id] = { ..graph, id: prefix + id }
+    ctx.filter_graphs.graphs[prefix + id] = { ..graph, id: prefix + id, }
   })
   document.patterns.patterns.each(fn(id, pattern) {
-    ctx.patterns.patterns[prefix + id] = { ..pattern, id: prefix + id }
+    ctx.patterns.patterns[prefix + id] = { ..pattern, id: prefix + id, }
   })
   document.patterns.references.each(fn(id, parent) {
     ctx.patterns.references[prefix + id] = qualify_resource_id(base_uri, parent)
@@ -123,7 +123,7 @@ fn merge_external_document(
     ctx.gradients.specified[prefix + id] = specified
   })
   document.markers.markers.each(fn(id, marker) {
-    ctx.markers.markers[prefix + id] = { ..marker, id: prefix + id }
+    ctx.markers.markers[prefix + id] = { ..marker, id: prefix + id, }
   })
 }
 
@@ -144,7 +144,7 @@ fn canonicalize_svg_element_references(
     }
     (attr.0, value)
   })
-  { name: element.name, attributes: attrs }
+  { name: element.name, attributes: attrs, }
 }
 
 ///|

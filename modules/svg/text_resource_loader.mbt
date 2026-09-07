@@ -172,7 +172,7 @@ fn canonicalize_fragment_reference(base : String, reference : String) -> String 
 ///|
 fn canonicalize_url_references(value : String, base : String) -> String {
   let lower = value.to_lower()
-  let output = StringBuilder::new()
+  let output = StringBuilder()
   let mut pos = 0
   while pos < value.length() {
     let found = match lower[pos:].find("url(") {
@@ -267,7 +267,7 @@ fn TextResourceLoadState::record(
   stage : RenderStage,
   resource : String,
 ) -> Unit {
-  self.diagnostics.push({ kind, stage, resource, node_id: "" })
+  self.diagnostics.push({ kind, stage, resource, node_id: "", })
 }
 
 ///|
@@ -373,7 +373,7 @@ fn load_document_stylesheets(
   base_uri : String,
 ) -> Array[@css_cascade.Stylesheet] {
   let stylesheets : Array[@css_cascade.Stylesheet] = []
-  let content = StringBuilder::new()
+  let content = StringBuilder()
   let mut in_style = false
   for event in events {
     match event {

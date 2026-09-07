@@ -253,7 +253,7 @@ fn apply_transformed_rect_clip(
       }
     },
   }
-  Some({ ..ctx, setter, clip: Some(clip) })
+  Some({ ..ctx, setter, clip: Some(clip), })
 }
 
 ///|

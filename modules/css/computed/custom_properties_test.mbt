@@ -40,7 +40,7 @@ test "font size resolves same-element and inherited custom properties" {
   )
   inspect(same_element.font_size, content="18")
 
-  let parent : @style.Style = { ..@style.Style::default(), font_size: 20.0 }
+  let parent : @style.Style = { ..@style.Style::default(), font_size: 20.0, }
   let inherited_vars : Map[String, String] = { "--size": "1.25em" }
   let inherited = @computed.compute_inline_raw(
     "font-size: var(--size)",

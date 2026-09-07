@@ -12,7 +12,7 @@ pub struct CascadedValues {
 
 ///|
 pub fn CascadedValues::new() -> CascadedValues {
-  { values: Map([]) }
+  { values: Map([]), }
 }
 
 ///|
@@ -99,7 +99,7 @@ fn accumulate_inline_declaration(
     value: decl.value,
     origin: Author,
     importance: decl.importance,
-    specificity: { a: 1000, b: 0, c: 0 },
+    specificity: { a: 1000, b: 0, c: 0, },
     // Inline styles are authored after every stylesheet, so their source order
     // must sort above all stylesheet declarations. Otherwise an inline longhand
     // (e.g. border-top-width) would be applied before a stylesheet shorthand
@@ -182,7 +182,7 @@ pub struct Stylesheet {
 
 ///|
 pub fn Stylesheet::new(origin : Origin) -> Stylesheet {
-  { imports: [], rules: [], keyframes: [], origin, cached_index: None }
+  { imports: [], rules: [], keyframes: [], origin, cached_index: None, }
 }
 
 ///|

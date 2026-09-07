@@ -26,7 +26,7 @@ fn SelectorParser::new_with_signs(
   tokens : Array[@token.Token],
   signs : Array[Bool],
 ) -> SelectorParser {
-  { tokens, signs: Some(signs), tokens_end: tokens.length(), pos: 0 }
+  { tokens, signs: Some(signs), tokens_end: tokens.length(), pos: 0, }
 }
 
 ///|
@@ -38,7 +38,7 @@ fn SelectorParser::from_slice(
   start : Int,
   end : Int,
 ) -> SelectorParser {
-  { tokens, signs: None, tokens_end: end, pos: start }
+  { tokens, signs: None, tokens_end: end, pos: start, }
 }
 
 ///|
@@ -201,7 +201,7 @@ fn SelectorParser::parse_complex_selector(
           match self.parse_compound_selector() {
             None => return None
             Some(next) => {
-              tail.push({ combinator: comb, selector: current })
+              tail.push({ combinator: comb, selector: current, })
               current = next
             }
           }
@@ -214,7 +214,7 @@ fn SelectorParser::parse_complex_selector(
   for i = tail.length() - 1; i >= 0; i = i - 1 {
     reversed_tail.push(tail[i])
   }
-  Some({ head: current, tail: reversed_tail })
+  Some({ head: current, tail: reversed_tail, })
 }
 
 ///|
@@ -444,7 +444,7 @@ fn SelectorParser::parse_compound_selector(
   if type_selector is None && subclasses.is_empty() {
     return None
   }
-  Some({ type_selector, subclasses, any_ns_universal })
+  Some({ type_selector, subclasses, any_ns_universal, })
 }
 
 ///|
@@ -669,7 +669,7 @@ fn SelectorParser::parse_attribute_selector(
     }
     _ => return None
   }
-  Some({ name, match_type, case_insensitive, any_namespace })
+  Some({ name, match_type, case_insensitive, any_namespace, })
 }
 
 ///|
@@ -1174,11 +1174,11 @@ fn SelectorParser::parse_nth_expr(self : SelectorParser) -> NthExpr? {
       let kw_lower = kw.to_lower()
       if kw_lower == "odd" {
         let _ = self.advance()
-        return Some({ a: 2, b: 1 })
+        return Some({ a: 2, b: 1, })
       }
       if kw_lower == "even" {
         let _ = self.advance()
-        return Some({ a: 2, b: 0 })
+        return Some({ a: 2, b: 0, })
       }
       if kw_lower == "n" {
         let _ = self.advance()
@@ -1191,14 +1191,14 @@ fn SelectorParser::parse_nth_expr(self : SelectorParser) -> NthExpr? {
       match ndashdigit_to_b(kw_lower, "n-") {
         Some(b) => {
           let _ = self.advance()
-          return Some({ a: 1, b })
+          return Some({ a: 1, b, })
         }
         None => ()
       }
       match ndashdigit_to_b(kw_lower, "-n-") {
         Some(b) => {
           let _ = self.advance()
-          return Some({ a: -1, b })
+          return Some({ a: -1, b, })
         }
         None => ()
       }
@@ -1225,7 +1225,7 @@ fn SelectorParser::parse_nth_expr(self : SelectorParser) -> NthExpr? {
       match ndashdigit_to_b(unit_lower, "n-") {
         Some(b) => {
           let _ = self.advance()
-          return Some({ a: num.to_int(), b })
+          return Some({ a: num.to_int(), b, })
         }
         None => ()
       }
@@ -1246,7 +1246,7 @@ fn SelectorParser::parse_nth_expr(self : SelectorParser) -> NthExpr? {
             _ => return None
           }
           let _ = self.advance()
-          return Some({ a: num.to_int(), b })
+          return Some({ a: num.to_int(), b, })
         }
         return None
       }
@@ -1255,7 +1255,7 @@ fn SelectorParser::parse_nth_expr(self : SelectorParser) -> NthExpr? {
     Number(num, _) => {
       let _ = self.advance()
       // Just a number = 0n+B
-      return Some({ a: 0, b: num.to_int() })
+      return Some({ a: 0, b: num.to_int(), })
     }
     Delim('+') => {
       // `+` must be immediately followed by `n`-form ident; CSS
@@ -1275,7 +1275,7 @@ fn SelectorParser::parse_nth_expr(self : SelectorParser) -> NthExpr? {
           match ndashdigit_to_b(kw_lower, "n-") {
             Some(b) => {
               let _ = self.advance()
-              return Some({ a: 1, b })
+              return Some({ a: 1, b, })
             }
             None => return None
           }
@@ -1303,7 +1303,7 @@ fn SelectorParser::finish_ndash_int(self : SelectorParser, a : Int) -> NthExpr? 
         None => ()
       }
       let _ = self.advance()
-      Some({ a, b: -n.to_int() })
+      Some({ a, b: -n.to_int(), })
     }
     _ => None
   }
@@ -1335,7 +1335,7 @@ fn SelectorParser::finish_nth_after_n(
             return None
           }
           let _ = self.advance()
-          return Some({ a, b: n.to_int() })
+          return Some({ a, b: n.to_int(), })
         }
         _ => return None
       }
@@ -1349,7 +1349,7 @@ fn SelectorParser::finish_nth_after_n(
             return None
           }
           let _ = self.advance()
-          return Some({ a, b: -n.to_int() })
+          return Some({ a, b: -n.to_int(), })
         }
         _ => return None
       }
@@ -1363,9 +1363,9 @@ fn SelectorParser::finish_nth_after_n(
         None => ()
       }
       let _ = self.advance()
-      return Some({ a, b: n.to_int() })
+      return Some({ a, b: n.to_int(), })
     }
-    _ => return Some({ a, b: 0 })
+    _ => return Some({ a, b: 0, })
   }
 }
 
@@ -1469,7 +1469,7 @@ fn SelectorParser::parse_relative_selector_list_until_paren(
           _ => None
         }
         match self.parse_complex_selector() {
-          Some(sel) => result.push({ combinator, selector: sel })
+          Some(sel) => result.push({ combinator, selector: sel, })
           None => break
         }
       }

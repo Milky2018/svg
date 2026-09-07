@@ -20,7 +20,7 @@ priv struct Tokenizer {
 
 ///|
 fn Tokenizer::new(input : String) -> Tokenizer {
-  { input, pos: 0, len: input.length(), last_num_signed: false }
+  { input, pos: 0, len: input.length(), last_num_signed: false, }
 }
 
 ///|
@@ -154,7 +154,7 @@ fn Tokenizer::consume_name(self : Tokenizer) -> String {
   // on a backslash, seeding it with the run already scanned.
   if self.pos < self.len &&
     self.input[self.pos].to_int().unsafe_to_char() == '\\' {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     buf.write_string(self.input.unsafe_substring(start~, end=self.pos))
     while self.pos < self.len {
       let c = self.input[self.pos].to_int().unsafe_to_char()
@@ -272,7 +272,7 @@ fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
   }
   // Slow path: seed the builder with the run scanned so far, then handle
   // escapes / bad-string termination char-by-char.
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(self.input.unsafe_substring(start~, end=self.pos))
   while !self.is_eof() {
     match self.consume() {

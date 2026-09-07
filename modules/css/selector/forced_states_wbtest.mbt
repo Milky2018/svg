@@ -8,7 +8,10 @@ test "matches_complex_with_forced_states hover" {
   let selector = must_parse(".btn:hover")
   let element = Element::new("button").add_class("btn")
   assert_false(matches_complex(element, selector))
-  let forced = ForcedPseudoStates::{ ..ForcedPseudoStates::none(), hover: true }
+  let forced = ForcedPseudoStates::{
+    ..ForcedPseudoStates::none(),
+    hover: true,
+  }
   assert_true(matches_complex_with_forced_states(element, selector, forced))
 }
 
@@ -17,7 +20,10 @@ test "matches_complex_with_forced_states focus" {
   let selector = must_parse("input:focus")
   let element = Element::new("input")
   assert_false(matches_complex(element, selector))
-  let forced = ForcedPseudoStates::{ ..ForcedPseudoStates::none(), focus: true }
+  let forced = ForcedPseudoStates::{
+    ..ForcedPseudoStates::none(),
+    focus: true,
+  }
   assert_true(matches_complex_with_forced_states(element, selector, forced))
 }
 
@@ -25,7 +31,10 @@ test "matches_complex_with_forced_states focus" {
 test "matches_complex_with_forced_states does not match wrong pseudo" {
   let selector = must_parse(".btn:hover")
   let element = Element::new("button").add_class("btn")
-  let forced = ForcedPseudoStates::{ ..ForcedPseudoStates::none(), focus: true }
+  let forced = ForcedPseudoStates::{
+    ..ForcedPseudoStates::none(),
+    focus: true,
+  }
   assert_false(matches_complex_with_forced_states(element, selector, forced))
 }
 
@@ -53,7 +62,10 @@ test "matches_complex_with_forced_states with parent selector" {
   let selector = must_parse(".container .btn:hover")
   let parent = Element::new("div").add_class("container")
   let element = Element::new("button").add_class("btn").set_parent(parent)
-  let forced = ForcedPseudoStates::{ ..ForcedPseudoStates::none(), hover: true }
+  let forced = ForcedPseudoStates::{
+    ..ForcedPseudoStates::none(),
+    hover: true,
+  }
   assert_true(matches_complex_with_forced_states(element, selector, forced))
 }
 
@@ -61,7 +73,7 @@ test "matches_complex_with_forced_states with parent selector" {
 test "ForcedPseudoStates none is empty" {
   assert_true(ForcedPseudoStates::none().is_empty())
   assert_false(
-    ForcedPseudoStates::{ ..ForcedPseudoStates::none(), hover: true }.is_empty(),
+    ForcedPseudoStates::{ ..ForcedPseudoStates::none(), hover: true, }.is_empty(),
   )
 }
 
@@ -137,7 +149,7 @@ test "matches_complex_with_forced_states - next-sibling combinator" {
 test "matches_complex_with_forced_states - subsequent-sibling combinator" {
   let sel = must_parse(".prev ~ .btn:hover")
   let prev = Element::new("span").add_class("prev")
-  let middle = { ..Element::new("span"), prev_sibling: Some(prev) }
+  let middle = { ..Element::new("span"), prev_sibling: Some(prev), }
   let element = {
     ..Element::new("button").add_class("btn"),
     prev_sibling: Some(middle),

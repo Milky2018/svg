@@ -15,14 +15,14 @@ pub fn parse_clip(value : String) -> @types.ClipRect {
     ).trim()
     // Split by comma or space (both are valid in CSS)
     let parts : Array[String] = []
-    let mut current = StringBuilder::new()
+    let mut current = StringBuilder()
     for c in content.iter() {
       if c == ',' || c == ' ' {
         let s = current.to_string().trim().to_owned()
         if !s.is_empty() {
           parts.push(s)
         }
-        current = StringBuilder::new()
+        current = StringBuilder()
       } else {
         current.write_char(c)
       }
@@ -291,7 +291,7 @@ fn extract_clip_path_path_string_with_quote(
   content : String,
   quote : Char,
 ) -> String? {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   let mut in_quote = false
   for c in content.iter() {
     if in_quote {
@@ -721,7 +721,7 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
 ///|
 fn tokenize_clip_path_path_data(path_data : String) -> Array[String] {
   let tokens : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   for c in path_data.iter() {
     if is_clip_path_path_command_char(c) {
       flush_clip_path_path_token(tokens, current)
@@ -975,7 +975,7 @@ fn is_clip_path_path_command_char(c : Char) -> Bool {
 
 ///|
 fn clip_path_path_char_to_string(c : Char) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   sb.write_char(c)
   sb.to_string()
 }
@@ -989,14 +989,14 @@ fn parse_clip_path_path_number(token : String) -> Double? {
 ///|
 fn split_clip_path_values(content : String) -> Array[String] {
   let parts : Array[String] = []
-  let mut current = StringBuilder::new()
+  let mut current = StringBuilder()
   for c in content.iter() {
     if c == ',' || c == ' ' || c == '\t' || c == '\n' {
       let s = current.to_string().trim().to_owned()
       if !s.is_empty() {
         parts.push(s)
       }
-      current = StringBuilder::new()
+      current = StringBuilder()
     } else {
       current.write_char(c)
     }

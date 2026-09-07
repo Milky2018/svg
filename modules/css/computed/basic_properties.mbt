@@ -394,7 +394,7 @@ pub fn parse_scroll_snap_type(value : String) -> @style.ScrollSnapType {
   if axis == None || strictness == None {
     @style.ScrollSnapType::none()
   } else {
-    { axis, strictness }
+    { axis, strictness, }
   }
 }
 

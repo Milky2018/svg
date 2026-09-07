@@ -43,7 +43,7 @@ test "external use keeps its document-scoped paint resources" {
 test "external paint and clip resources use qualified ids" {
   let options = RenderOptions::{
     ..RenderOptions::default(),
-    environment: { ..RenderEnvironment::default(), base_uri: "mem:/main.svg" },
+    environment: { ..RenderEnvironment::default(), base_uri: "mem:/main.svg", },
     text_resource_resolver: Some(fn(uri, kind) {
       guard kind is SvgDocument else { return None }
       if uri == "mem:/resources.svg" {

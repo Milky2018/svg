@@ -121,7 +121,7 @@ test "README: render with host text resources and static state" {
       sample_time_seconds: 0.5,
       element_state_resolver: Some(fn(id) {
         if id == "target" {
-          { ..ElementState::none(), hover: true }
+          { ..ElementState::none(), hover: true, }
         } else {
           ElementState::none()
         }

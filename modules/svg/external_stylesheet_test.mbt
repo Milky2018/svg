@@ -39,7 +39,7 @@ test "static environment drives pseudo state and media queries" {
       device_pixel_ratio: 2.0,
       element_state_resolver: Some(fn(id) {
         if id == "target" {
-          { ..ElementState::none(), hover: true }
+          { ..ElementState::none(), hover: true, }
         } else {
           ElementState::none()
         }
@@ -67,7 +67,7 @@ test "static environment drives pseudo state and media queries" {
 test "cyclic stylesheet import is diagnostic and bounded" {
   let options = RenderOptions::{
     ..RenderOptions::default(),
-    environment: { ..RenderEnvironment::default(), base_uri: "mem:/main.svg" },
+    environment: { ..RenderEnvironment::default(), base_uri: "mem:/main.svg", },
     text_resource_resolver: Some(fn(uri, kind) {
       guard kind is Stylesheet else { return None }
       match uri {

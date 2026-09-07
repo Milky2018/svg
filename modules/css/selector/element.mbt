@@ -131,7 +131,7 @@ pub fn Element::is_last_child(self : Element) -> Bool {
 ///|
 /// Builder for creating elements with fluent API
 pub fn Element::set_id(self : Element, id : String) -> Element {
-  { ..self, id: Some(id) }
+  { ..self, id: Some(id), }
 }
 
 ///|
@@ -148,7 +148,7 @@ pub fn Element::set_attribute(
   value : String,
 ) -> Element {
   let attributes = self.attributes.copy()
-  attributes.push({ name, value })
+  attributes.push({ name, value, })
   { ..self, attributes, }
 }
 
@@ -165,10 +165,10 @@ pub fn Element::set_sibling_info(
   index : Int,
   count : Int,
 ) -> Element {
-  { ..self, sibling_index: index, sibling_count: count }
+  { ..self, sibling_index: index, sibling_count: count, }
 }
 
 ///|
 pub fn Element::set_parent(self : Element, parent : Element) -> Element {
-  { ..self, parent: Some(parent) }
+  { ..self, parent: Some(parent), }
 }

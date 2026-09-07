@@ -457,7 +457,7 @@ pub impl Show for ComplexSelector with fn output(self, logger) {
   let parts : Array[String] = []
   for i = self.tail.length() - 1; i >= 0; i = i - 1 {
     let step = self.tail[i]
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     step.selector.output(buf)
     parts.push(buf.to_string())
     match step.combinator {
@@ -520,12 +520,12 @@ pub impl Show for Specificity with fn output(self, logger) {
 
 ///|
 pub fn Specificity::zero() -> Specificity {
-  { a: 0, b: 0, c: 0 }
+  { a: 0, b: 0, c: 0, }
 }
 
 ///|
 pub fn Specificity::add(self : Specificity, other : Specificity) -> Specificity {
-  { a: self.a + other.a, b: self.b + other.b, c: self.c + other.c }
+  { a: self.a + other.a, b: self.b + other.b, c: self.c + other.c, }
 }
 
 ///|
@@ -564,17 +564,56 @@ pub fn CompoundSelector::from_class(class_name : String) -> CompoundSelector {
 ///|
 /// Create a simple compound selector with just an ID selector
 pub fn CompoundSelector::from_id(id : String) -> CompoundSelector {
-  { type_selector: None, subclasses: [Id(id)], any_ns_universal: false }
+  { type_selector: None, subclasses: [Id(id)], any_ns_universal: false, }
 }
 
 ///|
 /// Create a simple compound selector with universal selector
 pub fn CompoundSelector::universal() -> CompoundSelector {
-  { type_selector: Some(Universal), subclasses: [], any_ns_universal: false }
+  { type_selector: Some(Universal), subclasses: [], any_ns_universal: false, }
 }
 
 ///|
 /// Create a complex selector from a single compound
 pub fn ComplexSelector::simple(compound : CompoundSelector) -> ComplexSelector {
-  { head: compound, tail: [] }
+  { head: compound, tail: [], }
 }
+
+///|
+pub extend AttributeMatch with Show::{to_string, output}
+
+///|
+pub extend AttributeSelector with Show::{to_string, output}
+
+///|
+pub extend Combinator with Show::{to_string, output}
+
+///|
+pub extend ComplexSelector with Show::{to_string, output}
+
+///|
+pub extend CompoundSelector with Show::{to_string, output}
+
+///|
+pub extend NthExpr with Show::{to_string, output}
+
+///|
+pub extend PseudoClass with Show::{to_string, output}
+
+///|
+pub extend PseudoElement with Show::{to_string, output}
+
+///|
+pub extend SelectorList with Show::{to_string, output}
+
+///|
+pub extend SimpleSelector with Show::{to_string, output}
+
+///|
+pub extend Specificity with Compare::{op_lt, op_le, op_ge, compare, op_gt}
+
+///|
+pub extend Specificity with Eq::{not_equal, equal}
+
+///|
+pub extend Specificity with Show::{to_string, output}

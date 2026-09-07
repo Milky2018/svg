@@ -301,7 +301,7 @@ fn parse_filter_primitive(
         .map(parse_number)
         .unwrap_or(1.0)
       let alpha = (base.a.to_double() * opacity).round().to_int()
-      Some(GraphFlood(result~, color={ ..base, a: alpha }))
+      Some(GraphFlood(result~, color={ ..base, a: alpha, }))
     }
     "feMerge" => {
       let inputs : Array[String] = []
@@ -488,11 +488,11 @@ fn parse_filter_primitive_children(
     match parser.advance_event() {
       XmlStart(element) => {
         let tag = element.name
-        children.push({ tag, attrs: element.attributes })
+        children.push({ tag, attrs: element.attributes, })
         skip_to_end_tag(parser, tag)
       }
       XmlEmpty(element) =>
-        children.push({ tag: element.name, attrs: element.attributes })
+        children.push({ tag: element.name, attrs: element.attributes, })
       XmlEnd(name) => if name == parent_tag { break }
       XmlEof => break
       _ => ()
@@ -697,7 +697,7 @@ fn parse_mask_with_content(
       mask_type,
     }
   } else {
-    { ..base, mask_units, mask_content_units, mask_type }
+    { ..base, mask_units, mask_content_units, mask_type, }
   }
   ctx.masks.add(mask)
 }

@@ -1,6 +1,6 @@
 ///|
 fn build_substring_local(s : String, start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = start
   let len = s.length()
   while i < end && i < len {
@@ -118,7 +118,7 @@ fn parse_length_simple(s : String) -> Double {
 ///|
 fn replace_viewport_units(value : String, vw : Double, vh : Double) -> String {
   let len = value.length()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < len {
     let c = char_at(value, i)
@@ -364,7 +364,7 @@ fn render_embedded_svg_image(
         height,
         transform,
         ctx,
-        { align: None, meet_or_slice: Meet },
+        { align: None, meet_or_slice: Meet, },
         sampling,
         opacity,
       )

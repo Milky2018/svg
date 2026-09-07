@@ -1277,7 +1277,7 @@ fn parse_font_family(value : String) -> String {
 ///|
 fn split_css_top_level(input : String, delimiter : Char) -> Array[String] {
   let parts : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   let mut depth = 0
   for ch in input {
     if ch == '(' {
@@ -1312,7 +1312,7 @@ fn split_css_top_level(input : String, delimiter : Char) -> Array[String] {
 ///|
 fn split_css_whitespace_preserving_functions(input : String) -> Array[String] {
   let parts : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   let mut depth = 0
   for ch in input {
     if ch == '(' {

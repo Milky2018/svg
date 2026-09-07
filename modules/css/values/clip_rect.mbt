@@ -20,13 +20,13 @@ pub impl Show for ClipRect with fn output(self, logger) {
     Auto => logger.write_string("auto")
     Rect(top~, right~, bottom~, left~) => {
       logger.write_string("rect(")
-      top.output(logger)
+      Show::output(top, logger)
       logger.write_string(", ")
-      right.output(logger)
+      Show::output(right, logger)
       logger.write_string(", ")
-      bottom.output(logger)
+      Show::output(bottom, logger)
       logger.write_string(", ")
-      left.output(logger)
+      Show::output(left, logger)
       logger.write_string(")")
     }
   }
@@ -36,3 +36,12 @@ pub impl Show for ClipRect with fn output(self, logger) {
 pub fn ClipRect::default() -> ClipRect {
   Auto
 }
+
+///|
+pub extend ClipRect with Debug::{to_repr}
+
+///|
+pub extend ClipRect with Eq::{not_equal, equal}
+
+///|
+pub extend ClipRect with Show::{to_string, output}

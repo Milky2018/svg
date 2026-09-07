@@ -25,7 +25,7 @@ let internal_effective_color_scheme_key = "--milky-css-effective-color-scheme"
 
 ///|
 fn view_to_string(v : StringView) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   sb.write_stringview(v)
   sb.to_string()
 }
@@ -674,8 +674,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     grid_template_columns_kind: self.grid_template_columns_kind,
     grid_template_rows_kind: self.grid_template_rows_kind,
     grid_template_areas: self.grid_template_areas,
-    grid_row: { start: self.grid_row_start, end: self.grid_row_end },
-    grid_column: { start: self.grid_column_start, end: self.grid_column_end },
+    grid_row: { start: self.grid_row_start, end: self.grid_row_end, },
+    grid_column: { start: self.grid_column_start, end: self.grid_column_end, },
     grid_area: self.grid_area,
     justify_items: self.justify_items,
     justify_self: self.justify_self,
@@ -1051,7 +1051,7 @@ fn text_decoration_to_string(
   if values.is_empty() {
     "none"
   } else {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     for i, value in values {
       if i > 0 {
         buf.write_string(" ")
@@ -1383,7 +1383,7 @@ fn seed_font_metrics(
   builder.line_height = seeded_line_height
   builder.font_weight = seeded_font_weight
   builder.font_family = seeded_font_family
-  { ..ctx, font_size: seeded_font_size }
+  { ..ctx, font_size: seeded_font_size, }
 }
 
 ///|

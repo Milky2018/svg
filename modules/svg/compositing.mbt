@@ -411,3 +411,15 @@ fn blend_images(backdrop : Image, source : Image, mode : BlendMode) -> Image {
   }
   result
 }
+
+///|
+pub extend BlendMode with Debug::{to_repr}
+
+///|
+pub extend BlendMode with Eq::{not_equal, equal}
+
+///|
+pub extend Isolation with Debug::{to_repr}
+
+///|
+pub extend Isolation with Eq::{not_equal, equal}

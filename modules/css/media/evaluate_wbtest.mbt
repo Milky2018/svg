@@ -99,7 +99,7 @@ test "media_query_list_or_semantics" {
   // Query list with OR semantics: screen, (min-width: 1000px)
   let mq_list : MediaQueryList = {
     queries: [
-      { negated: false, only: false, media_type: Some(Screen), conditions: [] },
+      { negated: false, only: false, media_type: Some(Screen), conditions: [], },
       {
         negated: false,
         only: false,

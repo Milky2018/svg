@@ -84,7 +84,7 @@ pub struct MediaQuery {
 ///|
 /// Create a default media query (matches all)
 pub fn MediaQuery::default() -> MediaQuery {
-  { negated: false, only: false, media_type: None, conditions: [] }
+  { negated: false, only: false, media_type: None, conditions: [], }
 }
 
 ///|
@@ -96,7 +96,7 @@ pub struct MediaQueryList {
 ///|
 /// Create an empty media query list
 pub fn MediaQueryList::new() -> MediaQueryList {
-  { queries: [] }
+  { queries: [], }
 }
 
 ///|
@@ -172,28 +172,28 @@ pub impl Show for MediaFeature with fn output(self, logger) {
     Update => logger.write_string("Update")
     Width(value) => {
       logger.write_string("Width(")
-      logger.write_object(to_repr(value))
+      logger.write_object(Repr(value))
       logger.write_string(")")
     }
     MinWidth(value) => logger.write_string("MinWidth(\{value})")
     MaxWidth(value) => logger.write_string("MaxWidth(\{value})")
     Height(value) => {
       logger.write_string("Height(")
-      logger.write_object(to_repr(value))
+      logger.write_object(Repr(value))
       logger.write_string(")")
     }
     MinHeight(value) => logger.write_string("MinHeight(\{value})")
     MaxHeight(value) => logger.write_string("MaxHeight(\{value})")
     AspectRatio(value) => {
       logger.write_string("AspectRatio(")
-      logger.write_object(to_repr(value))
+      logger.write_object(Repr(value))
       logger.write_string(")")
     }
     MinAspectRatio(value) => logger.write_string("MinAspectRatio(\{value})")
     MaxAspectRatio(value) => logger.write_string("MaxAspectRatio(\{value})")
     Resolution(value) => {
       logger.write_string("Resolution(")
-      logger.write_object(to_repr(value))
+      logger.write_object(Repr(value))
       logger.write_string(")")
     }
     MinResolution(value) => logger.write_string("MinResolution(\{value})")
@@ -235,7 +235,7 @@ pub impl Show for MediaFeature with fn output(self, logger) {
       logger.write_string(name)
       logger.write_string("\"")
       logger.write_string(", ")
-      logger.write_object(to_repr(value))
+      logger.write_object(Repr(value))
       logger.write_string(")")
     }
   }
@@ -248,15 +248,69 @@ pub impl Show for MediaQuery with fn output(self, logger) {
   logger.write_string(", only: ")
   logger.write_string(self.only.to_string())
   logger.write_string(", media_type: ")
-  logger.write_object(to_repr(self.media_type))
+  logger.write_object(Repr(self.media_type))
   logger.write_string(", conditions: ")
-  logger.write_object(to_repr(self.conditions))
+  logger.write_object(Repr(self.conditions))
   logger.write_string("}")
 }
 
 ///|
 pub impl Show for MediaQueryList with fn output(self, logger) {
   logger.write_string("{queries: ")
-  logger.write_object(to_repr(self.queries))
+  logger.write_object(Repr(self.queries))
   logger.write_string("}")
 }
+
+///|
+pub extend MediaFeature with Debug::{to_repr}
+
+///|
+pub extend MediaFeature with Eq::{not_equal, equal}
+
+///|
+pub extend MediaFeature with Show::{to_string, output}
+
+///|
+pub extend MediaQuery with Debug::{to_repr}
+
+///|
+pub extend MediaQuery with Eq::{not_equal, equal}
+
+///|
+pub extend MediaQuery with Show::{to_string, output}
+
+///|
+pub extend MediaQueryList with Debug::{to_repr}
+
+///|
+pub extend MediaQueryList with Eq::{not_equal, equal}
+
+///|
+pub extend MediaQueryList with Show::{to_string, output}
+
+///|
+pub extend MediaType with Debug::{to_repr}
+
+///|
+pub extend MediaType with Eq::{not_equal, equal}
+
+///|
+pub extend MediaType with Show::{to_string, output}
+
+///|
+pub extend MediaValue with Debug::{to_repr}
+
+///|
+pub extend MediaValue with Eq::{not_equal, equal}
+
+///|
+pub extend MediaValue with Show::{to_string, output}
+
+///|
+pub extend RangeOp with Debug::{to_repr}
+
+///|
+pub extend RangeOp with Eq::{not_equal, equal}
+
+///|
+pub extend RangeOp with Show::{to_string, output}

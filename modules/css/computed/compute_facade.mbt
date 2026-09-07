@@ -69,7 +69,7 @@ pub fn compute_inline_raw(
             Value(value),
             Author,
             importance,
-            { a: 1000, b: 0, c: 0 },
+            { a: 1000, b: 0, c: 0, },
             order,
           ),
         )

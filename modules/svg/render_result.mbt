@@ -103,7 +103,7 @@ pub fn RenderOptions::default() -> RenderOptions {
 pub fn RenderOptions::with_image_resolver(
   image_resolver : (String) -> Image?,
 ) -> RenderOptions {
-  { ..RenderOptions::default(), image_resolver: Some(image_resolver) }
+  { ..RenderOptions::default(), image_resolver: Some(image_resolver), }
 }
 
 ///|
@@ -122,3 +122,33 @@ pub(all) struct RenderResult {
   image : Image
   diagnostics : Array[RenderDiagnostic]
 }
+
+///|
+pub extend ElementState with Debug::{to_repr}
+
+///|
+pub extend ElementState with Eq::{not_equal, equal}
+
+///|
+pub extend PreferredColorScheme with Debug::{to_repr}
+
+///|
+pub extend PreferredColorScheme with Eq::{not_equal, equal}
+
+///|
+pub extend RenderDiagnosticKind with Debug::{to_repr}
+
+///|
+pub extend RenderDiagnosticKind with Eq::{not_equal, equal}
+
+///|
+pub extend RenderStage with Debug::{to_repr}
+
+///|
+pub extend RenderStage with Eq::{not_equal, equal}
+
+///|
+pub extend TextResourceKind with Debug::{to_repr}
+
+///|
+pub extend TextResourceKind with Eq::{not_equal, equal}

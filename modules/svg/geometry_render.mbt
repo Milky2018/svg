@@ -772,7 +772,7 @@ fn raster_affine_stroke(
     })
     raster_affine_stroke(
       device_points,
-      { ..stroke, non_scaling: false },
+      { ..stroke, non_scaling: false, },
       Transform::identity(),
       color,
       setter,
@@ -1006,7 +1006,7 @@ fn build_marker_subpaths(commands : Array[PathCommand]) -> Array[MarkerSubpath] 
       }
       out_points.push(dup)
     }
-    subpaths.push({ points: out_points })
+    subpaths.push({ points: out_points, })
   }
 
   fn record_out(

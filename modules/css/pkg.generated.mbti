@@ -134,4 +134,3 @@ pub using @selector {type Specificity}
 pub using @cascade {type Stylesheet}
 
 // Traits
-

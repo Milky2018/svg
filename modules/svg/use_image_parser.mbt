@@ -57,7 +57,7 @@ fn parse_use(
     Some(v) => parse_transform(v)
     None => Transform::identity()
   }
-  let use_elem = { ..UseElement::new(href, x, y), width, height, transform }
+  let use_elem = { ..UseElement::new(href, x, y), width, height, transform, }
   let viewport_fallback = ctx.current_viewport()
   let (base_href, frag) = split_href_fragment(use_elem.href)
   let allow_data_url_use = false
@@ -78,12 +78,12 @@ fn parse_use(
             None =>
               match (node.viewport_width, node.viewport_height) {
                 (Some(w), Some(h)) =>
-                  (Some({ min_x: 0.0, min_y: 0.0, width: w, height: h }), true)
+                  (Some({ min_x: 0.0, min_y: 0.0, width: w, height: h, }), true)
                 _ =>
                   match viewport_fallback {
                     Some((vw, vh)) =>
                       (
-                        Some({ min_x: 0.0, min_y: 0.0, width: vw, height: vh }),
+                        Some({ min_x: 0.0, min_y: 0.0, width: vw, height: vh, }),
                         true,
                       )
                     None => (None, false)
@@ -91,7 +91,7 @@ fn parse_use(
               }
           }
           if force_non_uniform {
-            node.preserve_aspect_ratio = { align: None, meet_or_slice: Meet }
+            node.preserve_aspect_ratio = { align: None, meet_or_slice: Meet, }
           }
           let vw = match use_elem.width {
             Some(w) => Some(w)
@@ -164,7 +164,7 @@ fn parse_use(
                 width: node.viewport_width.unwrap(),
                 height: node.viewport_height.unwrap(),
               })
-              node.preserve_aspect_ratio = { align: None, meet_or_slice: Meet }
+              node.preserve_aspect_ratio = { align: None, meet_or_slice: Meet, }
             }
           }
           node.id = get_attr(attrs, "id").unwrap_or("")
@@ -220,7 +220,7 @@ fn parse_use(
 fn decode_html_entities(value : String) -> String {
   let mut i = 0
   let len = value.length()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   while i < len {
     let c = Int::unsafe_to_char(value[i].to_int())
     if c == '&' {
@@ -292,7 +292,7 @@ fn hex_value_local(c : Char) -> Int? {
 ///|
 fn decode_percent_local(value : String) -> String {
   let len = value.length()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < len {
     let c = Int::unsafe_to_char(value[i].to_int())
@@ -340,7 +340,7 @@ fn is_base64_ws_local(c : Char) -> Bool {
 ///|
 fn decode_base64_local(value : String) -> String? {
   let len = value.length()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut q0 = 0
   let mut q1 = 0
   let mut q2 = 0

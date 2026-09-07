@@ -37,6 +37,11 @@ pub(all) enum Align {
   XMidYMax
   XMaxYMax
 } derive(Eq, @debug.Debug)
+pub fn Align::equal(Self, Self) -> Bool
+pub fn Align::not_equal(Self, Self) -> Bool
+pub fn Align::output(Self, &Logger) -> Unit
+pub fn Align::to_repr(Self) -> @debug.Repr
+pub fn Align::to_string(Self) -> String
 pub impl Show for Align
 
 pub(all) enum BlendMode {
@@ -57,6 +62,9 @@ pub(all) enum BlendMode {
   ColorMode
   Luminosity
 } derive(Eq, @debug.Debug)
+pub fn BlendMode::equal(Self, Self) -> Bool
+pub fn BlendMode::not_equal(Self, Self) -> Bool
+pub fn BlendMode::to_repr(Self) -> @debug.Repr
 
 pub(all) struct BoundingBox {
   min_x : Double
@@ -89,6 +97,9 @@ pub(all) enum ClipPathUnits {
   UserSpaceOnUse
   ObjectBoundingBox
 } derive(Eq, @debug.Debug)
+pub fn ClipPathUnits::equal(Self, Self) -> Bool
+pub fn ClipPathUnits::not_equal(Self, Self) -> Bool
+pub fn ClipPathUnits::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Color {
   r : Int
@@ -100,6 +111,7 @@ pub fn Color::black() -> Self
 pub fn Color::is_transparent(Self) -> Bool
 pub fn Color::rgb(Int, Int, Int) -> Self
 pub fn Color::rgba(Int, Int, Int, Int) -> Self
+pub fn Color::to_repr(Self) -> @debug.Repr
 pub fn Color::transparent() -> Self
 pub fn Color::white() -> Self
 
@@ -110,6 +122,7 @@ pub(all) enum ComponentTransferFunction {
   TransferLinear(slope~ : Double, intercept~ : Double)
   TransferGamma(amplitude~ : Double, exponent~ : Double, offset~ : Double)
 } derive(@debug.Debug)
+pub fn ComponentTransferFunction::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ElementState {
   hover : Bool
@@ -118,12 +131,20 @@ pub(all) struct ElementState {
   focus_visible : Bool
   focus_within : Bool
 } derive(Eq, @debug.Debug)
+pub fn ElementState::equal(Self, Self) -> Bool
 pub fn ElementState::none() -> Self
+pub fn ElementState::not_equal(Self, Self) -> Bool
+pub fn ElementState::to_repr(Self) -> @debug.Repr
 
 pub(all) enum FillRule {
   NonZero
   EvenOdd
 } derive(Eq, @debug.Debug)
+pub fn FillRule::equal(Self, Self) -> Bool
+pub fn FillRule::not_equal(Self, Self) -> Bool
+pub fn FillRule::output(Self, &Logger) -> Unit
+pub fn FillRule::to_repr(Self) -> @debug.Repr
+pub fn FillRule::to_string(Self) -> String
 pub impl Show for FillRule
 
 pub(all) enum Filter {
@@ -145,6 +166,9 @@ pub(all) enum FilterChannel {
   ChannelB
   ChannelA
 } derive(Eq, @debug.Debug)
+pub fn FilterChannel::equal(Self, Self) -> Bool
+pub fn FilterChannel::not_equal(Self, Self) -> Bool
+pub fn FilterChannel::to_repr(Self) -> @debug.Repr
 
 pub(all) enum FilterCompositeOperator {
   CompositeOver
@@ -154,12 +178,18 @@ pub(all) enum FilterCompositeOperator {
   CompositeXor
   CompositeArithmetic
 } derive(Eq, @debug.Debug)
+pub fn FilterCompositeOperator::equal(Self, Self) -> Bool
+pub fn FilterCompositeOperator::not_equal(Self, Self) -> Bool
+pub fn FilterCompositeOperator::to_repr(Self) -> @debug.Repr
 
 pub(all) enum FilterEdgeMode {
   EdgeDuplicate
   EdgeWrap
   EdgeNone
 } derive(Eq, @debug.Debug)
+pub fn FilterEdgeMode::equal(Self, Self) -> Bool
+pub fn FilterEdgeMode::not_equal(Self, Self) -> Bool
+pub fn FilterEdgeMode::to_repr(Self) -> @debug.Repr
 
 pub(all) struct FilterGraph {
   id : String
@@ -194,12 +224,14 @@ pub(all) enum FilterGraphPrimitive {
   GraphDiffuseLighting(input~ : String, result~ : String, surface_scale~ : Double, diffuse_constant~ : Double, color~ : Color, light~ : FilterLight)
   GraphSpecularLighting(input~ : String, result~ : String, surface_scale~ : Double, specular_constant~ : Double, specular_exponent~ : Double, color~ : Color, light~ : FilterLight)
 } derive(@debug.Debug)
+pub fn FilterGraphPrimitive::to_repr(Self) -> @debug.Repr
 
 pub(all) enum FilterLight {
   DistantLight(azimuth~ : Double, elevation~ : Double)
   PointLight(x~ : Double, y~ : Double, z~ : Double)
   SpotLight(x~ : Double, y~ : Double, z~ : Double, points_at_x~ : Double, points_at_y~ : Double, points_at_z~ : Double, exponent~ : Double, limiting_cone_angle~ : Double?)
 } derive(@debug.Debug)
+pub fn FilterLight::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Gradient {
   Linear(LinearGradient)
@@ -215,6 +247,9 @@ pub(all) enum GradientUnits {
   UserSpaceOnUse
   ObjectBoundingBox
 } derive(Eq, @debug.Debug)
+pub fn GradientUnits::equal(Self, Self) -> Bool
+pub fn GradientUnits::not_equal(Self, Self) -> Bool
+pub fn GradientUnits::to_repr(Self) -> @debug.Repr
 
 pub struct Image {
   // private fields
@@ -232,17 +267,28 @@ pub(all) enum ImageSampling {
   Bilinear
   Bicubic
 } derive(Eq, @debug.Debug)
+pub fn ImageSampling::equal(Self, Self) -> Bool
+pub fn ImageSampling::not_equal(Self, Self) -> Bool
+pub fn ImageSampling::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Isolation {
   Auto
   Isolate
 } derive(Eq, @debug.Debug)
+pub fn Isolation::equal(Self, Self) -> Bool
+pub fn Isolation::not_equal(Self, Self) -> Bool
+pub fn Isolation::to_repr(Self) -> @debug.Repr
 
 pub(all) enum LineCap {
   Butt
   Round
   Square
 } derive(Eq, @debug.Debug)
+pub fn LineCap::equal(Self, Self) -> Bool
+pub fn LineCap::not_equal(Self, Self) -> Bool
+pub fn LineCap::output(Self, &Logger) -> Unit
+pub fn LineCap::to_repr(Self) -> @debug.Repr
+pub fn LineCap::to_string(Self) -> String
 pub impl Show for LineCap
 
 pub(all) enum LineJoin {
@@ -250,6 +296,11 @@ pub(all) enum LineJoin {
   Round
   Bevel
 } derive(Eq, @debug.Debug)
+pub fn LineJoin::equal(Self, Self) -> Bool
+pub fn LineJoin::not_equal(Self, Self) -> Bool
+pub fn LineJoin::output(Self, &Logger) -> Unit
+pub fn LineJoin::to_repr(Self) -> @debug.Repr
+pub fn LineJoin::to_string(Self) -> String
 pub impl Show for LineJoin
 
 pub(all) struct LinearGradient {
@@ -312,23 +363,39 @@ pub(all) enum MaskType {
   Luminance
   Alpha
 } derive(Eq, @debug.Debug)
+pub fn MaskType::equal(Self, Self) -> Bool
+pub fn MaskType::not_equal(Self, Self) -> Bool
+pub fn MaskType::output(Self, &Logger) -> Unit
+pub fn MaskType::to_repr(Self) -> @debug.Repr
+pub fn MaskType::to_string(Self) -> String
 pub impl Show for MaskType
 
 pub(all) enum MaskUnits {
   UserSpaceOnUse
   ObjectBoundingBox
 } derive(Eq, @debug.Debug)
+pub fn MaskUnits::equal(Self, Self) -> Bool
+pub fn MaskUnits::not_equal(Self, Self) -> Bool
+pub fn MaskUnits::to_repr(Self) -> @debug.Repr
 
 pub(all) enum MeetOrSlice {
   Meet
   Slice
 } derive(Eq, @debug.Debug)
+pub fn MeetOrSlice::equal(Self, Self) -> Bool
+pub fn MeetOrSlice::not_equal(Self, Self) -> Bool
+pub fn MeetOrSlice::output(Self, &Logger) -> Unit
+pub fn MeetOrSlice::to_repr(Self) -> @debug.Repr
+pub fn MeetOrSlice::to_string(Self) -> String
 pub impl Show for MeetOrSlice
 
 pub(all) enum MorphologyOperator {
   MorphologyErode
   MorphologyDilate
 } derive(Eq, @debug.Debug)
+pub fn MorphologyOperator::equal(Self, Self) -> Bool
+pub fn MorphologyOperator::not_equal(Self, Self) -> Bool
+pub fn MorphologyOperator::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Paint {
   None
@@ -349,12 +416,20 @@ pub(all) struct PaintOrder {
   order : Array[PaintOrderItem]
 } derive(Eq, @debug.Debug)
 pub fn PaintOrder::default() -> Self
+pub fn PaintOrder::equal(Self, Self) -> Bool
+pub fn PaintOrder::not_equal(Self, Self) -> Bool
+pub fn PaintOrder::to_repr(Self) -> @debug.Repr
 
 pub(all) enum PaintOrderItem {
   Fill
   Stroke
   Markers
 } derive(Eq, @debug.Debug)
+pub fn PaintOrderItem::equal(Self, Self) -> Bool
+pub fn PaintOrderItem::not_equal(Self, Self) -> Bool
+pub fn PaintOrderItem::output(Self, &Logger) -> Unit
+pub fn PaintOrderItem::to_repr(Self) -> @debug.Repr
+pub fn PaintOrderItem::to_string(Self) -> String
 pub impl Show for PaintOrderItem
 
 pub(all) enum PathCommand {
@@ -378,6 +453,7 @@ pub(all) enum PathCommand {
   SmoothQuadraticCurveToRel(Double, Double)
   ArcToRel(Double, Double, Double, Bool, Bool, Double, Double)
 } derive(@debug.Debug)
+pub fn PathCommand::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Pattern {
   id : String
@@ -403,6 +479,9 @@ pub(all) enum PreferredColorScheme {
   Light
   Dark
 } derive(Eq, @debug.Debug)
+pub fn PreferredColorScheme::equal(Self, Self) -> Bool
+pub fn PreferredColorScheme::not_equal(Self, Self) -> Bool
+pub fn PreferredColorScheme::to_repr(Self) -> @debug.Repr
 
 pub(all) struct PreserveAspectRatio {
   align : Align
@@ -436,6 +515,9 @@ pub(all) enum RenderDiagnosticKind {
   ResourceCycle
   ResourceLimitExceeded
 } derive(Eq, @debug.Debug)
+pub fn RenderDiagnosticKind::equal(Self, Self) -> Bool
+pub fn RenderDiagnosticKind::not_equal(Self, Self) -> Bool
+pub fn RenderDiagnosticKind::to_repr(Self) -> @debug.Repr
 
 pub(all) struct RenderEnvironment {
   base_uri : String
@@ -470,6 +552,9 @@ pub(all) enum RenderStage {
   Image
   Effects
 } derive(Eq, @debug.Debug)
+pub fn RenderStage::equal(Self, Self) -> Bool
+pub fn RenderStage::not_equal(Self, Self) -> Bool
+pub fn RenderStage::to_repr(Self) -> @debug.Repr
 
 pub struct SVGDocument {
   // private fields
@@ -535,12 +620,16 @@ pub(all) enum Shape {
   Image(x~ : Double, y~ : Double, width~ : Double, height~ : Double, href~ : String)
   Group
 } derive(@debug.Debug)
+pub fn Shape::to_repr(Self) -> @debug.Repr
 
 pub(all) enum SpreadMethod {
   Pad
   Repeat
   Reflect
 } derive(Eq, @debug.Debug)
+pub fn SpreadMethod::equal(Self, Self) -> Bool
+pub fn SpreadMethod::not_equal(Self, Self) -> Bool
+pub fn SpreadMethod::to_repr(Self) -> @debug.Repr
 
 pub(all) struct StrokeStyle {
   paint : Paint
@@ -570,6 +659,9 @@ pub(all) enum TextResourceKind {
   Stylesheet
   SvgDocument
 } derive(Eq, @debug.Debug)
+pub fn TextResourceKind::equal(Self, Self) -> Bool
+pub fn TextResourceKind::not_equal(Self, Self) -> Bool
+pub fn TextResourceKind::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Transform {
   a : Double
@@ -621,4 +713,3 @@ pub fn ViewBox::get_transform(Self, Double, Double, PreserveAspectRatio) -> Tran
 // Type aliases
 
 // Traits
-

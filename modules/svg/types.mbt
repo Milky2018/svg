@@ -13,27 +13,27 @@ pub(all) struct Color {
 
 ///|
 pub fn Color::rgb(r : Int, g : Int, b : Int) -> Color {
-  { r, g, b, a: 255 }
+  { r, g, b, a: 255, }
 }
 
 ///|
 pub fn Color::rgba(r : Int, g : Int, b : Int, a : Int) -> Color {
-  { r, g, b, a }
+  { r, g, b, a, }
 }
 
 ///|
 pub fn Color::transparent() -> Color {
-  { r: 0, g: 0, b: 0, a: 0 }
+  { r: 0, g: 0, b: 0, a: 0, }
 }
 
 ///|
 pub fn Color::black() -> Color {
-  { r: 0, g: 0, b: 0, a: 255 }
+  { r: 0, g: 0, b: 0, a: 255, }
 }
 
 ///|
 pub fn Color::white() -> Color {
-  { r: 255, g: 255, b: 255, a: 255 }
+  { r: 255, g: 255, b: 255, a: 255, }
 }
 
 ///|
@@ -107,7 +107,7 @@ pub(all) struct PreserveAspectRatio {
 
 ///|
 pub fn PreserveAspectRatio::default() -> PreserveAspectRatio {
-  { align: XMidYMid, meet_or_slice: Meet }
+  { align: XMidYMid, meet_or_slice: Meet, }
 }
 
 ///|
@@ -150,7 +150,7 @@ pub fn ViewBox::get_transform(
     }
   }
   // Combine: first translate by viewBox min, then scale
-  { a: sx, b: 0.0, c: 0.0, d: sy, e: tx, f: ty }
+  { a: sx, b: 0.0, c: 0.0, d: sy, e: tx, f: ty, }
 }
 
 ///|
@@ -403,7 +403,7 @@ pub(all) struct PaintOrder {
 
 ///|
 pub fn PaintOrder::default() -> PaintOrder {
-  { order: [Fill, Stroke, Markers] }
+  { order: [Fill, Stroke, Markers], }
 }
 
 ///|
@@ -584,7 +584,7 @@ pub fn BoundingBox::from_rect(
   w : Double,
   h : Double,
 ) -> BoundingBox {
-  { min_x: x, min_y: y, max_x: x + w, max_y: y + h }
+  { min_x: x, min_y: y, max_x: x + w, max_y: y + h, }
 }
 
 ///|
@@ -669,7 +669,7 @@ priv struct ClipRect {
 
 ///|
 fn ClipRect::new(x : Int, y : Int, width : Int, height : Int) -> ClipRect {
-  { x, y, width, height }
+  { x, y, width, height, }
 }
 
 ///|
@@ -691,3 +691,72 @@ fn ClipRect::to_bbox(self : ClipRect) -> BoundingBox {
     max_y: (self.y + self.height).to_double(),
   }
 }
+
+///|
+pub extend Align with Debug::{to_repr}
+
+///|
+pub extend Align with Eq::{not_equal, equal}
+
+///|
+pub extend Color with Debug::{to_repr}
+
+///|
+pub extend FillRule with Debug::{to_repr}
+
+///|
+pub extend FillRule with Eq::{not_equal, equal}
+
+///|
+pub extend GradientUnits with Debug::{to_repr}
+
+///|
+pub extend GradientUnits with Eq::{not_equal, equal}
+
+///|
+pub extend ImageSampling with Debug::{to_repr}
+
+///|
+pub extend ImageSampling with Eq::{not_equal, equal}
+
+///|
+pub extend LineCap with Debug::{to_repr}
+
+///|
+pub extend LineCap with Eq::{not_equal, equal}
+
+///|
+pub extend LineJoin with Debug::{to_repr}
+
+///|
+pub extend LineJoin with Eq::{not_equal, equal}
+
+///|
+pub extend MeetOrSlice with Debug::{to_repr}
+
+///|
+pub extend MeetOrSlice with Eq::{not_equal, equal}
+
+///|
+pub extend PaintOrder with Debug::{to_repr}
+
+///|
+pub extend PaintOrder with Eq::{not_equal, equal}
+
+///|
+pub extend PaintOrderItem with Debug::{to_repr}
+
+///|
+pub extend PaintOrderItem with Eq::{not_equal, equal}
+
+///|
+pub extend PathCommand with Debug::{to_repr}
+
+///|
+pub extend Shape with Debug::{to_repr}
+
+///|
+pub extend SpreadMethod with Debug::{to_repr}
+
+///|
+pub extend SpreadMethod with Eq::{not_equal, equal}

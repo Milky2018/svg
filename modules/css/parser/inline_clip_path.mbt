@@ -736,7 +736,7 @@ fn parse_clip_path_path_data(path_data : String) -> @style.ClipPath {
 ///|
 fn tokenize_clip_path_path_data(path_data : String) -> Array[String] {
   let tokens : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   for c in path_data.iter() {
     if is_clip_path_path_command_char(c) {
       flush_clip_path_path_token(tokens, current)
@@ -990,7 +990,7 @@ fn is_clip_path_path_command_char(c : Char) -> Bool {
 
 ///|
 fn clip_path_path_char_to_string(c : Char) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   sb.write_char(c)
   sb.to_string()
 }
