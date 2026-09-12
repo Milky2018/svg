@@ -83,6 +83,11 @@ fn merge_external_document(
   base_uri : String,
 ) -> Unit {
   let prefix = resource_strip_fragment(base_uri) + "#"
+  // The external document root is parsed as the document root, so it does
+  // not receive the nested-`<svg>` viewport marker during parsing. When the
+  // whole document is referenced through `<use>`, that root becomes a
+  // referenced `<svg>` target and must retain viewport clipping semantics.
+  document.root.establishes_viewport = true
   ctx.defs.elements[resource_strip_fragment(base_uri)] = document.root
   if document.root.id != "" {
     ctx.defs.elements[prefix + document.root.id] = document.root

@@ -40,6 +40,41 @@ test "external use keeps its document-scoped paint resources" {
 }
 
 ///|
+test "external whole-document use clips the referenced root viewport" {
+  let options = RenderOptions::{
+    ..RenderOptions::default(),
+    environment: {
+      ..RenderEnvironment::default(),
+      base_uri: "mem:/documents/main.svg",
+    },
+    text_resource_resolver: Some(fn(uri, kind) {
+      guard kind is SvgDocument else { return None }
+      if uri == "mem:/assets/root.svg" {
+        Some(
+          (
+            #|<svg xmlns="http://www.w3.org/2000/svg">
+            #|  <rect x="-2" y="-2" width="4" height="4" fill="green"/>
+            #|</svg>
+          ),
+        )
+      } else {
+        None
+      }
+    }),
+  }
+  let svg =
+    #|<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8">
+    #|  <use href="../assets/root.svg" x="4" y="4"/>
+    #|</svg>
+  let result = render_svg(svg, 8, 8, options)
+  inspect(result.diagnostics.length(), content="0")
+  // The external root viewport clips its negative local coordinates before
+  // the <use> translation: only the 4..6 square remains visible.
+  inspect(result.image.get_pixel(3, 3).a, content="0")
+  inspect(result.image.get_pixel(5, 5).g, content="128")
+}
+
+///|
 test "external paint and clip resources use qualified ids" {
   let options = RenderOptions::{
     ..RenderOptions::default(),
