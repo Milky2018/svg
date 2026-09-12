@@ -186,6 +186,23 @@ fn UseElement::instantiate_definition(
   match registry.get(id) {
     Some(target) => {
       let node = target.clone()
+      // Only a nested <svg> (or a target that already carries viewport
+      // geometry) establishes a new viewport when instantiated through <use>.
+      // Plain graphics elements such as <path>, <rect>, or <g> are rendered in
+      // the referencing user space without an implicit viewport, so their
+      // content must never be clipped to the fallback viewport size. Glyph
+      // outlines with negative coordinates rely on this.
+      let is_viewport_target = node.establishes_viewport ||
+        node.view_box is Some(_) ||
+        (node.viewport_width is Some(_) && node.viewport_height is Some(_))
+      let viewport_fallback : (Double, Double)? = if is_viewport_target {
+        viewport_fallback
+      } else {
+        None
+      }
+      if !is_viewport_target {
+        node.clip_overflow = false
+      }
       let (vb, force_non_uniform) = match node.view_box {
         Some(vb) => (Some(vb), false)
         None =>
@@ -349,6 +366,7 @@ fn SVGNode::clone(self : SVGNode) -> SVGNode {
     mask_id: self.mask_id,
     clip_path_id: self.clip_path_id,
     clip_overflow: self.clip_overflow,
+    establishes_viewport: self.establishes_viewport,
     children,
   }
 }

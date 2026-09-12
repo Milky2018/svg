@@ -721,6 +721,7 @@ fn parse_element(
       }
       if tag_name == "svg" {
         if parent_tag != "" {
+          node.establishes_viewport = true
           if geometry_value("width") is Some(v) {
             node.viewport_width = Some(
               parse_length_with_context(v, Horizontal, element_length_context),
