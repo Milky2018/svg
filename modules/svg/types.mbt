@@ -444,6 +444,9 @@ pub(all) struct SVGNode {
   priv mut mask_id : String? // Reference to mask by ID
   priv mut clip_path_id : String? // Reference to clip path by ID
   mut clip_overflow : Bool
+  /// True for nested `<svg>` elements, which establish a viewport even when
+  /// they carry no explicit width, height, or viewBox.
+  priv mut establishes_viewport : Bool
   children : Array[SVGNode]
 }
 
@@ -485,6 +488,7 @@ pub fn SVGNode::new(shape : Shape) -> SVGNode {
     mask_id: None,
     clip_path_id: None,
     clip_overflow: true,
+    establishes_viewport: false,
     children: [],
   }
 }
