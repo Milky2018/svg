@@ -64,9 +64,9 @@ pub fn parse_flex_direction(String) -> @values.FlexDirection
 
 pub fn parse_flex_wrap(String) -> @values.FlexWrap
 
-pub fn parse_float(String) -> @values.Float
+pub fn parse_float(String) -> @values.CssFloat
 
-pub fn parse_float_with_direction(String, @style.Direction) -> @values.Float
+pub fn parse_float_with_direction(String, @style.Direction) -> @values.CssFloat
 
 pub fn parse_grid_area_shorthand(String) -> (@values.GridPlacement, @values.GridPlacement, @values.GridPlacement, @values.GridPlacement)
 

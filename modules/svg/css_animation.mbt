@@ -1,5 +1,5 @@
 ///|
-fn animation_list_index(length : Int, index : Int) -> Int {
+fn animation_list_index(length : Int32, index : Int32) -> Int32 {
   if length == 0 {
     0
   } else {
@@ -8,7 +8,7 @@ fn animation_list_index(length : Int, index : Int) -> Int {
 }
 
 ///|
-fn animation_duration(style : @css_style.Style, index : Int) -> Double {
+fn animation_duration(style : @css_style.Style, index : Int32) -> Double {
   if style.animation_duration.is_empty() {
     0.0
   } else {
@@ -20,7 +20,7 @@ fn animation_duration(style : @css_style.Style, index : Int) -> Double {
 }
 
 ///|
-fn animation_delay(style : @css_style.Style, index : Int) -> Double {
+fn animation_delay(style : @css_style.Style, index : Int32) -> Double {
   if style.animation_delay.is_empty() {
     0.0
   } else {
@@ -34,7 +34,7 @@ fn animation_delay(style : @css_style.Style, index : Int) -> Double {
 ///|
 fn animation_easing(
   style : @css_style.Style,
-  index : Int,
+  index : Int32,
 ) -> @css_values.Easing {
   if style.animation_timing_function.is_empty() {
     Ease
@@ -49,7 +49,7 @@ fn animation_easing(
 ///|
 fn animation_iteration_count(
   style : @css_style.Style,
-  index : Int,
+  index : Int32,
 ) -> @css_values.AnimationIterationCount {
   if style.animation_iteration_count.is_empty() {
     Count(1.0)
@@ -64,7 +64,7 @@ fn animation_iteration_count(
 ///|
 fn animation_direction(
   style : @css_style.Style,
-  index : Int,
+  index : Int32,
 ) -> @css_values.AnimationDirection {
   if style.animation_direction.is_empty() {
     Normal
@@ -79,7 +79,7 @@ fn animation_direction(
 ///|
 fn animation_fill_mode(
   style : @css_style.Style,
-  index : Int,
+  index : Int32,
 ) -> @css_values.AnimationFillMode {
   if style.animation_fill_mode.is_empty() {
     None
@@ -94,7 +94,7 @@ fn animation_fill_mode(
 ///|
 fn animation_play_state(
   style : @css_style.Style,
-  index : Int,
+  index : Int32,
 ) -> @css_values.AnimationPlayState {
   if style.animation_play_state.is_empty() {
     Running
@@ -119,7 +119,7 @@ fn animation_has_forwards_fill(mode : @css_values.AnimationFillMode) -> Bool {
 ///|
 fn directed_animation_progress(
   progress : Double,
-  iteration : Int,
+  iteration : Int32,
   direction : @css_values.AnimationDirection,
 ) -> Double {
   let reverse = match direction {
@@ -138,7 +138,7 @@ fn directed_animation_progress(
 ///|
 fn sampled_animation_progress(
   style : @css_style.Style,
-  index : Int,
+  index : Int32,
   sample_time_seconds : Double,
 ) -> Double? {
   let duration = animation_duration(style, index)

@@ -5,14 +5,14 @@
 ///|
 /// Image data (RGBA pixels)
 pub struct Image {
-  priv width : Int
-  priv height : Int
+  priv width : Int32
+  priv height : Int32
   priv pixels : Array[Color] // Row-major order
 }
 
 ///|
 /// Create a new image with specified dimensions
-pub fn Image::new(width : Int, height : Int) -> Image {
+pub fn Image::new(width : Int32, height : Int32) -> Image {
   let width = if width < 0 { 0 } else { width }
   let height = if height < 0 { 0 } else { height }
   let total = width * height
@@ -22,7 +22,7 @@ pub fn Image::new(width : Int, height : Int) -> Image {
 
 ///|
 /// Create an image filled with a color
-pub fn Image::filled(width : Int, height : Int, color : Color) -> Image {
+pub fn Image::filled(width : Int32, height : Int32, color : Color) -> Image {
   let width = if width < 0 { 0 } else { width }
   let height = if height < 0 { 0 } else { height }
   let total = width * height
@@ -33,8 +33,8 @@ pub fn Image::filled(width : Int, height : Int, color : Color) -> Image {
 ///|
 /// Create an image from row-major RGBA pixels when dimensions match exactly.
 pub fn Image::from_pixels(
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   source : Array[Color],
 ) -> Image? {
   if width < 0 || height < 0 || source.length() != width * height {
@@ -48,18 +48,18 @@ pub fn Image::from_pixels(
 }
 
 ///|
-pub fn Image::width(self : Image) -> Int {
+pub fn Image::width(self : Image) -> Int32 {
   self.width
 }
 
 ///|
-pub fn Image::height(self : Image) -> Int {
+pub fn Image::height(self : Image) -> Int32 {
   self.height
 }
 
 ///|
 /// Get pixel at coordinates
-pub fn Image::get_pixel(self : Image, x : Int, y : Int) -> Color {
+pub fn Image::get_pixel(self : Image, x : Int32, y : Int32) -> Color {
   if x < 0 || x >= self.width || y < 0 || y >= self.height {
     return Color::transparent()
   }
@@ -68,7 +68,12 @@ pub fn Image::get_pixel(self : Image, x : Int, y : Int) -> Color {
 
 ///|
 /// Set pixel at coordinates
-pub fn Image::set_pixel(self : Image, x : Int, y : Int, color : Color) -> Unit {
+pub fn Image::set_pixel(
+  self : Image,
+  x : Int32,
+  y : Int32,
+  color : Color,
+) -> Unit {
   if x >= 0 && x < self.width && y >= 0 && y < self.height {
     self.pixels[y * self.width + x] = color
   }
@@ -86,7 +91,7 @@ fn Image::clone(self : Image) -> Image {
 
 ///|
 /// Apply blur filter in place
-fn Image::apply_blur_in_place(self : Image, radius : Int) -> Unit {
+fn Image::apply_blur_in_place(self : Image, radius : Int32) -> Unit {
   if radius <= 0 {
     return
   }

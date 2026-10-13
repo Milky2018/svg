@@ -99,7 +99,7 @@ pub(all) struct Declaration {
   /// Selector specificity (from the rule that contains this declaration)
   specificity : @selector.Specificity
   /// Source order (higher = later in source)
-  source_order : Int
+  source_order : Int32
 }
 
 ///|
@@ -134,7 +134,7 @@ pub fn Declaration::with_metadata(
   origin : Origin,
   importance : Importance,
   specificity : @selector.Specificity,
-  source_order : Int,
+  source_order : Int32,
 ) -> Declaration {
   { property, value, origin, importance, specificity, source_order, }
 }
@@ -160,7 +160,7 @@ pub fn Declaration::from_inline(
 ///|
 /// Cascade precedence level
 /// Higher value = higher precedence
-fn cascade_precedence(origin : Origin, importance : Importance) -> Int {
+fn cascade_precedence(origin : Origin, importance : Importance) -> Int32 {
   match (origin, importance) {
     // Lowest to highest precedence for cascade
     // 1. Normal user-agent
@@ -182,7 +182,7 @@ fn cascade_precedence(origin : Origin, importance : Importance) -> Int {
 ///|
 /// Compare two declarations for cascade ordering
 /// Returns positive if a wins, negative if b wins, 0 if equal
-fn compare_declarations(a : Declaration, b : Declaration) -> Int {
+fn compare_declarations(a : Declaration, b : Declaration) -> Int32 {
   // 1. Compare cascade precedence (origin + importance)
   let prec_a = cascade_precedence(a.origin, a.importance)
   let prec_b = cascade_precedence(b.origin, b.importance)

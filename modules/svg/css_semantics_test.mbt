@@ -1,13 +1,13 @@
 ///|
-fn css_test_node(svg : String, id : String) -> SVGNode? {
-  match parse_svg_document(svg) {
+fn css_test_node(svg : String, id : String) -> @svg.SVGNode? {
+  match @svg.parse_svg_document(svg) {
     Some(document) => css_find_node(document.root(), id)
     None => None
   }
 }
 
 ///|
-fn css_find_node(node : SVGNode, id : String) -> SVGNode? {
+fn css_find_node(node : @svg.SVGNode, id : String) -> @svg.SVGNode? {
   if node.id == id {
     return Some(node)
   }
@@ -22,11 +22,11 @@ fn css_find_node(node : SVGNode, id : String) -> SVGNode? {
 
 ///|
 fn assert_solid_color(
-  paint : Paint,
-  r : Int,
-  g : Int,
-  b : Int,
-  a : Int,
+  paint : @svg.Paint,
+  r : Int32,
+  g : Int32,
+  b : Int32,
+  a : Int32,
 ) -> Unit raise {
   match paint {
     SolidColor(color) => {
@@ -389,7 +389,7 @@ test "stylesheet recovery preserves later valid rules" {
 ///|
 test "linear gradient stops use the shared CSS cascade" {
   let svg = "<svg width=\"100\" height=\"1\"><style>linearGradient { --accent: hsl(120, 100%, 25%); color: blue; stop-color: red; } #current { stop-color: currentColor !important; } stop.clamped { stop-opacity: 2; }</style><defs><linearGradient id=\"paint\"><stop offset=\"0\" style=\"stop-color: var(--accent); stop-opacity: -1\"/><stop id=\"current\" offset=\"0.5\" style=\"stop-color: yellow\"/><stop class=\"clamped\" offset=\"1\" stop-color=\"inherit\"/></linearGradient></defs><rect width=\"100\" height=\"1\" fill=\"url(#paint)\"/></svg>"
-  let image = render_svg(svg, 100, 1, RenderOptions::default()).image
+  let image = @svg.render_svg(svg, 100, 1, @svg.RenderOptions::default()).image
   assert_true(image.get_pixel(0, 0).a < 10)
   assert_true(image.get_pixel(50, 0).b > 200)
   assert_true(image.get_pixel(99, 0).r > 200)
@@ -398,7 +398,7 @@ test "linear gradient stops use the shared CSS cascade" {
 ///|
 test "radial gradient stop selectors receive structural context" {
   let svg = "<svg width=\"20\" height=\"20\"><style>radialGradient > stop:last-child { stop-color: hsl(300, 100%, 25%); stop-opacity: 0.5; }</style><defs><radialGradient id=\"paint\"><stop offset=\"0\" stop-color=\"white\"/><stop offset=\"1\" stop-color=\"black\"/></radialGradient></defs><rect width=\"20\" height=\"20\" fill=\"url(#paint)\"/></svg>"
-  let color = render_svg(svg, 20, 20, RenderOptions::default()).image.get_pixel(
+  let color = @svg.render_svg(svg, 20, 20, @svg.RenderOptions::default()).image.get_pixel(
     0, 0,
   )
   assert_eq(color.r, 128)

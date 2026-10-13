@@ -1,15 +1,15 @@
 ///|
-fn resolver_test_image() -> Image {
-  let image = Image::new(2, 1)
-  image.set_pixel(0, 0, Color::rgba(255, 0, 0, 128))
-  image.set_pixel(1, 0, Color::rgb(0, 255, 0))
+fn resolver_test_image() -> @svg.Image {
+  let image = @svg.Image::new(2, 1)
+  image.set_pixel(0, 0, @svg.Color::rgba(255, 0, 0, 128))
+  image.set_pixel(1, 0, @svg.Color::rgb(0, 255, 0))
   image
 }
 
 ///|
 test "image pixel construction validates dimensions" {
-  let pixels = [Color::rgb(255, 0, 0), Color::rgb(0, 255, 0)]
-  match Image::from_pixels(2, 1, pixels) {
+  let pixels = [@svg.Color::rgb(255, 0, 0), @svg.Color::rgb(0, 255, 0)]
+  match @svg.Image::from_pixels(2, 1, pixels) {
     Some(image) => {
       inspect(image.width(), content="2")
       inspect(image.height(), content="1")
@@ -17,17 +17,20 @@ test "image pixel construction validates dimensions" {
     }
     None => fail("expected matching pixels to construct an image")
   }
-  inspect(Image::from_pixels(1, 1, pixels) is None, content="true")
-  inspect(Image::from_pixels(-1, 1, []) is None, content="true")
+  inspect(@svg.Image::from_pixels(1, 1, pixels) is None, content="true")
+  inspect(@svg.Image::from_pixels(-1, 1, []) is None, content="true")
 }
 
 ///|
-fn render_with_test_resolver(svg : String, resolved : Array[String]) -> Image {
-  render_svg(
+fn render_with_test_resolver(
+  svg : String,
+  resolved : Array[String],
+) -> @svg.Image {
+  @svg.render_svg(
     svg,
     8,
     8,
-    RenderOptions::with_image_resolver(fn(href) {
+    @svg.RenderOptions::with_image_resolver(fn(href) {
       resolved.push(href)
       if href == "asset.png" {
         Some(resolver_test_image())

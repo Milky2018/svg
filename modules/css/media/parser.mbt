@@ -409,7 +409,7 @@ fn parse_calc_media_value(s : String) -> MediaValue? {
 }
 
 ///|
-fn skip_calc_ws(s : String, pos : Int) -> Int {
+fn skip_calc_ws(s : String, pos : Int32) -> Int32 {
   let mut i = pos
   while i < s.length() {
     let c = s[i].to_int().unsafe_to_char()
@@ -423,7 +423,7 @@ fn skip_calc_ws(s : String, pos : Int) -> Int {
 }
 
 ///|
-fn parse_calc_expr_at(s : String, pos : Int) -> (Double, Int)? {
+fn parse_calc_expr_at(s : String, pos : Int32) -> (Double, Int32)? {
   match parse_calc_term_at(s, pos) {
     Some((first, next)) => {
       let mut value = first
@@ -448,7 +448,7 @@ fn parse_calc_expr_at(s : String, pos : Int) -> (Double, Int)? {
 }
 
 ///|
-fn parse_calc_term_at(s : String, pos : Int) -> (Double, Int)? {
+fn parse_calc_term_at(s : String, pos : Int32) -> (Double, Int32)? {
   match parse_calc_factor_at(s, pos) {
     Some((first, next)) => {
       let mut value = first
@@ -479,7 +479,7 @@ fn parse_calc_term_at(s : String, pos : Int) -> (Double, Int)? {
 }
 
 ///|
-fn parse_calc_factor_at(s : String, pos : Int) -> (Double, Int)? {
+fn parse_calc_factor_at(s : String, pos : Int32) -> (Double, Int32)? {
   let pos = skip_calc_ws(s, pos)
   if pos >= s.length() {
     return None
@@ -510,7 +510,7 @@ fn parse_calc_factor_at(s : String, pos : Int) -> (Double, Int)? {
 }
 
 ///|
-fn parse_calc_numeric_value_at(s : String, pos : Int) -> (Double, Int)? {
+fn parse_calc_numeric_value_at(s : String, pos : Int32) -> (Double, Int32)? {
   let mut i = pos
   let mut saw_digit = false
   while i < s.length() {
@@ -592,7 +592,7 @@ fn parse_number_value(s : String) -> Double? {
 
 ///|
 /// Parse an integer value
-fn parse_int(s : String) -> Int? {
+fn parse_int(s : String) -> Int32? {
   Some(@string.parse_int(s)) catch {
     _ => None
   }
@@ -600,7 +600,7 @@ fn parse_int(s : String) -> Int? {
 
 ///|
 /// Find the position of a character in a string
-fn find_char(s : String, c : Char) -> Int {
+fn find_char(s : String, c : Char) -> Int32 {
   for i = 0; i < s.length(); i = i + 1 {
     if s[i].to_int().unsafe_to_char() == c {
       return i
@@ -611,7 +611,7 @@ fn find_char(s : String, c : Char) -> Int {
 
 ///|
 /// Find the position of a substring
-fn find_substring(s : String, sub : String) -> Int {
+fn find_substring(s : String, sub : String) -> Int32 {
   if sub.length() > s.length() {
     return -1
   }

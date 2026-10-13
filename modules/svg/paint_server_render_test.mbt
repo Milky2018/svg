@@ -1,10 +1,16 @@
 ///|
-fn render_paint_fixture(svg : String, width : Int, height : Int) -> Image {
-  render_svg_to_image(svg, width, height).unwrap_or(Image::new(width, height))
+fn render_paint_fixture(
+  svg : String,
+  width : Int32,
+  height : Int32,
+) -> @svg.Image {
+  @svg.render_svg_to_image(svg, width, height).unwrap_or(
+    @svg.Image::new(width, height),
+  )
 }
 
 ///|
-fn count_visible_paint_pixels(image : Image) -> Int {
+fn count_visible_paint_pixels(image : @svg.Image) -> Int32 {
   let mut count = 0
   for y in 0..<image.height() {
     for x in 0..<image.width() {
@@ -188,14 +194,14 @@ test "recursive pattern content is rejected" {
 test "pattern tiles are cached within one render" {
   let resolved : Array[String] = []
   let svg = "<svg width=\"8\" height=\"8\"><defs><pattern id=\"p\" width=\"4\" height=\"4\" patternUnits=\"userSpaceOnUse\"><image href=\"tile.png\" width=\"4\" height=\"4\" preserveAspectRatio=\"none\"/></pattern></defs><rect width=\"8\" height=\"8\" fill=\"url(#p)\"/><rect width=\"8\" height=\"8\" fill=\"url(#p)\"/></svg>"
-  let _ = render_svg(
+  let _ = @svg.render_svg(
     svg,
     8,
     8,
-    RenderOptions::with_image_resolver(fn(href) {
+    @svg.RenderOptions::with_image_resolver(fn(href) {
       resolved.push(href)
-      let image = Image::new(1, 1)
-      image.set_pixel(0, 0, Color::rgb(255, 0, 0))
+      let image = @svg.Image::new(1, 1)
+      image.set_pixel(0, 0, @svg.Color::rgb(255, 0, 0))
       Some(image)
     }),
   )

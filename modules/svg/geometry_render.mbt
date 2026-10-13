@@ -759,8 +759,8 @@ fn raster_affine_stroke(
   transform : Transform,
   color : Color,
   setter : ColorSink,
-  canvas_width : Int,
-  canvas_height : Int,
+  canvas_width : Int32,
+  canvas_height : Int32,
   closed : Bool,
 ) -> Unit {
   if source_points.length() == 0 || stroke.width <= 0.0 {
@@ -1011,7 +1011,7 @@ fn build_marker_subpaths(commands : Array[PathCommand]) -> Array[MarkerSubpath] 
 
   fn record_out(
     points : Array[MarkerPoint],
-    idx : Int,
+    idx : Int32,
     dx : Double,
     dy : Double,
     eps : Double,
@@ -1026,7 +1026,7 @@ fn build_marker_subpaths(commands : Array[PathCommand]) -> Array[MarkerSubpath] 
 
   fn record_in(
     points : Array[MarkerPoint],
-    idx : Int,
+    idx : Int32,
     dx : Double,
     dy : Double,
     eps : Double,

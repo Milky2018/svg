@@ -32,9 +32,9 @@ pub(all) struct Element {
   /// Child elements
   children : Array[Element]
   /// Index among siblings (1-based for :nth-child)
-  sibling_index : Int
+  sibling_index : Int32
   /// Total number of siblings (for :last-child, :nth-last-child)
-  sibling_count : Int
+  sibling_count : Int32
 }
 
 ///|
@@ -162,8 +162,8 @@ pub fn Element::add_custom_state(self : Element, state : String) -> Element {
 ///|
 pub fn Element::set_sibling_info(
   self : Element,
-  index : Int,
-  count : Int,
+  index : Int32,
+  count : Int32,
 ) -> Element {
   { ..self, sibling_index: index, sibling_count: count, }
 }

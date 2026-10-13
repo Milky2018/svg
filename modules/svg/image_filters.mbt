@@ -21,7 +21,7 @@ pub(all) enum Filter {
 /// Apply blur filter to a region of pixels
 fn apply_blur(
   pixels : Array[Array[Color]],
-  radius : Int,
+  radius : Int32,
 ) -> Array[Array[Color]] {
   if radius <= 0 || pixels.is_empty() {
     return pixels
@@ -64,7 +64,7 @@ fn apply_blur(
 }
 
 ///|
-fn clamp_int(v : Int, min : Int, max : Int) -> Int {
+fn clamp_int(v : Int32, min : Int32, max : Int32) -> Int32 {
   if v < min {
     min
   } else if v > max {
@@ -309,9 +309,9 @@ fn apply_color_matrix(color : Color, matrix : FixedArray[Double]) -> Color {
 /// Apply drop shadow to an image and return new image with shadow
 fn apply_drop_shadow(
   image : Image,
-  offset_x : Int,
-  offset_y : Int,
-  blur_radius : Int,
+  offset_x : Int32,
+  offset_y : Int32,
+  blur_radius : Int32,
   shadow_color : Color,
 ) -> Image {
   // Create output with extra space for shadow

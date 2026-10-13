@@ -14,7 +14,7 @@ pub(all) enum BorderStyle {
 } derive(Debug, Eq)
 
 ///|
-pub fn BorderStyle::priority(self : BorderStyle) -> Int {
+pub fn BorderStyle::priority(self : BorderStyle) -> Int32 {
   match self {
     None => 0
     Inset => 1
@@ -259,7 +259,7 @@ pub fn MarginTrim::trim_block_end(self : MarginTrim) -> Bool {
 /// CSS z-index property
 pub(all) enum ZIndex {
   Auto // Stacking order determined by DOM order
-  Value(Int) // Explicit stacking level
+  Value(Int32) // Explicit stacking level
 } derive(Debug, Eq)
 
 ///|
@@ -375,7 +375,7 @@ pub fn Transform::has_affine_matrix(self : Transform) -> Bool {
 
 ///|
 /// Return a quarter-turn rotation count (0..3), or -1 for other angles.
-pub fn Transform::quarter_turns(self : Transform) -> Int {
+pub fn Transform::quarter_turns(self : Transform) -> Int32 {
   let raw_turns = (self.rotate_degrees / 90.0).round().to_int()
   let snapped_degrees = raw_turns.to_double() * 90.0
   if (self.rotate_degrees - snapped_degrees).abs() > 0.0001 {
@@ -898,7 +898,7 @@ pub fn BoxShadow::new(
 pub(all) struct Style {
   mut display : @types.Display
   mut position : @types.Position
-  mut float : @types.Float
+  mut float : @types.CssFloat
   mut clear : @types.Clear
   // Box sizing
   mut box_sizing : @types.BoxSizing
@@ -937,13 +937,13 @@ pub(all) struct Style {
   mut flex_grow : Double
   mut flex_shrink : Double
   mut flex_basis : @types.Dimension
-  mut order : Int // Flex item order (default 0)
+  mut order : Int32 // Flex item order (default 0)
   // Gap
   mut row_gap : @types.Dimension
   mut column_gap : @types.Dimension
   mut column_gap_is_normal : Bool
   // Multi-column layout
-  mut column_count : Int? // None = auto
+  mut column_count : Int32? // None = auto
   mut column_width : @types.Dimension // auto or fixed width
   mut column_fill : ColumnFill
   // Aspect ratio (width / height)
@@ -1044,8 +1044,8 @@ pub(all) struct Style {
   mut table_layout : TableLayout // table-layout: auto | fixed
   mut caption_side : CaptionSide // caption-side: top | bottom
   // Table cell properties (from HTML attributes)
-  mut rowspan : Int // rowspan attribute (default 1)
-  mut colspan : Int // colspan attribute (default 1)
+  mut rowspan : Int32 // rowspan attribute (default 1)
+  mut colspan : Int32 // colspan attribute (default 1)
   // Border radius (computed px values for rounded corners)
   mut border_top_left_radius : Double
   mut border_top_right_radius : Double

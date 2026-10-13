@@ -17,8 +17,8 @@ priv struct SelectorParser {
   /// from a larger token stream (e.g. a stylesheet's rule body),
   /// `tokens_end` caps where the parser is allowed to read so callers
   /// don't have to copy a sub-array.
-  tokens_end : Int
-  mut pos : Int
+  tokens_end : Int32
+  mut pos : Int32
 }
 
 ///|
@@ -35,8 +35,8 @@ fn SelectorParser::new_with_signs(
 /// selectors it has already lexed.
 fn SelectorParser::from_slice(
   tokens : Array[@token.Token],
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
 ) -> SelectorParser {
   { tokens, signs: None, tokens_end: end, pos: start, }
 }
@@ -46,7 +46,7 @@ fn SelectorParser::from_slice(
 /// leading `+`/`-` sign in source. Returns `false` for non-Number
 /// tokens, out-of-bounds positions, and parsers built without sign
 /// info (legacy callers).
-fn SelectorParser::is_signed_at(self : SelectorParser, pos : Int) -> Bool {
+fn SelectorParser::is_signed_at(self : SelectorParser, pos : Int32) -> Bool {
   match self.signs {
     None => false
     Some(s) => if pos < 0 || pos >= s.length() { false } else { s[pos] }
@@ -292,7 +292,10 @@ fn SelectorParser::parse_ns_prefix(self : SelectorParser) -> NamespacePrefix {
 }
 
 ///|
-fn SelectorParser::peek_at(self : SelectorParser, offset : Int) -> @token.Token {
+fn SelectorParser::peek_at(
+  self : SelectorParser,
+  offset : Int32,
+) -> @token.Token {
   let idx = self.pos + offset
   if idx >= self.tokens.length() {
     // Fall back to the tokenizer's trailing EOF (always present).
@@ -1053,7 +1056,7 @@ fn SelectorParser::parse_pseudo_class(self : SelectorParser) -> PseudoClass? {
         "heading" => {
           // :heading(N, ...) — comma-separated list of integer levels.
           self.skip_whitespace()
-          let levels : Array[Int] = []
+          let levels : Array[Int32] = []
           let mut ok = true
           while true {
             match self.peek() {
@@ -1291,7 +1294,10 @@ fn SelectorParser::parse_nth_expr(self : SelectorParser) -> NthExpr? {
 /// After consuming a `<n-form>-` shape (`n-`, `-n-`, `<int>n-`),
 /// require a signless integer next. WPT cases like `5n- 5` are valid
 /// (canonicalize to `5n-5`); `5n- -5` / `5n- +5` are parse errors.
-fn SelectorParser::finish_ndash_int(self : SelectorParser, a : Int) -> NthExpr? {
+fn SelectorParser::finish_ndash_int(
+  self : SelectorParser,
+  a : Int32,
+) -> NthExpr? {
   let _ = self.advance()
   self.skip_whitespace()
   match self.peek() {
@@ -1320,7 +1326,7 @@ fn SelectorParser::finish_ndash_int(self : SelectorParser, a : Int) -> NthExpr? 
 /// (e.g. `5n +3` with double sign, `5n 3` with no operator).
 fn SelectorParser::finish_nth_after_n(
   self : SelectorParser,
-  a : Int,
+  a : Int32,
 ) -> NthExpr? {
   // Snapshot position to peek the next non-whitespace token; we need
   // to distinguish "no whitespace" from "whitespace + signed-integer".
@@ -1373,7 +1379,7 @@ fn SelectorParser::finish_nth_after_n(
 /// Parse `<prefix><digits>` patterns from a lowercased identifier. The
 /// prefix is one of "n-" / "-n-"; the returned integer is the negative
 /// of the digit run (the `-` is part of the ident token).
-fn ndashdigit_to_b(name : String, prefix : String) -> Int? {
+fn ndashdigit_to_b(name : String, prefix : String) -> Int32? {
   if !name.has_prefix(prefix) {
     return None
   }
@@ -1503,8 +1509,8 @@ pub fn parse_selector_list_text(css : String) -> SelectorList? {
 /// every rule; we synthesize the text from the same slice.
 pub fn parse_selector_list_from_tokens(
   tokens : Array[@token.Token],
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
 ) -> Array[ComplexSelector] {
   let result : Array[ComplexSelector] = []
   // Find top-level commas inside the slice to split into selectors.
@@ -1539,8 +1545,8 @@ pub fn parse_selector_list_from_tokens(
 ///|
 fn parse_selector_slice(
   tokens : Array[@token.Token],
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
 ) -> ComplexSelector? {
   let parser = SelectorParser::from_slice(tokens, start, end)
   parser.skip_whitespace()

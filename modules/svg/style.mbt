@@ -196,9 +196,9 @@ fn resolve_computed_style(
   apply_noncomputed : Bool,
   length_viewport : (Double, Double),
   css_viewport : (Double, Double),
-  is_root? : Bool = false,
-  stylesheets? : Array[@css_cascade.Stylesheet] = [],
-  sample_time_seconds? : Double = 0.0,
+  is_root~ : Bool = false,
+  stylesheets~ : Array[@css_cascade.Stylesheet] = [],
+  sample_time_seconds~ : Double = 0.0,
 ) -> InheritedStyle {
   let compute_context = {
     ..@css_computed.ComputeContext::with_parent_and_vars(

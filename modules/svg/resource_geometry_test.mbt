@@ -1,6 +1,12 @@
 ///|
-fn render_resource_fixture(svg : String, width : Int, height : Int) -> Image {
-  render_svg_to_image(svg, width, height).unwrap_or(Image::new(width, height))
+fn render_resource_fixture(
+  svg : String,
+  width : Int32,
+  height : Int32,
+) -> @svg.Image {
+  @svg.render_svg_to_image(svg, width, height).unwrap_or(
+    @svg.Image::new(width, height),
+  )
 }
 
 ///|
@@ -16,16 +22,16 @@ test "use placement is transformed with the instance" {
 
 ///|
 test "use transform preserves the referenced node transform order" {
-  let content = SVGNode::new(
+  let content = @svg.SVGNode::new(
     Rect(x=0.0, y=0.0, width=1.0, height=1.0, rx=0.0, ry=0.0),
   )
   content.id = "source"
-  content.transform = Transform::translate(1.0, 0.0)
-  let document = SVGDocument::new(SVGNode::new(Group))
-  document.add_symbol(Symbol::new("source", content))
+  content.transform = @svg.Transform::translate(1.0, 0.0)
+  let document = @svg.SVGDocument::new(@svg.SVGNode::new(Group))
+  document.add_symbol(@svg.Symbol::new("source", content))
   let instance = {
-    ..UseElement::new("#source", 5.0, 0.0),
-    transform: Transform::scale(2.0, 2.0),
+    ..@svg.UseElement::new("#source", 5.0, 0.0),
+    transform: @svg.Transform::scale(2.0, 2.0),
   }
   match document.instantiate_use(instance) {
     Some(node) => {

@@ -81,9 +81,9 @@ pub(all) struct RenderOptions {
   image_resolver : ((String) -> Image?)?
   text_resource_resolver : ((String, TextResourceKind) -> String?)?
   environment : RenderEnvironment
-  max_external_depth : Int
-  max_external_resources : Int
-  max_external_bytes : Int
+  max_external_depth : Int32
+  max_external_resources : Int32
+  max_external_bytes : Int32
 }
 
 ///|

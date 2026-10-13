@@ -26,7 +26,7 @@ pub enum RangeOp {
 pub enum MediaValue {
   Number(Double)
   Dimension(Double, String) // value and unit (e.g., 768px, 2dppx)
-  Ratio(Int, Int) // e.g., 16/9
+  Ratio(Int32, Int32) // e.g., 16/9
   Ident(String) // e.g., landscape, portrait
 } derive(Eq, Debug)
 
@@ -107,7 +107,7 @@ pub fn MediaQueryList::is_empty(self : MediaQueryList) -> Bool {
 
 ///|
 /// Get the number of queries
-pub fn MediaQueryList::length(self : MediaQueryList) -> Int {
+pub fn MediaQueryList::length(self : MediaQueryList) -> Int32 {
   self.queries.length()
 }
 

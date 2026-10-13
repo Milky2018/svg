@@ -1,6 +1,6 @@
 name = "Milky2018/css"
 
-version = "0.5.3"
+version = "0.6.0"
 
 description = "CSS parser, selector, cascade, and computed-style core maintained for Milky2018/svg"
 

@@ -3,7 +3,7 @@
 // =============================================================================
 
 ///|
-fn parse_column_count(value : String) -> Int? {
+fn parse_column_count(value : String) -> Int32? {
   let trimmed = value.trim().to_owned()
   if trimmed.is_empty() || trimmed == "auto" {
     return None
@@ -73,7 +73,7 @@ fn parse_column_span(value : String) -> @style.ColumnSpan {
 fn parse_columns_shorthand(
   value : String,
   ctx : ComputeContext,
-) -> (Int?, @types.Dimension)? {
+) -> (Int32?, @types.Dimension)? {
   let parts : Array[StringView] = value
     .trim()
     .split(" ")
@@ -82,7 +82,7 @@ fn parse_columns_shorthand(
   if parts.length() == 0 {
     return None
   }
-  let mut count : Int? = None
+  let mut count : Int32? = None
   let mut width = @types.Dimension::Auto
   for part in parts {
     let token = part.to_owned()

@@ -8,19 +8,19 @@
 ///|
 /// RGBA color with 8-bit channels and alpha
 pub(all) struct Color {
-  r : Int // 0-255
-  g : Int // 0-255
-  b : Int // 0-255
+  r : Int32 // 0-255
+  g : Int32 // 0-255
+  b : Int32 // 0-255
   a : Double // 0.0-1.0
 } derive(Debug)
 
 ///|
-pub fn Color::rgb(r : Int, g : Int, b : Int) -> Color {
+pub fn Color::rgb(r : Int32, g : Int32, b : Int32) -> Color {
   { r, g, b, a: 1.0, }
 }
 
 ///|
-pub fn Color::rgba(r : Int, g : Int, b : Int, a : Double) -> Color {
+pub fn Color::rgba(r : Int32, g : Int32, b : Int32, a : Double) -> Color {
   { r, g, b, a, }
 }
 
@@ -69,7 +69,7 @@ pub fn Color::is_opaque(self : Color) -> Bool {
 ///|
 /// Convert to CSS hex string (#rrggbb or #rrggbbaa)
 pub fn Color::to_hex(self : Color) -> String {
-  fn hex_char(n : Int) -> Char {
+  fn hex_char(n : Int32) -> Char {
     if n < 10 {
       ('0'.to_int() + n).unsafe_to_char()
     } else {
@@ -77,7 +77,7 @@ pub fn Color::to_hex(self : Color) -> String {
     }
   }
 
-  fn hex2(n : Int) -> String {
+  fn hex2(n : Int32) -> String {
     let hi = n / 16 % 16
     let lo = n % 16
     let sb = StringBuilder()

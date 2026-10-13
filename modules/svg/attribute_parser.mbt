@@ -507,12 +507,12 @@ fn parse_url_ref(value : String) -> String? {
   if string_starts_with(v, "url(") && string_ends_with(v, ")") {
     let inner = build_substring(v, 4, v.length() - 1)
     let trimmed = trim_string(inner)
-    if trimmed.length() > 0 && Int::unsafe_to_char(trimmed[0].to_int()) == '#' {
+    if trimmed.length() > 0 && Int32::unsafe_to_char(trimmed[0].to_int()) == '#' {
       return Some(build_substring(trimmed, 1, trimmed.length()))
     }
     return Some(trimmed)
   }
-  if Int::unsafe_to_char(v[0].to_int()) == '#' {
+  if Int32::unsafe_to_char(v[0].to_int()) == '#' {
     return Some(build_substring(v, 1, v.length()))
   }
   None
@@ -523,7 +523,7 @@ fn parse_number_list(value : String) -> Array[Double] {
   let nums : Array[Double] = []
   let mut buf = StringBuilder()
   for i in 0..<value.length() {
-    let c = Int::unsafe_to_char(value[i].to_int())
+    let c = Int32::unsafe_to_char(value[i].to_int())
     if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
       if buf.to_string().length() > 0 {
         nums.push(parse_number(buf.to_string()))
@@ -544,7 +544,7 @@ fn split_tokens(value : String) -> Array[String] {
   let tokens : Array[String] = []
   let mut buf = StringBuilder()
   for i in 0..<value.length() {
-    let c = Int::unsafe_to_char(value[i].to_int())
+    let c = Int32::unsafe_to_char(value[i].to_int())
     if c == ' ' || c == '\n' || c == '\r' || c == '\t' {
       if buf.to_string().length() > 0 {
         tokens.push(buf.to_string())

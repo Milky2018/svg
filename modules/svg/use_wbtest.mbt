@@ -91,7 +91,7 @@ test "use element render with viewBox scaling" {
   let svg = "<svg><symbol id=\"box\" viewBox=\"0 0 10 10\"><rect x=\"0\" y=\"0\" width=\"10\" height=\"10\"/></symbol><use href=\"#box\" x=\"0\" y=\"0\" width=\"20\" height=\"20\"/></svg>"
   match parse_svg_document(svg) {
     Some(doc) => {
-      let drawn_pixels : Array[(Int, Int, Color)] = []
+      let drawn_pixels : Array[(Int32, Int32, Color)] = []
       let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
@@ -130,7 +130,7 @@ test "use element referencing element outside defs" {
     "<use href=\"#myRect\" x=\"20\" y=\"0\"/></svg>"
   match parse_svg_document(svg) {
     Some(doc) => {
-      let drawn_pixels : Array[(Int, Int, Color)] = []
+      let drawn_pixels : Array[(Int32, Int32, Color)] = []
       let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
@@ -151,7 +151,7 @@ test "use element referencing element defined after use (forward reference)" {
     "<rect id=\"laterRect\" width=\"10\" height=\"10\" fill=\"blue\"/></svg>"
   match parse_svg_document(svg) {
     Some(doc) => {
-      let drawn_pixels : Array[(Int, Int, Color)] = []
+      let drawn_pixels : Array[(Int32, Int32, Color)] = []
       let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }

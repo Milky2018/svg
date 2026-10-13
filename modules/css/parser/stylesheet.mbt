@@ -4,7 +4,7 @@
 
 ///|
 /// Maximum allowed CSS input size (10 MB)
-let css_max_input_size : Int = 10 * 1024 * 1024
+let css_max_input_size : Int32 = 10 * 1024 * 1024
 
 ///|
 /// Parse a full stylesheet from CSS text
@@ -73,8 +73,8 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
 fn parse_import_rule(
   stylesheet : @cascade.Stylesheet,
   tokens : Array[@token.Token],
-  start : Int,
-) -> Int {
+  start : Int32,
+) -> Int32 {
   let mut pos = skip_ws(tokens, start + 1)
   let mut href : String? = None
   match tokens[pos] {
@@ -126,8 +126,8 @@ fn parse_import_rule(
 fn parse_media_rule(
   stylesheet : @cascade.Stylesheet,
   tokens : Array[@token.Token],
-  start : Int,
-) -> Int {
+  start : Int32,
+) -> Int32 {
   let mut pos = start + 1 // Skip @media token
 
   // Collect media query tokens until '{'
@@ -210,9 +210,9 @@ fn parse_media_rule(
 fn parse_supports_rule_with_media(
   stylesheet : @cascade.Stylesheet,
   tokens : Array[@token.Token],
-  start : Int,
+  start : Int32,
   media_query : @media.MediaQueryList,
-) -> Int {
+) -> Int32 {
   let mut pos = start + 1 // Skip @supports token
 
   // Skip condition tokens until '{' (handling nested parens)
@@ -274,8 +274,8 @@ fn parse_supports_rule_with_media(
 fn parse_supports_rule(
   stylesheet : @cascade.Stylesheet,
   tokens : Array[@token.Token],
-  start : Int,
-) -> Int {
+  start : Int32,
+) -> Int32 {
   let mut pos = start + 1 // Skip @supports token
 
   // Skip condition tokens until '{' (handling nested parens)
@@ -345,7 +345,7 @@ fn parse_supports_rule(
 
 ///|
 /// Skip whitespace tokens
-fn skip_ws(tokens : Array[@token.Token], pos : Int) -> Int {
+fn skip_ws(tokens : Array[@token.Token], pos : Int32) -> Int32 {
   let mut p = pos
   while p < tokens.length() {
     match tokens[p] {
@@ -359,8 +359,8 @@ fn skip_ws(tokens : Array[@token.Token], pos : Int) -> Int {
 ///|
 fn skip_supports_condition_to_block(
   tokens : Array[@token.Token],
-  start : Int,
-) -> Int {
+  start : Int32,
+) -> Int32 {
   let mut pos = start
   let mut paren_depth = 0
   while pos < tokens.length() {
@@ -435,8 +435,8 @@ fn supports_condition_matches(condition : String) -> Bool {
 fn parse_keyframes_rule(
   stylesheet : @cascade.Stylesheet,
   tokens : Array[@token.Token],
-  start : Int,
-) -> Int {
+  start : Int32,
+) -> Int32 {
   let mut pos = skip_ws(tokens, start + 1)
   // Animation name: a custom-ident or a string.
   let name = match tokens[pos] {
@@ -553,7 +553,7 @@ fn is_keyframes_keyword(name : String) -> Bool {
 
 ///|
 /// Skip an @-rule (until semicolon or matching braces)
-fn skip_at_rule(tokens : Array[@token.Token], start : Int) -> Int {
+fn skip_at_rule(tokens : Array[@token.Token], start : Int32) -> Int32 {
   let mut pos = start + 1
   let mut brace_depth = 0
   while pos < tokens.length() {
@@ -587,11 +587,11 @@ fn skip_at_rule(tokens : Array[@token.Token], start : Int) -> Int {
 /// Parse a style rule: selector { declarations }
 fn parse_style_rule(
   tokens : Array[@token.Token],
-  start : Int,
+  start : Int32,
 ) -> (
   Array[(String, @selector.ComplexSelector)],
   Array[@cascade.Declaration],
-  Int,
+  Int32,
 )? {
   let mut pos = start
 
@@ -661,8 +661,8 @@ fn parse_style_rule(
 /// Parse a declaration within a rule block
 fn parse_rule_declaration(
   tokens : Array[@token.Token],
-  start : Int,
-) -> (String, String, @cascade.Importance, Int)? {
+  start : Int32,
+) -> (String, String, @cascade.Importance, Int32)? {
   let mut pos = skip_ws(tokens, start)
 
   // Get property name
@@ -734,9 +734,9 @@ fn parse_rule_declaration(
 /// Find matching right brace index for a left brace token.
 fn find_matching_right_brace(
   tokens : Array[@token.Token],
-  left_brace_pos : Int,
-  limit : Int,
-) -> Int? {
+  left_brace_pos : Int32,
+  limit : Int32,
+) -> Int32? {
   if left_brace_pos < 0 || left_brace_pos >= tokens.length() {
     return None
   }
@@ -765,7 +765,10 @@ fn find_matching_right_brace(
 
 ///|
 /// Skip a nested ampersand rule block like `&::foo { ... }`.
-fn skip_nested_rule_block(tokens : Array[@token.Token], start : Int) -> Int? {
+fn skip_nested_rule_block(
+  tokens : Array[@token.Token],
+  start : Int32,
+) -> Int32? {
   let mut pos = start
   while pos < tokens.length() {
     match tokens[pos] {
@@ -802,8 +805,8 @@ fn replace_ampersand(
 /// Extract one-level nested `&... { ... }` rules as parsed selector/declaration entries.
 fn extract_ampersand_nested_rules(
   tokens : Array[@token.Token],
-  rule_start : Int,
-  rule_end : Int,
+  rule_start : Int32,
+  rule_end : Int32,
   selectors : Array[(String, @selector.ComplexSelector)],
 ) -> Array[(String, @selector.ComplexSelector, Array[@cascade.Declaration])] {
   let rules : Array[
@@ -928,8 +931,8 @@ fn extract_ampersand_nested_rules(
 /// Convert token range to string
 fn tokens_to_string(
   tokens : Array[@token.Token],
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
 ) -> String {
   let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
@@ -977,8 +980,8 @@ fn tokens_to_string(
 /// `@token.tokenize` that the previous string-based path required.
 fn parse_selector_list_from_tokens(
   tokens : Array[@token.Token],
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
 ) -> Array[(String, @selector.ComplexSelector)] {
   let result : Array[(String, @selector.ComplexSelector)] = []
   // Find top-level commas; each segment becomes one (text, selector).
@@ -1007,8 +1010,8 @@ fn parse_selector_list_from_tokens(
 fn push_selector(
   result : Array[(String, @selector.ComplexSelector)],
   tokens : Array[@token.Token],
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
 ) -> Unit {
   // Use the token-direct selector parser (no re-tokenization).
   // Note `from_tokens` returns Array[ComplexSelector] over each

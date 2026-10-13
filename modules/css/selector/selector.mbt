@@ -94,8 +94,8 @@ pub impl Show for AttributeSelector with fn output(self, logger) {
 ///|
 /// Nth expression: An+B
 pub struct NthExpr {
-  a : Int // coefficient
-  b : Int // offset
+  a : Int32 // coefficient
+  b : Int32 // offset
 }
 
 ///|
@@ -164,7 +164,7 @@ pub enum PseudoClass {
   /// `:heading` — any HTML heading element (h1-h6).
   /// `:heading(N, ...)` — headings of the specified levels.
   /// Spec: CSS Selectors 4 (draft).
-  Heading(Array[Int])
+  Heading(Array[Int32])
   /// `:dir(ltr|rtl)` — directionality. Spec: CSS Selectors 4.
   Dir(String)
   /// `:lang(<language-code>+)` — language-tag match. Spec: Selectors 4.
@@ -502,9 +502,9 @@ pub impl Show for SelectorList with fn output(self, logger) {
 /// b: class selectors, attribute selectors, pseudo-classes count
 /// c: type selectors, pseudo-elements count
 pub(all) struct Specificity {
-  a : Int
-  b : Int
-  c : Int
+  a : Int32
+  b : Int32
+  c : Int32
 } derive(Eq, Compare)
 
 ///|
@@ -531,7 +531,10 @@ pub fn Specificity::add(self : Specificity, other : Specificity) -> Specificity 
 ///|
 /// Compare specificities for cascade ordering
 /// Returns positive if self > other, negative if self < other, 0 if equal
-pub fn Specificity::compare_to(self : Specificity, other : Specificity) -> Int {
+pub fn Specificity::compare_to(
+  self : Specificity,
+  other : Specificity,
+) -> Int32 {
   if self.a != other.a {
     return self.a - other.a
   }

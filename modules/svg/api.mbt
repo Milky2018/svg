@@ -6,8 +6,8 @@
 /// Parse and render SVG markup with structured diagnostics.
 pub fn render_svg(
   svg_str : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   options : RenderOptions,
 ) -> RenderResult {
   let diagnostics : Array[RenderDiagnostic] = []
@@ -39,8 +39,8 @@ pub fn render_svg(
 /// Render a parsed SVG document with structured diagnostics.
 pub fn render_svg_document(
   document : SVGDocument,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   options : RenderOptions,
 ) -> RenderResult {
   render_svg_document_with_diagnostics(document, width, height, options, [])
@@ -49,8 +49,8 @@ pub fn render_svg_document(
 ///|
 fn render_svg_document_with_diagnostics(
   document : SVGDocument,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   options : RenderOptions,
   diagnostics : Array[RenderDiagnostic],
 ) -> RenderResult {
@@ -70,8 +70,8 @@ fn render_svg_document_with_diagnostics(
 /// Parse and render an SVG markup string into an Image.
 pub fn render_svg_to_image(
   svg_str : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> Image? {
   parse_svg_document_in_viewport(svg_str, width.to_double(), height.to_double()).map(fn(
       doc,
@@ -89,10 +89,10 @@ pub fn render_svg_to_image(
 /// `transform` is a 6-element affine transform [a, b, c, d, e, f] or empty for identity.
 pub fn render_path_commands_to_image(
   commands : Array[PathCommand],
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   fill_color : Color,
-  transform? : Array[Double] = [],
+  transform~ : Array[Double] = [],
 ) -> Image {
   let image = Image::new(width, height)
   if commands.is_empty() || width <= 0 || height <= 0 {

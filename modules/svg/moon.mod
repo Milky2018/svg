@@ -1,12 +1,12 @@
 name = "Milky2018/svg"
 
-version = "0.5.3"
+version = "0.6.0"
 
 description = "Standalone SVG scene graph and renderer"
 
 import {
-  "Milky2018/css@0.5.3",
-  "Milky2018/xml@0.4.1",
+  "Milky2018/css@0.6.0",
+  "Milky2018/xml@0.6.0",
 }
 
 readme = "README.mbt.md"

@@ -79,7 +79,7 @@ pub(all) enum AlignSelf {
 
 ///|
 /// CSS float property
-pub(all) enum Float {
+pub(all) enum CssFloat {
   None
   Left
   Right
@@ -205,17 +205,17 @@ pub impl Show for AnimationIterationCount with fn output(self, logger) {
 /// Grid line placement for grid items
 pub(all) enum GridPlacement {
   Auto
-  Line(Int)
-  Span(Int)
+  Line(Int32)
+  Span(Int32)
   // Named line reference, e.g. `grid-column: left-sidebar`.
   // Resolved against the named lines declared in grid-template-columns/rows.
   Named(String)
   // `<integer> && <custom-ident>`, e.g. `grid-column: 2 foo`: the Nth line
   // named `foo` (N may be negative to count from the end).
-  NamedLine(Int, String)
+  NamedLine(Int32, String)
   // `span && <integer>? && <custom-ident>`, e.g. `grid-column: span 2 foo`:
   // span until the Nth line named `foo` (N defaults to 1).
-  SpanNamed(Int, String)
+  SpanNamed(Int32, String)
 } derive(Debug, Eq)
 
 ///|
@@ -235,7 +235,7 @@ pub(all) enum SingleTrackSizing {
 ///|
 /// Repeat count for repeat() function
 pub(all) enum RepeatCount {
-  Count(Int)
+  Count(Int32)
   AutoFill
   AutoFit
 } derive(Debug, Eq)
@@ -386,7 +386,7 @@ pub impl Show for AlignSelf with fn output(self, logger) {
 }
 
 ///|
-pub impl Show for Float with fn output(self, logger) {
+pub impl Show for CssFloat with fn output(self, logger) {
   let name = match self {
     None => "None"
     Left => "Left"
@@ -653,13 +653,13 @@ pub extend FlexWrap with Eq::{not_equal, equal}
 pub extend FlexWrap with Show::{to_string, output}
 
 ///|
-pub extend Float with Debug::{to_repr}
+pub extend CssFloat with Debug::{to_repr}
 
 ///|
-pub extend Float with Eq::{not_equal, equal}
+pub extend CssFloat with Eq::{not_equal, equal}
 
 ///|
-pub extend Float with Show::{to_string, output}
+pub extend CssFloat with Show::{to_string, output}
 
 ///|
 pub extend GridAutoFlow with Debug::{to_repr}

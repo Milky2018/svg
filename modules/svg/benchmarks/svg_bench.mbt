@@ -2,7 +2,11 @@
 /// SVG Rendering Benchmarks
 
 ///|
-fn render_svg_to_image(svg : String, width : Int, height : Int) -> @svg.Image? {
+fn render_svg_to_image(
+  svg : String,
+  width : Int32,
+  height : Int32,
+) -> @svg.Image? {
   @svg.render_svg_to_image(svg, width, height)
 }
 

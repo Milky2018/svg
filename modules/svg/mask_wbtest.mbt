@@ -26,7 +26,7 @@ test "render with mask" {
   let svg = "<svg><defs><mask id=\"m\" maskUnits=\"userSpaceOnUse\" maskContentUnits=\"userSpaceOnUse\"><rect x=\"0\" y=\"0\" width=\"10\" height=\"10\" fill=\"white\"/></mask></defs><rect x=\"0\" y=\"0\" width=\"20\" height=\"20\" fill=\"red\" mask=\"url(#m)\"/></svg>"
   match parse_svg_document(svg) {
     Some(doc) => {
-      let drawn_pixels : Array[(Int, Int, Color)] = []
+      let drawn_pixels : Array[(Int32, Int32, Color)] = []
       let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
@@ -44,7 +44,7 @@ test "render with mask objectBoundingBox content" {
   let svg = "<svg><defs><mask id=\"m\" maskContentUnits=\"objectBoundingBox\"><rect x=\"0\" y=\"0\" width=\"0.5\" height=\"1\" fill=\"white\"/></mask></defs><rect x=\"0\" y=\"0\" width=\"20\" height=\"10\" fill=\"red\" mask=\"url(#m)\"/></svg>"
   match parse_svg_document(svg) {
     Some(doc) => {
-      let drawn_pixels : Array[(Int, Int, Color)] = []
+      let drawn_pixels : Array[(Int32, Int32, Color)] = []
       let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
@@ -62,7 +62,7 @@ test "mask bounds percent values" {
   let svg = "<svg><defs><mask id=\"m\" maskUnits=\"objectBoundingBox\" maskContentUnits=\"objectBoundingBox\" x=\"25%\" y=\"0%\" width=\"50%\" height=\"100%\"><rect x=\"0\" y=\"0\" width=\"1\" height=\"1\" fill=\"white\"/></mask></defs><rect x=\"0\" y=\"0\" width=\"20\" height=\"10\" fill=\"red\" mask=\"url(#m)\"/></svg>"
   match parse_svg_document(svg) {
     Some(doc) => {
-      let drawn_pixels : Array[(Int, Int, Color)] = []
+      let drawn_pixels : Array[(Int32, Int32, Color)] = []
       let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
@@ -80,7 +80,7 @@ test "maskUnits userSpaceOnUse respects viewBox scale" {
   let svg = "<svg viewBox=\"0 0 10 10\"><defs><mask id=\"m\" maskUnits=\"userSpaceOnUse\" maskContentUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"5\" height=\"10\"><rect x=\"0\" y=\"0\" width=\"5\" height=\"10\" fill=\"white\"/></mask></defs><rect x=\"0\" y=\"0\" width=\"10\" height=\"10\" fill=\"red\" mask=\"url(#m)\"/></svg>"
   match parse_svg_document(svg) {
     Some(doc) => {
-      let drawn_pixels : Array[(Int, Int, Color)] = []
+      let drawn_pixels : Array[(Int32, Int32, Color)] = []
       let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }
@@ -98,7 +98,7 @@ test "maskUnits userSpaceOnUse with rotation transform" {
   let svg = "<svg><defs><mask id=\"m\" maskUnits=\"userSpaceOnUse\" maskContentUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"10\" height=\"5\"><rect x=\"0\" y=\"0\" width=\"10\" height=\"5\" fill=\"white\"/></mask></defs><rect x=\"0\" y=\"0\" width=\"10\" height=\"10\" fill=\"red\" transform=\"rotate(90)\" mask=\"url(#m)\"/></svg>"
   match parse_svg_document(svg) {
     Some(doc) => {
-      let drawn_pixels : Array[(Int, Int, Color)] = []
+      let drawn_pixels : Array[(Int32, Int32, Color)] = []
       let setter : ColorSink = {
         set: (x, y, color) => drawn_pixels.push((x, y, color)),
       }

@@ -1,6 +1,6 @@
 ///|
 test "parse simple media type - screen" {
-  let mq = parse_media_query_list("screen")
+  let mq = @media.parse_media_query_list("screen")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.negated, content="false")
@@ -11,7 +11,7 @@ test "parse simple media type - screen" {
 
 ///|
 test "parse simple media type - print" {
-  let mq = parse_media_query_list("print")
+  let mq = @media.parse_media_query_list("print")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   debug_inspect(q.media_type, content="Some(Print)")
@@ -19,7 +19,7 @@ test "parse simple media type - print" {
 
 ///|
 test "parse simple media type - all" {
-  let mq = parse_media_query_list("all")
+  let mq = @media.parse_media_query_list("all")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   debug_inspect(q.media_type, content="Some(All)")
@@ -27,7 +27,7 @@ test "parse simple media type - all" {
 
 ///|
 test "parse not modifier" {
-  let mq = parse_media_query_list("not screen")
+  let mq = @media.parse_media_query_list("not screen")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.negated, content="true")
@@ -36,7 +36,7 @@ test "parse not modifier" {
 
 ///|
 test "parse only modifier" {
-  let mq = parse_media_query_list("only screen")
+  let mq = @media.parse_media_query_list("only screen")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.only, content="true")
@@ -45,7 +45,7 @@ test "parse only modifier" {
 
 ///|
 test "parse min-width feature" {
-  let mq = parse_media_query_list("(min-width: 768px)")
+  let mq = @media.parse_media_query_list("(min-width: 768px)")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.conditions.length(), content="1")
@@ -54,7 +54,7 @@ test "parse min-width feature" {
 
 ///|
 test "parse max-width feature" {
-  let mq = parse_media_query_list("(max-width: 1024px)")
+  let mq = @media.parse_media_query_list("(max-width: 1024px)")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.conditions.length(), content="1")
@@ -63,7 +63,7 @@ test "parse max-width feature" {
 
 ///|
 test "parse screen and min-width" {
-  let mq = parse_media_query_list("screen and (min-width: 768px)")
+  let mq = @media.parse_media_query_list("screen and (min-width: 768px)")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   debug_inspect(q.media_type, content="Some(Screen)")
@@ -73,7 +73,7 @@ test "parse screen and min-width" {
 
 ///|
 test "parse multiple conditions" {
-  let mq = parse_media_query_list(
+  let mq = @media.parse_media_query_list(
     "screen and (min-width: 768px) and (max-width: 1024px)",
   )
   inspect(mq.queries.length(), content="1")
@@ -86,7 +86,7 @@ test "parse multiple conditions" {
 
 ///|
 test "parse comma-separated queries" {
-  let mq = parse_media_query_list("screen, print")
+  let mq = @media.parse_media_query_list("screen, print")
   inspect(mq.queries.length(), content="2")
   debug_inspect(mq.queries[0].media_type, content="Some(Screen)")
   debug_inspect(mq.queries[1].media_type, content="Some(Print)")
@@ -94,7 +94,7 @@ test "parse comma-separated queries" {
 
 ///|
 test "parse complex comma-separated queries" {
-  let mq = parse_media_query_list(
+  let mq = @media.parse_media_query_list(
     "screen and (min-width: 768px), print and (color)",
   )
   inspect(mq.queries.length(), content="2")
@@ -108,7 +108,7 @@ test "parse complex comma-separated queries" {
 
 ///|
 test "parse boolean feature - color" {
-  let mq = parse_media_query_list("(color)")
+  let mq = @media.parse_media_query_list("(color)")
   inspect(mq.queries.length(), content="1")
   inspect(mq.queries[0].conditions.length(), content="1")
   inspect(mq.queries[0].conditions[0], content="Color")
@@ -116,42 +116,42 @@ test "parse boolean feature - color" {
 
 ///|
 test "parse boolean feature - hover" {
-  let mq = parse_media_query_list("(hover)")
+  let mq = @media.parse_media_query_list("(hover)")
   inspect(mq.queries.length(), content="1")
   inspect(mq.queries[0].conditions[0], content="Hover")
 }
 
 ///|
 test "parse orientation feature" {
-  let mq = parse_media_query_list("(orientation: landscape)")
+  let mq = @media.parse_media_query_list("(orientation: landscape)")
   inspect(mq.queries.length(), content="1")
   inspect(mq.queries[0].conditions[0], content="Orientation(\"landscape\")")
 }
 
 ///|
 test "parse orientation portrait" {
-  let mq = parse_media_query_list("(orientation: portrait)")
+  let mq = @media.parse_media_query_list("(orientation: portrait)")
   inspect(mq.queries.length(), content="1")
   inspect(mq.queries[0].conditions[0], content="Orientation(\"portrait\")")
 }
 
 ///|
 test "parse prefers-color-scheme dark" {
-  let mq = parse_media_query_list("(prefers-color-scheme: dark)")
+  let mq = @media.parse_media_query_list("(prefers-color-scheme: dark)")
   inspect(mq.queries.length(), content="1")
   inspect(mq.queries[0].conditions[0], content="PrefersColorScheme(\"dark\")")
 }
 
 ///|
 test "parse prefers-color-scheme light" {
-  let mq = parse_media_query_list("(prefers-color-scheme: light)")
+  let mq = @media.parse_media_query_list("(prefers-color-scheme: light)")
   inspect(mq.queries.length(), content="1")
   inspect(mq.queries[0].conditions[0], content="PrefersColorScheme(\"light\")")
 }
 
 ///|
 test "parse prefers-reduced-motion" {
-  let mq = parse_media_query_list("(prefers-reduced-motion: reduce)")
+  let mq = @media.parse_media_query_list("(prefers-reduced-motion: reduce)")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -161,7 +161,7 @@ test "parse prefers-reduced-motion" {
 
 ///|
 test "parse aspect-ratio" {
-  let mq = parse_media_query_list("(aspect-ratio: 16/9)")
+  let mq = @media.parse_media_query_list("(aspect-ratio: 16/9)")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -171,14 +171,14 @@ test "parse aspect-ratio" {
 
 ///|
 test "parse min-aspect-ratio" {
-  let mq = parse_media_query_list("(min-aspect-ratio: 4/3)")
+  let mq = @media.parse_media_query_list("(min-aspect-ratio: 4/3)")
   inspect(mq.queries.length(), content="1")
   inspect(mq.queries[0].conditions[0], content="MinAspectRatio(Ratio(4, 3))")
 }
 
 ///|
 test "parse resolution" {
-  let mq = parse_media_query_list("(min-resolution: 2dppx)")
+  let mq = @media.parse_media_query_list("(min-resolution: 2dppx)")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -188,7 +188,7 @@ test "parse resolution" {
 
 ///|
 test "parse height feature" {
-  let mq = parse_media_query_list("(min-height: 600px)")
+  let mq = @media.parse_media_query_list("(min-height: 600px)")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -198,7 +198,7 @@ test "parse height feature" {
 
 ///|
 test "parse range syntax - width greater than" {
-  let mq = parse_media_query_list("(width >= 768px)")
+  let mq = @media.parse_media_query_list("(width >= 768px)")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -208,7 +208,7 @@ test "parse range syntax - width greater than" {
 
 ///|
 test "parse range syntax - width less than" {
-  let mq = parse_media_query_list("(width < 1024px)")
+  let mq = @media.parse_media_query_list("(width < 1024px)")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -218,7 +218,7 @@ test "parse range syntax - width less than" {
 
 ///|
 test "parse range syntax - height" {
-  let mq = parse_media_query_list("(height <= 800px)")
+  let mq = @media.parse_media_query_list("(height <= 800px)")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -228,7 +228,7 @@ test "parse range syntax - height" {
 
 ///|
 test "parse top-level or media range as query list" {
-  let mq = parse_media_query_list("(width <= 769px) or (width > 1006px)")
+  let mq = @media.parse_media_query_list("(width <= 769px) or (width > 1006px)")
   inspect(mq.queries.length(), content="2")
   inspect(
     mq.queries[0].conditions[0],
@@ -242,7 +242,7 @@ test "parse top-level or media range as query list" {
 
 ///|
 test "parse calc length in media range" {
-  let mq = parse_media_query_list("(width >= calc(40rem + 1px))")
+  let mq = @media.parse_media_query_list("(width >= calc(40rem + 1px))")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -252,26 +252,26 @@ test "parse calc length in media range" {
 
 ///|
 test "parse display-mode" {
-  let mq = parse_media_query_list("(display-mode: fullscreen)")
+  let mq = @media.parse_media_query_list("(display-mode: fullscreen)")
   inspect(mq.queries.length(), content="1")
   inspect(mq.queries[0].conditions[0], content="DisplayMode(\"fullscreen\")")
 }
 
 ///|
 test "parse empty query list" {
-  let mq = parse_media_query_list("")
+  let mq = @media.parse_media_query_list("")
   inspect(mq.queries.length(), content="0")
 }
 
 ///|
 test "parse whitespace-only query" {
-  let mq = parse_media_query_list("   ")
+  let mq = @media.parse_media_query_list("   ")
   inspect(mq.queries.length(), content="0")
 }
 
 ///|
 test "parse custom feature" {
-  let mq = parse_media_query_list("(unknown-feature: value)")
+  let mq = @media.parse_media_query_list("(unknown-feature: value)")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -281,7 +281,7 @@ test "parse custom feature" {
 
 ///|
 test "parse only screen with features" {
-  let mq = parse_media_query_list("only screen and (color)")
+  let mq = @media.parse_media_query_list("only screen and (color)")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.only, content="true")
@@ -291,7 +291,7 @@ test "parse only screen with features" {
 
 ///|
 test "parse not print with features" {
-  let mq = parse_media_query_list("not print and (monochrome)")
+  let mq = @media.parse_media_query_list("not print and (monochrome)")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.negated, content="true")
@@ -302,21 +302,21 @@ test "parse not print with features" {
 
 ///|
 test "parse pointer feature" {
-  let mq = parse_media_query_list("(pointer)")
+  let mq = @media.parse_media_query_list("(pointer)")
   inspect(mq.queries.length(), content="1")
   inspect(mq.queries[0].conditions[0], content="Pointer")
 }
 
 ///|
 test "parse grid feature" {
-  let mq = parse_media_query_list("(grid)")
+  let mq = @media.parse_media_query_list("(grid)")
   inspect(mq.queries.length(), content="1")
   inspect(mq.queries[0].conditions[0], content="Grid")
 }
 
 ///|
 test "parse em units" {
-  let mq = parse_media_query_list("(min-width: 48em)")
+  let mq = @media.parse_media_query_list("(min-width: 48em)")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -326,7 +326,7 @@ test "parse em units" {
 
 ///|
 test "parse rem units" {
-  let mq = parse_media_query_list("(min-width: 30rem)")
+  let mq = @media.parse_media_query_list("(min-width: 30rem)")
   inspect(mq.queries.length(), content="1")
   inspect(
     mq.queries[0].conditions[0],
@@ -336,21 +336,21 @@ test "parse rem units" {
 
 ///|
 test "MediaQueryList is_empty" {
-  let mq = parse_media_query_list("")
+  let mq = @media.parse_media_query_list("")
   inspect(mq.is_empty(), content="true")
-  let mq2 = parse_media_query_list("screen")
+  let mq2 = @media.parse_media_query_list("screen")
   inspect(mq2.is_empty(), content="false")
 }
 
 ///|
 test "MediaQueryList length" {
-  let mq = parse_media_query_list("screen, print, all")
+  let mq = @media.parse_media_query_list("screen, print, all")
   inspect(mq.length(), content="3")
 }
 
 ///|
 test "MediaQuery default" {
-  let q = MediaQuery::default()
+  let q = @media.MediaQuery::default()
   inspect(q.negated, content="false")
   inspect(q.only, content="false")
   debug_inspect(q.media_type, content="None")

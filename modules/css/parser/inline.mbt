@@ -430,7 +430,7 @@ fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
 /// Parse multiple dimension values (for shorthand properties like margin, padding)
 fn parse_multi_dimensions(
   tokens : ArrayView[@token.Token],
-  max_count : Int,
+  max_count : Int32,
 ) -> Array[@types.Dimension] {
   let result : Array[@types.Dimension] = []
   let mut rest = tokens
@@ -566,7 +566,7 @@ fn parse_position(tokens : ArrayView[@token.Token]) -> @types.Position? {
 fn parse_float(
   tokens : ArrayView[@token.Token],
   direction : @style.Direction,
-) -> @types.Float? {
+) -> @types.CssFloat? {
   if tokens.length() == 0 {
     return None
   }
@@ -713,8 +713,8 @@ fn collect_alignment_parts(tokens : ArrayView[@token.Token]) -> Array[String] {
 ///|
 fn parse_alignment_segment_with_overflow(
   parts : Array[String],
-  start : Int,
-) -> ((@types.Alignment, Bool), Int)? {
+  start : Int32,
+) -> ((@types.Alignment, Bool), Int32)? {
   if start >= parts.length() {
     return None
   }
@@ -761,8 +761,8 @@ fn parse_alignment_segment_with_overflow(
 ///|
 fn parse_alignment_segment(
   parts : Array[String],
-  start : Int,
-) -> (@types.Alignment, Int)? {
+  start : Int32,
+) -> (@types.Alignment, Int32)? {
   match parse_alignment_segment_with_overflow(parts, start) {
     Some(((alignment, _), next_index)) => Some((alignment, next_index))
     None => None
@@ -850,7 +850,7 @@ fn parse_number(tokens : ArrayView[@token.Token]) -> Double? {
 
 ///|
 /// Parse an integer value
-fn parse_integer(tokens : ArrayView[@token.Token]) -> Int? {
+fn parse_integer(tokens : ArrayView[@token.Token]) -> Int32? {
   if tokens.length() == 0 {
     return None
   }

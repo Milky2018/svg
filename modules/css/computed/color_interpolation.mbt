@@ -10,7 +10,7 @@ fn lerp(a : Double, b : Double, t : Double) -> Double {
 
 ///|
 /// Round to the nearest integer and clamp to the 0-255 color-channel range.
-fn lerp_channel(a : Int, b : Int, t : Double) -> Int {
+fn lerp_channel(a : Int32, b : Int32, t : Double) -> Int32 {
   let v = lerp(a.to_double(), b.to_double(), t)
   let r = (v + 0.5).to_int()
   if r < 0 {
@@ -40,7 +40,7 @@ fn interpolate_color(
 
 ///|
 /// sRGB 0-255 channel to linear-light [0, 1].
-fn srgb_to_linear(c : Int) -> Double {
+fn srgb_to_linear(c : Int32) -> Double {
   let x = c.to_double() / 255.0
   if x <= 0.04045 {
     x / 12.92
@@ -51,7 +51,7 @@ fn srgb_to_linear(c : Int) -> Double {
 
 ///|
 /// Linear-light [0, 1] to sRGB 0-255 channel (rounded, clamped).
-fn linear_to_srgb(x : Double) -> Int {
+fn linear_to_srgb(x : Double) -> Int32 {
   let c = if x <= 0.0031308 {
     12.92 * x
   } else {
@@ -104,7 +104,7 @@ fn srgb_to_oklab(c : @types.Color) -> (Double, Double, Double) {
 }
 
 ///|
-fn oklab_to_srgb(l : Double, a : Double, b : Double) -> (Int, Int, Int) {
+fn oklab_to_srgb(l : Double, a : Double, b : Double) -> (Int32, Int32, Int32) {
   let l_ = l + 0.3963377774 * a + 0.2158037573 * b
   let m_ = l - 0.1055613458 * a - 0.0638541728 * b
   let s_ = l - 0.0894841775 * a - 1.2914855480 * b
@@ -233,7 +233,7 @@ fn lab_f(t : Double) -> Double {
 
 ///|
 /// CIE Lab (D65) to sRGB 0-255.
-fn lab_to_srgb(l : Double, a : Double, b : Double) -> (Int, Int, Int) {
+fn lab_to_srgb(l : Double, a : Double, b : Double) -> (Int32, Int32, Int32) {
   let fy = (l + 16.0) / 116.0
   let fx = fy + a / 500.0
   let fz = fy - b / 200.0

@@ -5,19 +5,19 @@
 ///|
 /// RGB Color (0-255 range)
 pub(all) struct Color {
-  r : Int
-  g : Int
-  b : Int
-  a : Int // Alpha (0-255, 255 = opaque)
+  r : Int32
+  g : Int32
+  b : Int32
+  a : Int32 // Alpha (0-255, 255 = opaque)
 } derive(Debug)
 
 ///|
-pub fn Color::rgb(r : Int, g : Int, b : Int) -> Color {
+pub fn Color::rgb(r : Int32, g : Int32, b : Int32) -> Color {
   { r, g, b, a: 255, }
 }
 
 ///|
-pub fn Color::rgba(r : Int, g : Int, b : Int, a : Int) -> Color {
+pub fn Color::rgba(r : Int32, g : Int32, b : Int32, a : Int32) -> Color {
   { r, g, b, a, }
 }
 
@@ -661,20 +661,25 @@ pub fn BoundingBox::contains_point(
 ///|
 /// Clipping rectangle for camera/viewport
 priv struct ClipRect {
-  x : Int
-  y : Int
-  width : Int
-  height : Int
+  x : Int32
+  y : Int32
+  width : Int32
+  height : Int32
 }
 
 ///|
-fn ClipRect::new(x : Int, y : Int, width : Int, height : Int) -> ClipRect {
+fn ClipRect::new(
+  x : Int32,
+  y : Int32,
+  width : Int32,
+  height : Int32,
+) -> ClipRect {
   { x, y, width, height, }
 }
 
 ///|
 /// Check if a point is inside the clip rect
-fn ClipRect::contains(self : ClipRect, x : Int, y : Int) -> Bool {
+fn ClipRect::contains(self : ClipRect, x : Int32, y : Int32) -> Bool {
   x >= self.x &&
   x < self.x + self.width &&
   y >= self.y &&

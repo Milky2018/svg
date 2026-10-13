@@ -1,167 +1,173 @@
 ///|
 test "Show for Display" {
-  inspect(Display::Block, content="Block")
-  inspect(Display::Inline, content="Inline")
-  inspect(Display::InlineBlock, content="InlineBlock")
-  inspect(Display::Flex, content="Flex")
-  inspect(Display::InlineFlex, content="InlineFlex")
-  inspect(Display::Grid, content="Grid")
-  inspect(Display::InlineGrid, content="InlineGrid")
-  inspect(Display::Table, content="Table")
-  inspect(Display::InlineTable, content="InlineTable")
-  inspect(Display::TableRow, content="TableRow")
-  inspect(Display::TableCell, content="TableCell")
-  inspect(Display::TableCaption, content="TableCaption")
-  inspect(Display::TableRowGroup, content="TableRowGroup")
-  inspect(Display::TableHeaderGroup, content="TableHeaderGroup")
-  inspect(Display::TableFooterGroup, content="TableFooterGroup")
-  inspect(Display::TableColumn, content="TableColumn")
-  inspect(Display::TableColumnGroup, content="TableColumnGroup")
-  inspect(Display::None, content="None")
-  inspect(Display::Contents, content="Contents")
-  inspect(Display::FlowRoot, content="FlowRoot")
+  inspect(@values.Display::Block, content="Block")
+  inspect(@values.Display::Inline, content="Inline")
+  inspect(@values.Display::InlineBlock, content="InlineBlock")
+  inspect(@values.Display::Flex, content="Flex")
+  inspect(@values.Display::InlineFlex, content="InlineFlex")
+  inspect(@values.Display::Grid, content="Grid")
+  inspect(@values.Display::InlineGrid, content="InlineGrid")
+  inspect(@values.Display::Table, content="Table")
+  inspect(@values.Display::InlineTable, content="InlineTable")
+  inspect(@values.Display::TableRow, content="TableRow")
+  inspect(@values.Display::TableCell, content="TableCell")
+  inspect(@values.Display::TableCaption, content="TableCaption")
+  inspect(@values.Display::TableRowGroup, content="TableRowGroup")
+  inspect(@values.Display::TableHeaderGroup, content="TableHeaderGroup")
+  inspect(@values.Display::TableFooterGroup, content="TableFooterGroup")
+  inspect(@values.Display::TableColumn, content="TableColumn")
+  inspect(@values.Display::TableColumnGroup, content="TableColumnGroup")
+  inspect(@values.Display::None, content="None")
+  inspect(@values.Display::Contents, content="Contents")
+  inspect(@values.Display::FlowRoot, content="FlowRoot")
 }
 
 ///|
 test "Show for Position" {
-  inspect(Position::Static, content="Static")
-  inspect(Position::Relative, content="Relative")
-  inspect(Position::Absolute, content="Absolute")
-  inspect(Position::Fixed, content="Fixed")
+  inspect(@values.Position::Static, content="Static")
+  inspect(@values.Position::Relative, content="Relative")
+  inspect(@values.Position::Absolute, content="Absolute")
+  inspect(@values.Position::Fixed, content="Fixed")
 }
 
 ///|
 test "Show for FlexDirection" {
-  inspect(FlexDirection::Row, content="Row")
-  inspect(FlexDirection::RowReverse, content="RowReverse")
-  inspect(FlexDirection::Column, content="Column")
-  inspect(FlexDirection::ColumnReverse, content="ColumnReverse")
+  inspect(@values.FlexDirection::Row, content="Row")
+  inspect(@values.FlexDirection::RowReverse, content="RowReverse")
+  inspect(@values.FlexDirection::Column, content="Column")
+  inspect(@values.FlexDirection::ColumnReverse, content="ColumnReverse")
 }
 
 ///|
 test "Show for Alignment" {
-  inspect(Alignment::Start, content="Start")
-  inspect(Alignment::End, content="End")
-  inspect(Alignment::Left, content="Left")
-  inspect(Alignment::Right, content="Right")
-  inspect(Alignment::FlexStart, content="FlexStart")
-  inspect(Alignment::FlexEnd, content="FlexEnd")
-  inspect(Alignment::Center, content="Center")
-  inspect(Alignment::SpaceBetween, content="SpaceBetween")
-  inspect(Alignment::SpaceAround, content="SpaceAround")
-  inspect(Alignment::SpaceEvenly, content="SpaceEvenly")
-  inspect(Alignment::Stretch, content="Stretch")
-  inspect(Alignment::Baseline, content="Baseline")
+  inspect(@values.Alignment::Start, content="Start")
+  inspect(@values.Alignment::End, content="End")
+  inspect(@values.Alignment::Left, content="Left")
+  inspect(@values.Alignment::Right, content="Right")
+  inspect(@values.Alignment::FlexStart, content="FlexStart")
+  inspect(@values.Alignment::FlexEnd, content="FlexEnd")
+  inspect(@values.Alignment::Center, content="Center")
+  inspect(@values.Alignment::SpaceBetween, content="SpaceBetween")
+  inspect(@values.Alignment::SpaceAround, content="SpaceAround")
+  inspect(@values.Alignment::SpaceEvenly, content="SpaceEvenly")
+  inspect(@values.Alignment::Stretch, content="Stretch")
+  inspect(@values.Alignment::Baseline, content="Baseline")
 }
 
 ///|
 test "Show for FlexWrap" {
-  inspect(FlexWrap::NoWrap, content="NoWrap")
-  inspect(FlexWrap::Wrap, content="Wrap")
-  inspect(FlexWrap::WrapReverse, content="WrapReverse")
+  inspect(@values.FlexWrap::NoWrap, content="NoWrap")
+  inspect(@values.FlexWrap::Wrap, content="Wrap")
+  inspect(@values.FlexWrap::WrapReverse, content="WrapReverse")
 }
 
 ///|
 test "Show for AlignSelf" {
-  inspect(AlignSelf::Auto, content="Auto")
-  inspect(AlignSelf::Start, content="Start")
-  inspect(AlignSelf::End, content="End")
-  inspect(AlignSelf::Center, content="Center")
-  inspect(AlignSelf::Stretch, content="Stretch")
-  inspect(AlignSelf::Baseline, content="Baseline")
+  inspect(@values.AlignSelf::Auto, content="Auto")
+  inspect(@values.AlignSelf::Start, content="Start")
+  inspect(@values.AlignSelf::End, content="End")
+  inspect(@values.AlignSelf::Center, content="Center")
+  inspect(@values.AlignSelf::Stretch, content="Stretch")
+  inspect(@values.AlignSelf::Baseline, content="Baseline")
 }
 
 ///|
-test "Show for Float, Clear, Overflow, BoxSizing" {
-  inspect(Float::None, content="None")
-  inspect(Float::Left, content="Left")
-  inspect(Float::Right, content="Right")
-  inspect(Clear::None, content="None")
-  inspect(Clear::Both, content="Both")
-  inspect(Overflow::Visible, content="Visible")
-  inspect(Overflow::Hidden, content="Hidden")
-  inspect(Overflow::Clip, content="Clip")
-  inspect(Overflow::Scroll, content="Scroll")
-  inspect(Overflow::Auto, content="Auto")
-  inspect(BoxSizing::ContentBox, content="ContentBox")
-  inspect(BoxSizing::BorderBox, content="BorderBox")
+test "Show for CssFloat, Clear, Overflow, BoxSizing" {
+  inspect(@values.CssFloat::None, content="None")
+  inspect(@values.CssFloat::Left, content="Left")
+  inspect(@values.CssFloat::Right, content="Right")
+  inspect(@values.Clear::None, content="None")
+  inspect(@values.Clear::Both, content="Both")
+  inspect(@values.Overflow::Visible, content="Visible")
+  inspect(@values.Overflow::Hidden, content="Hidden")
+  inspect(@values.Overflow::Clip, content="Clip")
+  inspect(@values.Overflow::Scroll, content="Scroll")
+  inspect(@values.Overflow::Auto, content="Auto")
+  inspect(@values.BoxSizing::ContentBox, content="ContentBox")
+  inspect(@values.BoxSizing::BorderBox, content="BorderBox")
 }
 
 ///|
 test "Show for grid types" {
-  inspect(GridAutoFlow::Row, content="Row")
-  inspect(GridAutoFlow::Column, content="Column")
-  inspect(GridAutoFlow::RowDense, content="RowDense")
-  inspect(GridAutoFlow::ColumnDense, content="ColumnDense")
-  inspect(GridPlacement::Auto, content="Auto")
-  inspect(GridPlacement::Line(3), content="Line(3)")
-  inspect(GridPlacement::Span(2), content="Span(2)")
-  inspect(GridPlacement::Named("left-sidebar"), content="Named(left-sidebar)")
-  let gl = GridLine::auto()
+  inspect(@values.GridAutoFlow::Row, content="Row")
+  inspect(@values.GridAutoFlow::Column, content="Column")
+  inspect(@values.GridAutoFlow::RowDense, content="RowDense")
+  inspect(@values.GridAutoFlow::ColumnDense, content="ColumnDense")
+  inspect(@values.GridPlacement::Auto, content="Auto")
+  inspect(@values.GridPlacement::Line(3), content="Line(3)")
+  inspect(@values.GridPlacement::Span(2), content="Span(2)")
+  inspect(
+    @values.GridPlacement::Named("left-sidebar"),
+    content="Named(left-sidebar)",
+  )
+  let gl = @values.GridLine::auto()
   inspect(gl, content="{start: Auto, end: Auto}")
 }
 
 ///|
 test "Show for SingleTrackSizing" {
-  inspect(SingleTrackSizing::Length(50.0), content="Length(50)")
-  inspect(SingleTrackSizing::Percent(0.5), content="Percent(0.5)")
-  inspect(SingleTrackSizing::Fr(1.0), content="Fr(1)")
-  inspect(SingleTrackSizing::Auto, content="Auto")
-  inspect(SingleTrackSizing::MinContent, content="MinContent")
-  inspect(SingleTrackSizing::MaxContent, content="MaxContent")
+  inspect(@values.SingleTrackSizing::Length(50.0), content="Length(50)")
+  inspect(@values.SingleTrackSizing::Percent(0.5), content="Percent(0.5)")
+  inspect(@values.SingleTrackSizing::Fr(1.0), content="Fr(1)")
+  inspect(@values.SingleTrackSizing::Auto, content="Auto")
+  inspect(@values.SingleTrackSizing::MinContent, content="MinContent")
+  inspect(@values.SingleTrackSizing::MaxContent, content="MaxContent")
   inspect(
-    SingleTrackSizing::FitContentLength(100.0),
+    @values.SingleTrackSizing::FitContentLength(100.0),
     content="FitContentLength(100)",
   )
   inspect(
-    SingleTrackSizing::FitContentPercent(0.5),
+    @values.SingleTrackSizing::FitContentPercent(0.5),
     content="FitContentPercent(0.5)",
   )
   inspect(
-    SingleTrackSizing::MinMax(Length(10.0), Fr(1.0)),
+    @values.SingleTrackSizing::MinMax(Length(10.0), Fr(1.0)),
     content="MinMax(Length(10), Fr(1))",
   )
 }
 
 ///|
 test "Show for TrackSizingFunction" {
-  inspect(TrackSizingFunction::Length(50.0), content="Length(50)")
-  inspect(TrackSizingFunction::Percent(0.25), content="Percent(0.25)")
-  inspect(TrackSizingFunction::Fr(2.0), content="Fr(2)")
-  inspect(TrackSizingFunction::Auto, content="Auto")
-  inspect(TrackSizingFunction::MinContent, content="MinContent")
-  inspect(TrackSizingFunction::MaxContent, content="MaxContent")
+  inspect(@values.TrackSizingFunction::Length(50.0), content="Length(50)")
+  inspect(@values.TrackSizingFunction::Percent(0.25), content="Percent(0.25)")
+  inspect(@values.TrackSizingFunction::Fr(2.0), content="Fr(2)")
+  inspect(@values.TrackSizingFunction::Auto, content="Auto")
+  inspect(@values.TrackSizingFunction::MinContent, content="MinContent")
+  inspect(@values.TrackSizingFunction::MaxContent, content="MaxContent")
   inspect(
-    TrackSizingFunction::FitContentLength(80.0),
+    @values.TrackSizingFunction::FitContentLength(80.0),
     content="FitContentLength(80)",
   )
   inspect(
-    TrackSizingFunction::FitContentPercent(0.25),
+    @values.TrackSizingFunction::FitContentPercent(0.25),
     content="FitContentPercent(0.25)",
   )
-  let mm = TrackSizingFunction::MinMax(Auto, Fr(1.0))
+  let mm = @values.TrackSizingFunction::MinMax(Auto, Fr(1.0))
   inspect(mm, content="MinMax(Auto, Fr(1))")
-  inspect(RepeatCount::Count(3), content="Count(3)")
-  inspect(RepeatCount::AutoFill, content="AutoFill")
-  inspect(RepeatCount::AutoFit, content="AutoFit")
-  let rep = TrackSizingFunction::Repeat(Count(2), [Fr(1.0), Auto], [])
+  inspect(@values.RepeatCount::Count(3), content="Count(3)")
+  inspect(@values.RepeatCount::AutoFill, content="AutoFill")
+  inspect(@values.RepeatCount::AutoFit, content="AutoFit")
+  let rep = @values.TrackSizingFunction::Repeat(Count(2), [Fr(1.0), Auto], [])
   inspect(rep, content="Repeat(Count(2), [Fr(1), Auto])")
   // With inner line names, the third component is rendered.
-  let rep2 = TrackSizingFunction::Repeat(Count(3), [Fr(1.0)], [["a"], ["b"]])
+  let rep2 = @values.TrackSizingFunction::Repeat(Count(3), [Fr(1.0)], [
+    ["a"],
+    ["b"],
+  ])
   inspect(rep2, content="Repeat(Count(3), [Fr(1)], [[\"a\"], [\"b\"]])")
 }
 
 ///|
 test "Show for MinTrackSizing and MaxTrackSizing" {
-  inspect(MinTrackSizing::Length(10.0), content="Length(10)")
-  inspect(MinTrackSizing::Percent(0.5), content="Percent(0.5)")
-  inspect(MinTrackSizing::Auto, content="Auto")
-  inspect(MinTrackSizing::MinContent, content="MinContent")
-  inspect(MinTrackSizing::MaxContent, content="MaxContent")
-  inspect(MaxTrackSizing::Length(20.0), content="Length(20)")
-  inspect(MaxTrackSizing::Percent(0.25), content="Percent(0.25)")
-  inspect(MaxTrackSizing::Fr(3.0), content="Fr(3)")
-  inspect(MaxTrackSizing::Auto, content="Auto")
-  inspect(MaxTrackSizing::MinContent, content="MinContent")
-  inspect(MaxTrackSizing::MaxContent, content="MaxContent")
+  inspect(@values.MinTrackSizing::Length(10.0), content="Length(10)")
+  inspect(@values.MinTrackSizing::Percent(0.5), content="Percent(0.5)")
+  inspect(@values.MinTrackSizing::Auto, content="Auto")
+  inspect(@values.MinTrackSizing::MinContent, content="MinContent")
+  inspect(@values.MinTrackSizing::MaxContent, content="MaxContent")
+  inspect(@values.MaxTrackSizing::Length(20.0), content="Length(20)")
+  inspect(@values.MaxTrackSizing::Percent(0.25), content="Percent(0.25)")
+  inspect(@values.MaxTrackSizing::Fr(3.0), content="Fr(3)")
+  inspect(@values.MaxTrackSizing::Auto, content="Auto")
+  inspect(@values.MaxTrackSizing::MinContent, content="MinContent")
+  inspect(@values.MaxTrackSizing::MaxContent, content="MaxContent")
 }

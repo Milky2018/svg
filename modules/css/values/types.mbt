@@ -86,7 +86,7 @@ pub(all) enum Easing {
   EaseInOutBounce
   LinearFunction(Array[LinearEasingPoint])
   CubicBezier(Double, Double, Double, Double)
-  Steps(Int, StepPosition)
+  Steps(Int32, StepPosition)
 } derive(Debug, Eq)
 
 ///|
@@ -202,7 +202,7 @@ pub fn Easing::cubic_bezier(
 }
 
 ///|
-pub fn Easing::steps(count : Int, position : StepPosition) -> Easing {
+pub fn Easing::steps(count : Int32, position : StepPosition) -> Easing {
   Steps(count, position)
 }
 
@@ -345,7 +345,7 @@ fn sample_linear_function(
 }
 
 ///|
-fn sample_steps(count : Int, position : StepPosition, t : Double) -> Double {
+fn sample_steps(count : Int32, position : StepPosition, t : Double) -> Double {
   if count <= 0 || (position == JumpNone && count <= 1) {
     return t
   }
@@ -525,7 +525,7 @@ pub fn Easing::frames(
   self : Easing,
   start_value : Double,
   end_value : Double,
-  count : Int,
+  count : Int32,
 ) -> Array[EasingFrame] {
   let frames : Array[EasingFrame] = []
   if count <= 0 {
@@ -552,7 +552,7 @@ fn parse_easing_number(value : String) -> Double? {
 }
 
 ///|
-fn parse_easing_int(value : String) -> Int? {
+fn parse_easing_int(value : String) -> Int32? {
   Some(@string.parse_int(value.trim().to_owned())) catch {
     _ => None
   }

@@ -87,10 +87,10 @@ fn clip_shape_contours(
 fn build_clip_node_coverage(
   node : SVGNode,
   parent_transform : Transform,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   resources : RenderResources,
-  depth : Int,
+  depth : Int32,
 ) -> CoverageMask {
   if depth >= 32 {
     return { origin_x: 0, origin_y: 0, width: 0, height: 0, values: [], }
@@ -156,10 +156,10 @@ fn build_clip_path_coverage(
   clip : ClipPath,
   element_transform : Transform,
   bbox_local : BoundingBox,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   resources : RenderResources,
-  depth : Int,
+  depth : Int32,
 ) -> CoverageMask {
   let base_transform = match clip.units {
     UserSpaceOnUse => element_transform
@@ -270,8 +270,8 @@ fn render_masked_node(
 ///|
 fn make_image_context(
   image : Image,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   parent : RenderState,
 ) -> RenderState {
   let setter = make_image_compositing_setter(image)
@@ -303,8 +303,8 @@ fn make_image_compositing_setter(image : Image) -> ColorSink {
 fn blit_image_to_context(
   image : Image,
   ctx : RenderState,
-  offset_x : Int,
-  offset_y : Int,
+  offset_x : Int32,
+  offset_y : Int32,
 ) -> Unit {
   let setter = match ctx.clip {
     Some(clip) => ctx.setter.with_clip(clip)
@@ -321,12 +321,12 @@ fn blit_image_to_context(
 }
 
 ///|
-fn floor_to_int(value : Double) -> Int {
+fn floor_to_int(value : Double) -> Int32 {
   value.floor().to_int()
 }
 
 ///|
-fn ceil_to_int(value : Double) -> Int {
+fn ceil_to_int(value : Double) -> Int32 {
   let i = value.to_int()
   if value > i.to_double() {
     i + 1

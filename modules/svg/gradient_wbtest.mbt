@@ -46,7 +46,7 @@ test "linear gradient rendering" {
   }
   let rect_node = rect("grad-rect", 0.0, 0.0, 100.0, 50.0)
   rect_node.fill = LinearGrad(grad)
-  let drawn_pixels : Array[(Int, Int, Color)] = []
+  let drawn_pixels : Array[(Int32, Int32, Color)] = []
   let setter : ColorSink = {
     set: (x, y, color) => drawn_pixels.push((x, y, color)),
   }

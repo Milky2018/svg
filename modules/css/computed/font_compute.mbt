@@ -80,7 +80,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
 fn parse_line_height(
   value : String,
   font_size : Double,
-  root_font_size? : Double = 16.0,
+  root_font_size~ : Double = 16.0,
 ) -> Double {
   let v = value.trim()
 

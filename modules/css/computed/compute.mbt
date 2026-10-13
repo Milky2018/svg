@@ -147,7 +147,7 @@ pub fn ComputeContext::with_viewport(
 priv struct StyleBuilder {
   mut display : @types.Display
   mut position : @types.Position
-  mut float : @types.Float
+  mut float : @types.CssFloat
   mut clear : @types.Clear
   mut box_sizing : @types.BoxSizing
   mut overflow_x : @types.Overflow
@@ -195,11 +195,11 @@ priv struct StyleBuilder {
   mut flex_grow : Double
   mut flex_shrink : Double
   mut flex_basis : @types.Dimension
-  mut order : Int
+  mut order : Int32
   mut row_gap : @types.Dimension
   mut column_gap : @types.Dimension
   mut column_gap_is_normal : Bool
-  mut column_count : Int?
+  mut column_count : Int32?
   mut column_width : @types.Dimension
   mut column_fill : @style.ColumnFill
   mut aspect_ratio : Double?
@@ -290,8 +290,8 @@ priv struct StyleBuilder {
   mut table_layout : @style.TableLayout
   mut caption_side : @style.CaptionSide
   // Table cell properties (not mutable via CSS, set from HTML attributes)
-  rowspan : Int
-  colspan : Int
+  rowspan : Int32
+  colspan : Int32
   // Border radius
   mut border_top_left_radius : Double
   mut border_top_right_radius : Double

@@ -42,14 +42,14 @@ fn find_test_node(node : SVGNode, id : String) -> SVGNode? {
 
 ///|
 fn miter_triangle_probe(
-  x0 : Int,
-  y0 : Int,
-  x1 : Int,
-  y1 : Int,
-  x2 : Int,
-  y2 : Int,
-  width : Int,
-) -> (Int, Int) {
+  x0 : Int32,
+  y0 : Int32,
+  x1 : Int32,
+  y1 : Int32,
+  x2 : Int32,
+  y2 : Int32,
+  width : Int32,
+) -> (Int32, Int32) {
   let dx0 = (x1 - x0).to_double()
   let dy0 = (y1 - y0).to_double()
   let dx1 = (x2 - x1).to_double()

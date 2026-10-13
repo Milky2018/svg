@@ -1,12 +1,12 @@
 ///|
 test "document registers and instantiates ordinary definitions" {
-  let definition = SVGNode::new(
+  let definition = @svg.SVGNode::new(
     Rect(x=0.0, y=0.0, width=4.0, height=3.0, rx=0.0, ry=0.0),
   )
   definition.id = "shape"
-  let document = SVGDocument::new(SVGNode::new(Group))
+  let document = @svg.SVGDocument::new(@svg.SVGNode::new(Group))
   document.add_definition("shape", definition)
-  let use_element = UseElement::new("#shape", 7.0, 9.0)
+  let use_element = @svg.UseElement::new("#shape", 7.0, 9.0)
   match document.instantiate_use(use_element) {
     Some(node) => {
       let (x, y) = node.transform.apply(0.0, 0.0)

@@ -1,10 +1,16 @@
 ///|
-fn render_geometry_fixture(svg : String, width : Int, height : Int) -> Image {
-  render_svg_to_image(svg, width, height).unwrap_or(Image::new(width, height))
+fn render_geometry_fixture(
+  svg : String,
+  width : Int32,
+  height : Int32,
+) -> @svg.Image {
+  @svg.render_svg_to_image(svg, width, height).unwrap_or(
+    @svg.Image::new(width, height),
+  )
 }
 
 ///|
-fn visible_geometry_pixels(image : Image) -> Int {
+fn visible_geometry_pixels(image : @svg.Image) -> Int32 {
   let mut count = 0
   for y in 0..<image.height() {
     for x in 0..<image.width() {
@@ -286,7 +292,7 @@ test "curved dash construction is stable under uniform scaling" {
 
 ///|
 test "marker overflow clips to its viewport unless visible" {
-  fn fixture(overflow : String) -> Image {
+  fn fixture(overflow : String) -> @svg.Image {
     render_geometry_fixture(
       "<svg width=\"24\" height=\"20\"><defs><marker id=\"m\" markerWidth=\"4\" markerHeight=\"4\" refX=\"2\" refY=\"2\" markerUnits=\"userSpaceOnUse\" overflow=\"" +
       overflow +
@@ -445,7 +451,7 @@ fn render_marker_geometry(
   shape : String,
   units : String,
   orient : String,
-) -> Image {
+) -> @svg.Image {
   render_geometry_fixture(
     "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\">" +
     "<defs><marker id=\"m\" markerWidth=\"5\" markerHeight=\"5\" refX=\"2.5\" refY=\"2.5\" markerUnits=\"" +

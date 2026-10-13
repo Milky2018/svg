@@ -1,9 +1,9 @@
 ///|
 test "external stylesheet and imports resolve relative to their own resource" {
-  let options = RenderOptions::{
-    ..RenderOptions::default(),
+  let options = @svg.RenderOptions::{
+    ..@svg.RenderOptions::default(),
     environment: {
-      ..RenderEnvironment::default(),
+      ..@svg.RenderEnvironment::default(),
       base_uri: "mem:/documents/main.svg",
     },
     text_resource_resolver: Some(fn(uri, kind) {
@@ -21,7 +21,7 @@ test "external stylesheet and imports resolve relative to their own resource" {
     #|<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2">
     #|  <rect id="target" width="2" height="2"/>
     #|</svg>
-  let result = render_svg(svg, 2, 2, options)
+  let result = @svg.render_svg(svg, 2, 2, options)
   inspect(result.diagnostics.length(), content="0")
   let pixel = result.image.get_pixel(1, 1)
   inspect(pixel.r, content="255")
@@ -31,17 +31,17 @@ test "external stylesheet and imports resolve relative to their own resource" {
 
 ///|
 test "static environment drives pseudo state and media queries" {
-  let options = RenderOptions::{
-    ..RenderOptions::default(),
+  let options = @svg.RenderOptions::{
+    ..@svg.RenderOptions::default(),
     environment: {
-      ..RenderEnvironment::default(),
+      ..@svg.RenderEnvironment::default(),
       color_scheme: Dark,
       device_pixel_ratio: 2.0,
       element_state_resolver: Some(fn(id) {
         if id == "target" {
-          { ..ElementState::none(), hover: true, }
+          { ..@svg.ElementState::none(), hover: true, }
         } else {
-          ElementState::none()
+          @svg.ElementState::none()
         }
       }),
     },
@@ -55,7 +55,7 @@ test "static environment drives pseudo state and media queries" {
     #|  </style>
     #|  <rect id="target" width="2" height="2"/>
     #|</svg>
-  let result = render_svg(svg, 2, 2, options)
+  let result = @svg.render_svg(svg, 2, 2, options)
   inspect(result.diagnostics.length(), content="0")
   let pixel = result.image.get_pixel(1, 1)
   inspect(pixel.r, content="255")
@@ -65,9 +65,12 @@ test "static environment drives pseudo state and media queries" {
 
 ///|
 test "cyclic stylesheet import is diagnostic and bounded" {
-  let options = RenderOptions::{
-    ..RenderOptions::default(),
-    environment: { ..RenderEnvironment::default(), base_uri: "mem:/main.svg", },
+  let options = @svg.RenderOptions::{
+    ..@svg.RenderOptions::default(),
+    environment: {
+      ..@svg.RenderEnvironment::default(),
+      base_uri: "mem:/main.svg",
+    },
     text_resource_resolver: Some(fn(uri, kind) {
       guard kind is Stylesheet else { return None }
       match uri {
@@ -82,7 +85,7 @@ test "cyclic stylesheet import is diagnostic and bounded" {
     #|<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1">
     #|  <rect width="1" height="1"/>
     #|</svg>
-  let result = render_svg(svg, 1, 1, options)
+  let result = @svg.render_svg(svg, 1, 1, options)
   inspect(
     result.diagnostics.any(fn(item) { item.kind is ResourceCycle }),
     content="true",

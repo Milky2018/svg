@@ -1,10 +1,10 @@
 ///|
-fn build_substring_local(s : String, start : Int, end : Int) -> String {
+fn build_substring_local(s : String, start : Int32, end : Int32) -> String {
   let buf = StringBuilder()
   let mut i = start
   let len = s.length()
   while i < end && i < len {
-    buf.write_char(Int::unsafe_to_char(s[i].to_int()))
+    buf.write_char(Int32::unsafe_to_char(s[i].to_int()))
     i = i + 1
   }
   buf.to_string()
@@ -29,7 +29,7 @@ fn trim_string_local(s : String) -> String {
   let mut start = 0
   let mut end = s.length()
   while start < end {
-    let c = Int::unsafe_to_char(s[start].to_int())
+    let c = Int32::unsafe_to_char(s[start].to_int())
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
       start = start + 1
     } else {
@@ -37,7 +37,7 @@ fn trim_string_local(s : String) -> String {
     }
   }
   while end > start {
-    let c = Int::unsafe_to_char(s[end - 1].to_int())
+    let c = Int32::unsafe_to_char(s[end - 1].to_int())
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
       end = end - 1
     } else {
@@ -53,8 +53,8 @@ fn is_space_char(c : Char) -> Bool {
 }
 
 ///|
-fn char_at(s : String, i : Int) -> Char {
-  Int::unsafe_to_char(s[i].to_int())
+fn char_at(s : String, i : Int32) -> Char {
+  Int32::unsafe_to_char(s[i].to_int())
 }
 
 ///|
@@ -162,7 +162,7 @@ fn replace_viewport_units(value : String, vw : Double, vh : Double) -> String {
 }
 
 ///|
-fn match_at(s : String, idx : Int, pat : String) -> Bool {
+fn match_at(s : String, idx : Int32, pat : String) -> Bool {
   if idx + pat.length() > s.length() {
     return false
   }
@@ -458,7 +458,7 @@ fn render_raster_image(
 }
 
 ///|
-fn sample_index(index : Int, length : Int, wrap : Bool) -> Int {
+fn sample_index(index : Int32, length : Int32, wrap : Bool) -> Int32 {
   if wrap {
     let value = index % length
     if value < 0 {
@@ -474,8 +474,8 @@ fn sample_index(index : Int, length : Int, wrap : Bool) -> Int {
 ///|
 fn sampled_premul_pixel(
   image : Image,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   wrap : Bool,
 ) -> PremulColor16 {
   PremulColor16::from_color(

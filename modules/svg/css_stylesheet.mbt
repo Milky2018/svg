@@ -9,7 +9,7 @@ fn split_class_names(value : String) -> Array[String] {
   let mut start = -1
   for i in 0..<=value.length() {
     let whitespace = i == value.length() ||
-      css_is_whitespace(Int::unsafe_to_char(value[i].to_int()))
+      css_is_whitespace(Int32::unsafe_to_char(value[i].to_int()))
     if whitespace {
       if start >= 0 {
         result.push(build_substring(value, start, i))
@@ -28,8 +28,8 @@ fn style_element(
   attrs : Array[(String, String)],
   parent : @css_selector.Element?,
   previous_sibling : @css_selector.Element?,
-  sibling_index : Int,
-  sibling_count : Int,
+  sibling_index : Int32,
+  sibling_count : Int32,
 ) -> @css_selector.Element {
   let mut element = @css_selector.Element::new(tag.to_lower())
   for attr in attrs {
@@ -113,7 +113,7 @@ fn cascade_element_styles(
   element : @css_selector.Element,
   attrs : Array[(String, String)],
   media_environment : @css_media.MediaEnvironment,
-  forced_states? : @css_selector.ForcedPseudoStates = @css_selector.ForcedPseudoStates::none(),
+  forced_states~ : @css_selector.ForcedPseudoStates = @css_selector.ForcedPseudoStates::none(),
 ) -> @css_cascade.CascadedValues {
   let author_stylesheets : Array[@css_cascade.Stylesheet] = []
   match presentation_stylesheet(attrs) {

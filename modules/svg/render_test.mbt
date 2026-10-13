@@ -8,15 +8,18 @@ fn public_test_rect(
   y : Double,
   width : Double,
   height : Double,
-) -> SVGNode {
-  let node = SVGNode::new(Rect(x~, y~, width~, height~, rx=0.0, ry=0.0))
+) -> @svg.SVGNode {
+  let node = @svg.SVGNode::new(Rect(x~, y~, width~, height~, rx=0.0, ry=0.0))
   node.id = id
   node
 }
 
 ///|
-fn public_test_group(id : String, children : Array[SVGNode]) -> SVGNode {
-  let node = SVGNode::new(Group)
+fn public_test_group(
+  id : String,
+  children : Array[@svg.SVGNode],
+) -> @svg.SVGNode {
+  let node = @svg.SVGNode::new(Group)
   node.id = id
   for child in children {
     node.children.push(child)
@@ -25,19 +28,23 @@ fn public_test_group(id : String, children : Array[SVGNode]) -> SVGNode {
 }
 
 ///|
-fn render_public_test_node(node : SVGNode, width : Int, height : Int) -> Image {
-  render_svg_document(
-    SVGDocument::new(node),
+fn render_public_test_node(
+  node : @svg.SVGNode,
+  width : Int32,
+  height : Int32,
+) -> @svg.Image {
+  @svg.render_svg_document(
+    @svg.SVGDocument::new(node),
     width,
     height,
-    RenderOptions::default(),
+    @svg.RenderOptions::default(),
   ).image
 }
 
 ///|
 test "render_svg_document_basic" {
   let node = public_test_rect("r", 0.0, 0.0, 10.0, 10.0)
-  node.fill = SolidColor(Color::black())
+  node.fill = SolidColor(@svg.Color::black())
   let image = render_public_test_node(node, 20, 20)
   let pixel = image.get_pixel(5, 5)
   inspect(pixel.is_transparent(), content="false")
@@ -46,9 +53,14 @@ test "render_svg_document_basic" {
 ///|
 test "render_svg_document_with_options_basic" {
   let node = public_test_rect("r", 2.0, 2.0, 6.0, 6.0)
-  node.fill = SolidColor(Color::black())
-  let doc = SVGDocument::new(node)
-  let image = render_svg_document(doc, 16, 16, RenderOptions::default()).image
+  node.fill = SolidColor(@svg.Color::black())
+  let doc = @svg.SVGDocument::new(node)
+  let image = @svg.render_svg_document(
+      doc,
+      16,
+      16,
+      @svg.RenderOptions::default(),
+    ).image
   let pixel = image.get_pixel(4, 4)
   inspect(pixel.is_transparent(), content="false")
 }
@@ -58,9 +70,9 @@ test "render_svg_viewbox_root" {
   let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\">" +
     "<rect width=\"10\" height=\"10\" fill=\"black\"/>" +
     "</svg>"
-  let image = match render_svg_to_image(svg, 20, 20) {
+  let image = match @svg.render_svg_to_image(svg, 20, 20) {
     Some(img) => img
-    None => Image::new(1, 1)
+    None => @svg.Image::new(1, 1)
   }
   let pixel = image.get_pixel(15, 15)
   inspect(pixel.is_transparent(), content="false")
@@ -71,9 +83,9 @@ test "opacity uses browser-compatible alpha quantization" {
   let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\">" +
     "<rect width=\"8\" height=\"8\" fill=\"red\" opacity=\"0.5\"/>" +
     "</svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   inspect(image.get_pixel(4, 4).a, content="128")
 }
@@ -85,9 +97,9 @@ test "group opacity composites children through an isolated layer" {
     "<rect x=\"0\" y=\"0\" width=\"8\" height=\"8\" fill=\"red\"/>" +
     "<rect x=\"4\" y=\"0\" width=\"8\" height=\"8\" fill=\"red\"/>" +
     "</g></svg>"
-  let image = match render_svg_to_image(svg, 12, 8) {
+  let image = match @svg.render_svg_to_image(svg, 12, 8) {
     Some(image) => image
-    None => Image::new(12, 8)
+    None => @svg.Image::new(12, 8)
   }
   inspect(image.get_pixel(2, 4).a, content="128")
   inspect(image.get_pixel(6, 4).a, content="128")
@@ -99,9 +111,9 @@ test "explicitly inherited opacity composes at child and container boundaries" {
     "<g opacity=\"0.5\">" +
     "<rect width=\"8\" height=\"8\" fill=\"red\" opacity=\"inherit\"/>" +
     "</g></svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   inspect(image.get_pixel(4, 4).a, content="64")
 }
@@ -112,9 +124,9 @@ test "overlapping translucent elements use source-over compositing" {
     "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +
     "<rect width=\"8\" height=\"8\" fill=\"blue\" opacity=\"0.5\"/>" +
     "</svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   let pixel = image.get_pixel(4, 4)
   inspect(pixel.r, content="127")
@@ -133,9 +145,9 @@ test "container mask is applied after isolated group rendering" {
     "<rect x=\"0\" y=\"0\" width=\"8\" height=\"8\" fill=\"red\"/>" +
     "<rect x=\"4\" y=\"0\" width=\"8\" height=\"8\" fill=\"blue\"/>" +
     "</g></svg>"
-  let image = match render_svg_to_image(svg, 12, 8) {
+  let image = match @svg.render_svg_to_image(svg, 12, 8) {
     Some(image) => image
-    None => Image::new(12, 8)
+    None => @svg.Image::new(12, 8)
   }
   inspect(image.get_pixel(2, 4).a, content="128")
   inspect(image.get_pixel(6, 4).a, content="128")
@@ -151,9 +163,9 @@ test "group opacity is applied after its container mask" {
     "<g opacity=\"0.5\" mask=\"url(#half)\">" +
     "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +
     "</g></svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   inspect(image.get_pixel(4, 4).a, content="64")
 }
@@ -167,9 +179,9 @@ test "color alpha inherited paint opacity mask and group opacity multiply once" 
     "<g fill-opacity=\"0.5\" opacity=\"0.5\" mask=\"url(#half)\">" +
     "<rect width=\"8\" height=\"8\" fill=\"rgba(255, 0, 0, 0.5)\"/>" +
     "</g></svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   let pixel = image.get_pixel(4, 4)
   inspect(pixel.r, content="255")
@@ -181,7 +193,7 @@ test "color alpha inherited paint opacity mask and group opacity multiply once" 
 ///|
 test "container filters process the isolated group result" {
   let child = public_test_rect("child", 0.0, 0.0, 8.0, 8.0)
-  child.fill = SolidColor(Color::rgb(255, 0, 0))
+  child.fill = SolidColor(@svg.Color::rgb(255, 0, 0))
   let root = public_test_group("filtered", [child])
   root.add_filter(Invert(1.0))
   let pixel = render_public_test_node(root, 8, 8).get_pixel(4, 4)
@@ -198,9 +210,9 @@ test "mix-blend-mode composites against the current backdrop" {
     "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +
     "<rect class=\"mixed\" width=\"8\" height=\"8\" fill=\"blue\"/>" +
     "</svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   let pixel = image.get_pixel(4, 4)
   inspect(pixel.r, content="0")
@@ -221,7 +233,9 @@ test "non-separable blend modes follow CSS component formulas" {
     "<rect x=\"12\" width=\"4\" height=\"4\" fill=\"#c86432\"/>" +
     "<rect x=\"12\" width=\"4\" height=\"4\" fill=\"#6496c8\" style=\"mix-blend-mode: luminosity\"/>" +
     "</svg>"
-  let image = render_svg_to_image(svg, 16, 4).unwrap_or(Image::new(16, 4))
+  let image = @svg.render_svg_to_image(svg, 16, 4).unwrap_or(
+    @svg.Image::new(16, 4),
+  )
   let hue = image.get_pixel(2, 2)
   inspect(hue.r, content="64")
   inspect(hue.g, content="139")
@@ -251,9 +265,9 @@ test "isolation prevents descendants from blending with outside backdrop" {
     "<g style=\"isolation: isolate\">" +
     "<rect width=\"8\" height=\"8\" fill=\"blue\" style=\"mix-blend-mode: multiply\"/>" +
     "</g></svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   let pixel = image.get_pixel(4, 4)
   inspect(pixel.r, content="0")
@@ -271,9 +285,9 @@ test "SVG filter graph evaluates a color matrix on SourceGraphic" {
     "</filter></defs>" +
     "<rect class=\"filtered\" width=\"8\" height=\"8\" fill=\"red\"/>" +
     "</svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   let pixel = image.get_pixel(4, 4)
   inspect(pixel.r, content="0")
@@ -291,9 +305,9 @@ test "SVG filter graph resolves named results for multi-input blend" {
     "</filter></defs>" +
     "<rect width=\"8\" height=\"8\" fill=\"red\" filter=\"url(#named)\"/>" +
     "</svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   let pixel = image.get_pixel(4, 4)
   inspect(pixel.r, content="0")
@@ -310,9 +324,9 @@ test "SVG filter region clips graph output" {
     "</filter></defs>" +
     "<rect width=\"8\" height=\"8\" fill=\"red\" filter=\"url(#half)\"/>" +
     "</svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   inspect(image.get_pixel(2, 4).a, content="255")
   inspect(image.get_pixel(6, 4).a, content="0")
@@ -327,9 +341,9 @@ test "SVG filter graph evaluates named feComposite inputs" {
     "</filter></defs>" +
     "<rect width=\"8\" height=\"8\" fill=\"red\" filter=\"url(#composite)\"/>" +
     "</svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   let pixel = image.get_pixel(4, 4)
   inspect(pixel.r, content="255")
@@ -348,9 +362,9 @@ test "container pipeline applies filter then mask then opacity" {
     "<g filter=\"url(#invert)\" mask=\"url(#half)\" opacity=\"0.5\">" +
     "<rect width=\"8\" height=\"8\" fill=\"red\"/>" +
     "</g></svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   let pixel = image.get_pixel(4, 4)
   inspect(pixel.r, content="0")
@@ -367,15 +381,15 @@ test "filter graph offset samples outside the image as transparent" {
     "</filter></defs>" +
     "<rect width=\"8\" height=\"8\" fill=\"red\" filter=\"url(#outside)\"/>" +
     "</svg>"
-  let image = match render_svg_to_image(svg, 8, 8) {
+  let image = match @svg.render_svg_to_image(svg, 8, 8) {
     Some(image) => image
-    None => Image::new(8, 8)
+    None => @svg.Image::new(8, 8)
   }
   inspect(image.get_pixel(4, 4).a, content="0")
 }
 
 ///|
-fn image_difference_count(a : Image, b : Image) -> Int {
+fn image_difference_count(a : @svg.Image, b : @svg.Image) -> Int32 {
   let mut count = 0
   for y in 0..<a.height() {
     for x in 0..<a.width() {
@@ -393,9 +407,9 @@ fn image_difference_count(a : Image, b : Image) -> Int {
 }
 
 ///|
-fn render_rect_at(x : Double) -> Image {
+fn render_rect_at(x : Double) -> @svg.Image {
   let node = public_test_rect("probe", x, 1.0, 8.0, 8.0)
-  node.fill = SolidColor(Color::black())
+  node.fill = SolidColor(@svg.Color::black())
   render_public_test_node(node, 16, 16)
 }
 
@@ -409,8 +423,8 @@ test "tiny rect translations are quantized symmetrically" {
 }
 
 ///|
-fn render_path_at(x : Double) -> Image {
-  render_path_commands_to_image(
+fn render_path_at(x : Double) -> @svg.Image {
+  @svg.render_path_commands_to_image(
     [
       MoveTo(0.0, 0.0),
       LineTo(8.0, 0.0),
@@ -420,7 +434,7 @@ fn render_path_at(x : Double) -> Image {
     ],
     16,
     16,
-    Color::black(),
+    @svg.Color::black(),
     transform=[1.0, 0.0, 0.0, 1.0, x, 1.0],
   )
 }
@@ -436,7 +450,7 @@ test "tiny path translations are quantized symmetrically" {
 
 ///|
 test "path facade preserves fractional coverage" {
-  let image = render_path_commands_to_image(
+  let image = @svg.render_path_commands_to_image(
     [
       MoveTo(0.5, 0.0),
       LineTo(1.5, 0.0),
@@ -446,7 +460,7 @@ test "path facade preserves fractional coverage" {
     ],
     3,
     1,
-    Color::black(),
+    @svg.Color::black(),
   )
   inspect(image.get_pixel(0, 0).a, content="128")
   inspect(image.get_pixel(1, 0).a, content="128")
@@ -454,13 +468,13 @@ test "path facade preserves fractional coverage" {
 }
 
 ///|
-fn render_scene_path_at(x : Double) -> Image {
-  let node = SVGNode::new(
-    Path(commands=parse_path("M 0 0 L 8 0 L 8 8 L 0 8 Z")),
+fn render_scene_path_at(x : Double) -> @svg.Image {
+  let node = @svg.SVGNode::new(
+    Path(commands=@svg.parse_path("M 0 0 L 8 0 L 8 8 L 0 8 Z")),
   )
   node.id = "probe"
-  node.fill = SolidColor(Color::black())
-  node.transform = Transform::translate(x, 1.0)
+  node.fill = SolidColor(@svg.Color::black())
+  node.transform = @svg.Transform::translate(x, 1.0)
   render_public_test_node(node, 16, 16)
 }
 

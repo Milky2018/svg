@@ -1,6 +1,6 @@
 ///|
 test "tokenize basic selectors" {
-  let tokens = tokenize(".foo #bar div")
+  let tokens = @token.tokenize(".foo #bar div")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content=(
@@ -19,7 +19,7 @@ test "tokenize basic selectors" {
 
 ///|
 test "tokenize property declaration" {
-  let tokens = tokenize("width: 100px")
+  let tokens = @token.tokenize("width: 100px")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content="[\"Ident(width)\", \"Colon\", \"Whitespace\", \"Dimension(100, px)\", \"EOF\"]",
@@ -28,7 +28,7 @@ test "tokenize property declaration" {
 
 ///|
 test "tokenize numbers" {
-  let tokens = tokenize("10 10.5 10% 10px 10em")
+  let tokens = @token.tokenize("10 10.5 10% 10px 10em")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content=(
@@ -50,7 +50,7 @@ test "tokenize numbers" {
 
 ///|
 test "tokenize function" {
-  let tokens = tokenize("calc(100% - 20px)")
+  let tokens = @token.tokenize("calc(100% - 20px)")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content=(
@@ -70,7 +70,7 @@ test "tokenize function" {
 
 ///|
 test "tokenize string" {
-  let tokens = tokenize("\"hello world\"")
+  let tokens = @token.tokenize("\"hello world\"")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content="[\"String(hello world)\", \"EOF\"]",
@@ -79,7 +79,7 @@ test "tokenize string" {
 
 ///|
 test "tokenize at-rule" {
-  let tokens = tokenize("@media screen")
+  let tokens = @token.tokenize("@media screen")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content="[\"AtKeyword(media)\", \"Whitespace\", \"Ident(screen)\", \"EOF\"]",
@@ -88,7 +88,7 @@ test "tokenize at-rule" {
 
 ///|
 test "tokenize braces and brackets" {
-  let tokens = tokenize("{ [ ( ) ] }")
+  let tokens = @token.tokenize("{ [ ( ) ] }")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content=(
@@ -112,7 +112,7 @@ test "tokenize braces and brackets" {
 
 ///|
 test "tokenize comment" {
-  let tokens = tokenize("a /* comment */ b")
+  let tokens = @token.tokenize("a /* comment */ b")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content="[\"Ident(a)\", \"Whitespace\", \"Whitespace\", \"Ident(b)\", \"EOF\"]",
@@ -121,7 +121,7 @@ test "tokenize comment" {
 
 ///|
 test "tokenize css rule" {
-  let tokens = tokenize(".container { display: flex; }")
+  let tokens = @token.tokenize(".container { display: flex; }")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content=(
@@ -146,7 +146,7 @@ test "tokenize css rule" {
 
 ///|
 test "tokenize negative number" {
-  let tokens = tokenize("-10px")
+  let tokens = @token.tokenize("-10px")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content="[\"Dimension(-10, px)\", \"EOF\"]",
@@ -155,19 +155,19 @@ test "tokenize negative number" {
 
 ///|
 test "tokenize hash unrestricted vs id" {
-  let id_tokens = tokenize("#main")
+  let id_tokens = @token.tokenize("#main")
   debug_inspect(
     id_tokens.map(fn(t) { t.to_string() }),
     content="[\"Hash(main)\", \"EOF\"]",
   )
   // numeric hash is still parsed as Hash
-  let num_tokens = tokenize("#123")
+  let num_tokens = @token.tokenize("#123")
   inspect(num_tokens[0].to_string(), content="Hash(123)")
 }
 
 ///|
 test "tokenize single-quoted string" {
-  let tokens = tokenize("'hello'")
+  let tokens = @token.tokenize("'hello'")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content="[\"String(hello)\", \"EOF\"]",
@@ -176,7 +176,7 @@ test "tokenize single-quoted string" {
 
 ///|
 test "tokenize comma" {
-  let tokens = tokenize("a,b")
+  let tokens = @token.tokenize("a,b")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content="[\"Ident(a)\", \"Comma\", \"Ident(b)\", \"EOF\"]",
@@ -185,7 +185,7 @@ test "tokenize comma" {
 
 ///|
 test "tokenize delim characters" {
-  let tokens = tokenize("> + ~ |")
+  let tokens = @token.tokenize("> + ~ |")
   debug_inspect(
     tokens.map(fn(t) { t.to_string() }),
     content=(
@@ -205,45 +205,45 @@ test "tokenize delim characters" {
 
 ///|
 test "tokenize positive signed number" {
-  let tokens = tokenize("+5em")
+  let tokens = @token.tokenize("+5em")
   inspect(tokens[0].to_string(), content="Dimension(5, em)")
 }
 
 ///|
 test "tokenize float number" {
-  let tokens = tokenize("3.14")
+  let tokens = @token.tokenize("3.14")
   inspect(tokens[0].to_string(), content="Number(3.14, num)")
 }
 
 ///|
 test "tokenize empty input yields just EOF" {
-  let tokens = tokenize("")
+  let tokens = @token.tokenize("")
   inspect(tokens.length(), content="1")
   inspect(tokens[0].to_string(), content="EOF")
 }
 
 ///|
 test "tokenize identifier with hyphens" {
-  let tokens = tokenize("flex-direction")
+  let tokens = @token.tokenize("flex-direction")
   inspect(tokens[0].to_string(), content="Ident(flex-direction)")
 }
 
 ///|
 test "tokenize url-like value via function token" {
-  let tokens = tokenize("url(image.png)")
+  let tokens = @token.tokenize("url(image.png)")
   inspect(tokens[0].to_string(), content="Function(url)")
 }
 
 ///|
 test "tokenize CDO and CDC" {
-  let tokens = tokenize("<!-- -->")
+  let tokens = @token.tokenize("<!-- -->")
   // CDO and CDC may or may not be emitted depending on tokenizer; assert no panic.
   assert_true(tokens.length() > 0)
 }
 
 ///|
 test "tokenize colon and semicolon adjacency" {
-  let tokens = tokenize("a:b;c")
+  let tokens = @token.tokenize("a:b;c")
   inspect(tokens[0].to_string(), content="Ident(a)")
   inspect(tokens[1].to_string(), content="Colon")
   inspect(tokens[2].to_string(), content="Ident(b)")
@@ -253,7 +253,7 @@ test "tokenize colon and semicolon adjacency" {
 
 ///|
 test "tokenize at-keyword variants" {
-  let tokens = tokenize("@import @media @keyframes")
+  let tokens = @token.tokenize("@import @media @keyframes")
   inspect(tokens[0].to_string(), content="AtKeyword(import)")
   inspect(tokens[2].to_string(), content="AtKeyword(media)")
   inspect(tokens[4].to_string(), content="AtKeyword(keyframes)")
@@ -261,7 +261,7 @@ test "tokenize at-keyword variants" {
 
 ///|
 test "tokenize escaped backslash in identifier" {
-  let tokens = tokenize("\\\\foo")
+  let tokens = @token.tokenize("\\\\foo")
   // Escape consumed and produced something; just confirm we got an ident.
   let first = tokens[0].to_string()
   assert_true(first.has_prefix("Ident("))
@@ -270,14 +270,14 @@ test "tokenize escaped backslash in identifier" {
 ///|
 test "tokenize many delim characters" {
   let chars = "!@$%^&*?"
-  let tokens = tokenize(chars)
+  let tokens = @token.tokenize(chars)
   // Each becomes a Delim (except @ which becomes AtKeyword if followed by ident)
   inspect(tokens.length() > 1, content="true")
 }
 
 ///|
 test "tokenize string with embedded escape" {
-  let tokens = tokenize("\"a\\\"b\"")
+  let tokens = @token.tokenize("\"a\\\"b\"")
   // String token should be returned
   let first = tokens[0].to_string()
   assert_true(first.has_prefix("String("))
@@ -285,7 +285,7 @@ test "tokenize string with embedded escape" {
 
 ///|
 test "tokenize whitespace-only input" {
-  let tokens = tokenize("   \t\n  ")
+  let tokens = @token.tokenize("   \t\n  ")
   // Should produce one or two Whitespace tokens then EOF
   let last = tokens[tokens.length() - 1].to_string()
   inspect(last, content="EOF")
@@ -294,14 +294,14 @@ test "tokenize whitespace-only input" {
 ///|
 test "tokenize number with uppercase hex escape in string" {
   // \41 = 'A' (hex), terminated by trailing space which is consumed.
-  let tokens = tokenize("\"\\41 BC\"")
+  let tokens = @token.tokenize("\"\\41 BC\"")
   inspect(tokens[0].to_string(), content="String(ABC)")
 }
 
 ///|
 test "tokenize hex escape with mixed-case hex" {
   // Cover hex_digit_to_int's upper-case branch (A-F).
-  let tokens = tokenize("\"\\Ab\"")
+  let tokens = @token.tokenize("\"\\Ab\"")
   // Hex \Ab parses; the result is some codepoint.
   let first = tokens[0].to_string()
   assert_true(first.has_prefix("String("))
@@ -309,19 +309,19 @@ test "tokenize hex escape with mixed-case hex" {
 
 ///|
 test "tokenize CDO token: <!--" {
-  let tokens = tokenize("<!-- foo -->")
+  let tokens = @token.tokenize("<!-- foo -->")
   inspect(tokens[0].to_string(), content="CDO")
 }
 
 ///|
 test "tokenize lone '<' as delim" {
-  let tokens = tokenize("<x")
+  let tokens = @token.tokenize("<x")
   inspect(tokens[0].to_string(), content="Delim(<)")
 }
 
 ///|
 test "tokenize lone '/' as delim" {
-  let tokens = tokenize("a / b")
+  let tokens = @token.tokenize("a / b")
   let mut has_slash = false
   for t in tokens {
     if t.to_string() == "Delim(/)" {
@@ -333,74 +333,74 @@ test "tokenize lone '/' as delim" {
 
 ///|
 test "tokenize lone '#' as delim" {
-  let tokens = tokenize("# ")
+  let tokens = @token.tokenize("# ")
   inspect(tokens[0].to_string(), content="Delim(#)")
 }
 
 ///|
 test "tokenize lone '@' as delim" {
-  let tokens = tokenize("@ ")
+  let tokens = @token.tokenize("@ ")
   inspect(tokens[0].to_string(), content="Delim(@)")
 }
 
 ///|
 test "tokenize backslash followed by newline yields delim" {
-  let tokens = tokenize("\\\n")
+  let tokens = @token.tokenize("\\\n")
   inspect(tokens[0].to_string(), content="Delim(\\)")
 }
 
 ///|
 test "tokenize lone '+' as delim" {
-  let tokens = tokenize("+ a")
+  let tokens = @token.tokenize("+ a")
   inspect(tokens[0].to_string(), content="Delim(+)")
 }
 
 ///|
 test "tokenize lone '.' as delim" {
-  let tokens = tokenize(". a")
+  let tokens = @token.tokenize(". a")
   inspect(tokens[0].to_string(), content="Delim(.)")
 }
 
 ///|
 test "tokenize identifier starting with double-dash" {
   // --my-var should be ident, not delim or number
-  let tokens = tokenize("--my-var")
+  let tokens = @token.tokenize("--my-var")
   inspect(tokens[0].to_string(), content="Ident(--my-var)")
 }
 
 ///|
 test "tokenize number with exponent" {
-  let tokens = tokenize("1.5e2")
+  let tokens = @token.tokenize("1.5e2")
   inspect(tokens[0].to_string(), content="Number(150, num)")
 }
 
 ///|
 test "tokenize number with negative exponent" {
-  let tokens = tokenize("1e-2")
+  let tokens = @token.tokenize("1e-2")
   inspect(tokens[0].to_string(), content="Number(0.01, num)")
 }
 
 ///|
 test "tokenize number with positive exponent sign" {
-  let tokens = tokenize("3e+1")
+  let tokens = @token.tokenize("3e+1")
   inspect(tokens[0].to_string(), content="Number(30, num)")
 }
 
 ///|
 test "tokenize percentage with float" {
-  let tokens = tokenize("12.5%")
+  let tokens = @token.tokenize("12.5%")
   inspect(tokens[0].to_string(), content="Percentage(12.5)")
 }
 
 ///|
 test "tokenize bad string (newline before quote)" {
-  let tokens = tokenize("\"abc\ndef\"")
+  let tokens = @token.tokenize("\"abc\ndef\"")
   inspect(tokens[0].to_string(), content="BadString")
 }
 
 ///|
 test "tokenize string with escaped non-special char" {
-  let tokens = tokenize("\"a\\bc\"")
+  let tokens = @token.tokenize("\"a\\bc\"")
   // \b consumes 'b' literally — string contains "abc"
   let first = tokens[0].to_string()
   assert_true(first.has_prefix("String("))
@@ -408,7 +408,7 @@ test "tokenize string with escaped non-special char" {
 
 ///|
 test "tokenize unterminated string at EOF" {
-  let tokens = tokenize("\"abc")
+  let tokens = @token.tokenize("\"abc")
   // Reaches EOF — returns the partial string
   inspect(tokens[0].to_string(), content="String(abc)")
 }
@@ -416,33 +416,33 @@ test "tokenize unterminated string at EOF" {
 ///|
 test "tokenize string with line continuation" {
   // \<newline> inside a string is consumed silently
-  let tokens = tokenize("\"a\\\nb\"")
+  let tokens = @token.tokenize("\"a\\\nb\"")
   let first = tokens[0].to_string()
   assert_true(first.has_prefix("String("))
 }
 
 ///|
 test "tokenize hash with no name" {
-  let tokens = tokenize("#")
+  let tokens = @token.tokenize("#")
   inspect(tokens[0].to_string(), content="Delim(#)")
 }
 
 ///|
 test "tokenize signed decimal number (+.5)" {
-  let tokens = tokenize("+.5")
+  let tokens = @token.tokenize("+.5")
   inspect(tokens[0].to_string(), content="Number(0.5, num)")
 }
 
 ///|
 test "tokenize signed decimal number (-.5)" {
-  let tokens = tokenize("-.5em")
+  let tokens = @token.tokenize("-.5em")
   inspect(tokens[0].to_string(), content="Dimension(-0.5, em)")
 }
 
 ///|
 test "tokenize backslash-start identifier" {
   // Backslash followed by something would start ident through escape path.
-  let tokens = tokenize("\\68 ello")
+  let tokens = @token.tokenize("\\68 ello")
   let first = tokens[0].to_string()
   // Should be an Ident token
   assert_true(first.has_prefix("Ident("))
@@ -451,38 +451,38 @@ test "tokenize backslash-start identifier" {
 ///|
 test "tokenize at-keyword with double-dash" {
   // @--my is would_start_ident via the -- branch
-  let tokens = tokenize("@--my")
+  let tokens = @token.tokenize("@--my")
   inspect(tokens[0].to_string(), content="AtKeyword(--my)")
 }
 
 ///|
 test "tokenize backslash-prefixed at-keyword" {
-  let tokens = tokenize("@\\41")
+  let tokens = @token.tokenize("@\\41")
   let first = tokens[0].to_string()
   assert_true(first.has_prefix("AtKeyword("))
 }
 
 ///|
 test "tokenize lone dot at end" {
-  let tokens = tokenize(".")
+  let tokens = @token.tokenize(".")
   inspect(tokens[0].to_string(), content="Delim(.)")
 }
 
 ///|
 test "tokenize sign at end (lone plus)" {
-  let tokens = tokenize("+")
+  let tokens = @token.tokenize("+")
   inspect(tokens[0].to_string(), content="Delim(+)")
 }
 
 ///|
 test "tokenize sign at end (lone minus)" {
-  let tokens = tokenize("-")
+  let tokens = @token.tokenize("-")
   inspect(tokens[0].to_string(), content="Delim(-)")
 }
 
 ///|
 test "tokenize backslash at EOF" {
-  let tokens = tokenize("\\")
+  let tokens = @token.tokenize("\\")
   // Backslash with nothing after — falls into name path, returns empty ident
   let first = tokens[0].to_string()
   // Could be Ident or Delim depending on impl
@@ -491,14 +491,14 @@ test "tokenize backslash at EOF" {
 
 ///|
 test "tokenize at-rule '@' followed by space" {
-  let tokens = tokenize("@ media")
+  let tokens = @token.tokenize("@ media")
   inspect(tokens[0].to_string(), content="Delim(@)")
 }
 
 ///|
 test "tokenize hash followed by name char yields Hash" {
   // Hash followed by content that is_name_char but not would_start_ident.
-  let tokens = tokenize("#1abc")
+  let tokens = @token.tokenize("#1abc")
   let first = tokens[0].to_string()
   assert_true(first.has_prefix("Hash("))
 }
@@ -506,36 +506,36 @@ test "tokenize hash followed by name char yields Hash" {
 ///|
 test "tokenize sign followed by dot then non-digit" {
   // "+.x" — would_start_number sees + then . then non-digit → returns false
-  let tokens = tokenize("+.x")
+  let tokens = @token.tokenize("+.x")
   inspect(tokens[0].to_string(), content="Delim(+)")
 }
 
 ///|
 test "tokenize dot followed by non-digit" {
   // ".x" — would_start_number: . then non-digit → returns false
-  let tokens = tokenize(".x")
+  let tokens = @token.tokenize(".x")
   inspect(tokens[0].to_string(), content="Delim(.)")
 }
 
 ///|
 test "tokenize number followed by dot then digit" {
   // ".5" — would_start_number: . then digit → returns true
-  let tokens = tokenize(".5")
+  let tokens = @token.tokenize(".5")
   inspect(tokens[0].to_string(), content="Number(0.5, num)")
 }
 
 ///|
 test "tokenize - misc non-special character is Delim" {
-  let tokens = tokenize("?")
+  let tokens = @token.tokenize("?")
   inspect(tokens[0].to_string(), content="Delim(?)")
-  let tokens2 = tokenize("&")
+  let tokens2 = @token.tokenize("&")
   inspect(tokens2[0].to_string(), content="Delim(&)")
 }
 
 ///|
 test "tokenize - escape followed by non-special letter in identifier" {
   // "\\a" - escape consumes 'a' literally
-  let tokens = tokenize("\\abc")
+  let tokens = @token.tokenize("\\abc")
   let first = tokens[0].to_string()
   // Should be an Ident token
   assert_true(first.has_prefix("Ident("))
@@ -544,7 +544,7 @@ test "tokenize - escape followed by non-special letter in identifier" {
 ///|
 test "tokenize - exponent at end of number" {
   // "1e" without exponent value falls through, returning just "1"
-  let tokens = tokenize("1e ")
+  let tokens = @token.tokenize("1e ")
   // Implementation may or may not produce a number
   let first = tokens[0].to_string()
   assert_true(first.has_prefix("Number(") || first.has_prefix("Dimension("))

@@ -1,9 +1,9 @@
 ///|
 test "external use keeps its document-scoped paint resources" {
-  let options = RenderOptions::{
-    ..RenderOptions::default(),
+  let options = @svg.RenderOptions::{
+    ..@svg.RenderOptions::default(),
     environment: {
-      ..RenderEnvironment::default(),
+      ..@svg.RenderEnvironment::default(),
       base_uri: "mem:/documents/main.svg",
     },
     text_resource_resolver: Some(fn(uri, kind) {
@@ -31,7 +31,7 @@ test "external use keeps its document-scoped paint resources" {
     #|<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4">
     #|  <use href="../assets/icons.svg#tile"/>
     #|</svg>
-  let result = render_svg(svg, 4, 4, options)
+  let result = @svg.render_svg(svg, 4, 4, options)
   inspect(result.diagnostics.length(), content="0")
   let pixel = result.image.get_pixel(2, 2)
   inspect(pixel.r, content="255")
@@ -41,9 +41,12 @@ test "external use keeps its document-scoped paint resources" {
 
 ///|
 test "external paint and clip resources use qualified ids" {
-  let options = RenderOptions::{
-    ..RenderOptions::default(),
-    environment: { ..RenderEnvironment::default(), base_uri: "mem:/main.svg", },
+  let options = @svg.RenderOptions::{
+    ..@svg.RenderOptions::default(),
+    environment: {
+      ..@svg.RenderEnvironment::default(),
+      base_uri: "mem:/main.svg",
+    },
     text_resource_resolver: Some(fn(uri, kind) {
       guard kind is SvgDocument else { return None }
       if uri == "mem:/resources.svg" {
@@ -71,7 +74,7 @@ test "external paint and clip resources use qualified ids" {
     #|        fill="url(resources.svg#paint)"
     #|        clip-path="url(resources.svg#left)"/>
     #|</svg>
-  let result = render_svg(svg, 4, 4, options)
+  let result = @svg.render_svg(svg, 4, 4, options)
   inspect(result.diagnostics.length(), content="0")
   inspect(result.image.get_pixel(1, 2).b, content="255")
   inspect(result.image.get_pixel(3, 2).a, content="0")

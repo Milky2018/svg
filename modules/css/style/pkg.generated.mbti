@@ -240,7 +240,7 @@ pub impl Show for ScrollSnapType
 pub(all) struct Style {
   mut display : @values.Display
   mut position : @values.Position
-  mut float : @values.Float
+  mut float : @values.CssFloat
   mut clear : @values.Clear
   mut box_sizing : @values.BoxSizing
   mut overflow_x : @values.Overflow

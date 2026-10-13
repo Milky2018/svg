@@ -362,7 +362,7 @@ fn apply_opacity(color : Color, opacity : Double) -> Color {
 }
 
 ///|
-fn apply_coverage(color : Color, coverage : Int) -> Color {
+fn apply_coverage(color : Color, coverage : Int32) -> Color {
   PremulColor16::from_color(color).scaled(clamp_channel16(coverage)).to_color()
 }
 
@@ -370,8 +370,8 @@ fn apply_coverage(color : Color, coverage : Int) -> Color {
 /// Create a RenderState with default settings
 fn RenderState::new(
   setter : ColorSink,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> RenderState {
   {
     setter,

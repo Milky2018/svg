@@ -199,6 +199,18 @@ pub fn Color::white() -> Self
 pub impl Eq for Color
 pub impl Show for Color
 
+pub(all) enum CssFloat {
+  None
+  Left
+  Right
+} derive(Eq, @debug.Debug)
+pub fn CssFloat::equal(Self, Self) -> Bool
+pub fn CssFloat::not_equal(Self, Self) -> Bool
+pub fn CssFloat::output(Self, &Logger) -> Unit
+pub fn CssFloat::to_repr(Self) -> @debug.Repr
+pub fn CssFloat::to_string(Self) -> String
+pub impl Show for CssFloat
+
 pub(all) enum Dimension {
   Length(Double)
   Percent(Double)
@@ -339,18 +351,6 @@ pub fn FlexWrap::output(Self, &Logger) -> Unit
 pub fn FlexWrap::to_repr(Self) -> @debug.Repr
 pub fn FlexWrap::to_string(Self) -> String
 pub impl Show for FlexWrap
-
-pub(all) enum Float {
-  None
-  Left
-  Right
-} derive(Eq, @debug.Debug)
-pub fn Float::equal(Self, Self) -> Bool
-pub fn Float::not_equal(Self, Self) -> Bool
-pub fn Float::output(Self, &Logger) -> Unit
-pub fn Float::to_repr(Self) -> @debug.Repr
-pub fn Float::to_string(Self) -> String
-pub impl Show for Float
 
 pub(all) struct GradientStop {
   color : Color

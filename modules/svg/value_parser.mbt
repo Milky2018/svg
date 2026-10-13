@@ -83,7 +83,7 @@ fn trim_string(s : String) -> String {
   let mut start = 0
   let mut end = s.length()
   while start < end {
-    let c = Int::unsafe_to_char(s[start].to_int())
+    let c = Int32::unsafe_to_char(s[start].to_int())
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
       start = start + 1
     } else {
@@ -91,7 +91,7 @@ fn trim_string(s : String) -> String {
     }
   }
   while end > start {
-    let c = Int::unsafe_to_char(s[end - 1].to_int())
+    let c = Int32::unsafe_to_char(s[end - 1].to_int())
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
       end = end - 1
     } else {
@@ -129,9 +129,9 @@ fn string_ends_with(s : String, suffix : String) -> Bool {
 }
 
 ///|
-fn find_first(s : String, target : Char) -> Int {
+fn find_first(s : String, target : Char) -> Int32 {
   for i in 0..<s.length() {
-    if Int::unsafe_to_char(s[i].to_int()) == target {
+    if Int32::unsafe_to_char(s[i].to_int()) == target {
       return i
     }
   }
@@ -159,10 +159,10 @@ priv struct LengthContext {
 fn LengthContext::new(
   viewport_width : Double,
   viewport_height : Double,
-  font_size? : Double = 16.0,
-  root_font_size? : Double = 16.0,
-  css_viewport_width? : Double = viewport_width,
-  css_viewport_height? : Double = viewport_height,
+  font_size~ : Double = 16.0,
+  root_font_size~ : Double = 16.0,
+  css_viewport_width~ : Double = viewport_width,
+  css_viewport_height~ : Double = viewport_height,
 ) -> LengthContext {
   {
     viewport_width,
@@ -222,20 +222,20 @@ fn parse_number_strict(value : String) -> Double? {
     return None
   }
   let mut i = 0
-  let first = Int::unsafe_to_char(value[i].to_int())
+  let first = Int32::unsafe_to_char(value[i].to_int())
   if first == '+' || first == '-' {
     i += 1
   }
   let mut digit_count = 0
   while i < value.length() &&
-        is_ascii_digit(Int::unsafe_to_char(value[i].to_int())) {
+        is_ascii_digit(Int32::unsafe_to_char(value[i].to_int())) {
     digit_count += 1
     i += 1
   }
-  if i < value.length() && Int::unsafe_to_char(value[i].to_int()) == '.' {
+  if i < value.length() && Int32::unsafe_to_char(value[i].to_int()) == '.' {
     i += 1
     while i < value.length() &&
-          is_ascii_digit(Int::unsafe_to_char(value[i].to_int())) {
+          is_ascii_digit(Int32::unsafe_to_char(value[i].to_int())) {
       digit_count += 1
       i += 1
     }
@@ -244,18 +244,18 @@ fn parse_number_strict(value : String) -> Double? {
     return None
   }
   if i < value.length() {
-    let exponent = Int::unsafe_to_char(value[i].to_int())
+    let exponent = Int32::unsafe_to_char(value[i].to_int())
     if exponent == 'e' || exponent == 'E' {
       i += 1
       if i < value.length() {
-        let sign = Int::unsafe_to_char(value[i].to_int())
+        let sign = Int32::unsafe_to_char(value[i].to_int())
         if sign == '+' || sign == '-' {
           i += 1
         }
       }
       let exponent_start = i
       while i < value.length() &&
-            is_ascii_digit(Int::unsafe_to_char(value[i].to_int())) {
+            is_ascii_digit(Int32::unsafe_to_char(value[i].to_int())) {
         i += 1
       }
       if i == exponent_start {
@@ -319,8 +319,8 @@ fn parse_number(s : String) -> Double {
   let mut sign = 1.0
   let mut i = 0
   let len = s.length()
-  fn char_at(str : String, idx : Int) -> Char {
-    Int::unsafe_to_char(str[idx].to_int())
+  fn char_at(str : String, idx : Int32) -> Char {
+    Int32::unsafe_to_char(str[idx].to_int())
   }
   // Sign
   if i < len && char_at(s, i) == '-' {
@@ -485,10 +485,10 @@ fn parse_color(value : String) -> Color {
 }
 
 ///|
-fn build_substring(s : String, start : Int, end : Int) -> String {
+fn build_substring(s : String, start : Int32, end : Int32) -> String {
   let buf = StringBuilder()
   for i in start..<end {
-    buf.write_char(Int::unsafe_to_char(s[i].to_int()))
+    buf.write_char(Int32::unsafe_to_char(s[i].to_int()))
   }
   buf.to_string()
 }
@@ -509,27 +509,27 @@ fn parse_svg_number_sequence(value : String) -> Array[Double]? {
   let mut i = 0
   while i < value.length() {
     while i < value.length() &&
-          is_svg_number_separator(Int::unsafe_to_char(value[i].to_int())) {
+          is_svg_number_separator(Int32::unsafe_to_char(value[i].to_int())) {
       i += 1
     }
     if i >= value.length() {
       break
     }
     let start = i
-    let first = Int::unsafe_to_char(value[i].to_int())
+    let first = Int32::unsafe_to_char(value[i].to_int())
     if first == '+' || first == '-' {
       i += 1
     }
     let mut digit_count = 0
     while i < value.length() &&
-          is_ascii_digit(Int::unsafe_to_char(value[i].to_int())) {
+          is_ascii_digit(Int32::unsafe_to_char(value[i].to_int())) {
       digit_count += 1
       i += 1
     }
-    if i < value.length() && Int::unsafe_to_char(value[i].to_int()) == '.' {
+    if i < value.length() && Int32::unsafe_to_char(value[i].to_int()) == '.' {
       i += 1
       while i < value.length() &&
-            is_ascii_digit(Int::unsafe_to_char(value[i].to_int())) {
+            is_ascii_digit(Int32::unsafe_to_char(value[i].to_int())) {
         digit_count += 1
         i += 1
       }
@@ -538,19 +538,19 @@ fn parse_svg_number_sequence(value : String) -> Array[Double]? {
       return None
     }
     if i < value.length() {
-      let exponent = Int::unsafe_to_char(value[i].to_int())
+      let exponent = Int32::unsafe_to_char(value[i].to_int())
       if exponent == 'e' || exponent == 'E' {
         let exponent_start = i
         i += 1
         if i < value.length() {
-          let sign = Int::unsafe_to_char(value[i].to_int())
+          let sign = Int32::unsafe_to_char(value[i].to_int())
           if sign == '+' || sign == '-' {
             i += 1
           }
         }
         let exponent_digits_start = i
         while i < value.length() &&
-              is_ascii_digit(Int::unsafe_to_char(value[i].to_int())) {
+              is_ascii_digit(Int32::unsafe_to_char(value[i].to_int())) {
           i += 1
         }
         if i == exponent_digits_start {
@@ -565,7 +565,7 @@ fn parse_svg_number_sequence(value : String) -> Array[Double]? {
       number => nums.push(number)
     }
     if i < value.length() {
-      let next = Int::unsafe_to_char(value[i].to_int())
+      let next = Int32::unsafe_to_char(value[i].to_int())
       if !is_svg_number_separator(next) && next != '-' {
         return None
       }
@@ -600,7 +600,7 @@ pub fn parse_transform(value : String) -> Transform {
   while i < value.length() {
     // Skip whitespace
     while i < value.length() {
-      let c = Int::unsafe_to_char(value[i].to_int())
+      let c = Int32::unsafe_to_char(value[i].to_int())
       if c == ' ' || c == ',' {
         i = i + 1
       } else {
@@ -613,7 +613,7 @@ pub fn parse_transform(value : String) -> Transform {
     // Read function name
     let name_start = i
     while i < value.length() {
-      let c = Int::unsafe_to_char(value[i].to_int())
+      let c = Int32::unsafe_to_char(value[i].to_int())
       if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
         i = i + 1
       } else {
@@ -622,13 +622,13 @@ pub fn parse_transform(value : String) -> Transform {
     }
     let name = build_substring(value, name_start, i)
     // Find '('
-    while i < value.length() && Int::unsafe_to_char(value[i].to_int()) != '(' {
+    while i < value.length() && Int32::unsafe_to_char(value[i].to_int()) != '(' {
       i = i + 1
     }
     i = i + 1 // Skip '('
     // Find ')' and parse arguments
     let args_start = i
-    while i < value.length() && Int::unsafe_to_char(value[i].to_int()) != ')' {
+    while i < value.length() && Int32::unsafe_to_char(value[i].to_int()) != ')' {
       i = i + 1
     }
     let args_str = build_substring(value, args_start, i)
@@ -702,7 +702,7 @@ fn parse_transform_args(s : String) -> Array[Double] {
   let result : Array[Double] = []
   let mut buf = StringBuilder()
   for i in 0..<s.length() {
-    let c = Int::unsafe_to_char(s[i].to_int())
+    let c = Int32::unsafe_to_char(s[i].to_int())
     if c == ' ' || c == ',' {
       if buf.to_string().length() > 0 {
         result.push(parse_number(buf.to_string()))

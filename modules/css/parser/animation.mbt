@@ -274,7 +274,7 @@ priv struct AnimationItem {
   mut direction : @types.AnimationDirection
   mut fill : @types.AnimationFillMode
   mut play_state : @types.AnimationPlayState
-  mut time_count : Int
+  mut time_count : Int32
 }
 
 ///|
@@ -295,8 +295,8 @@ pub struct AnimationShorthand {
 /// easing and the index just past it, or None.
 fn try_parse_easing_at(
   seg : ArrayView[@token.Token],
-  i : Int,
-) -> (@types.Easing, Int)? {
+  i : Int32,
+) -> (@types.Easing, Int32)? {
   match seg[i] {
     Function(_) => {
       // Consume through the matching RightParen.
@@ -478,7 +478,7 @@ priv struct TransitionItem {
   mut duration : Double
   mut timing : @types.Easing
   mut delay : Double
-  mut time_count : Int
+  mut time_count : Int32
 }
 
 ///|

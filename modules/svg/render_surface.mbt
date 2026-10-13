@@ -10,10 +10,10 @@ priv enum WorkingColorSpace {
 /// A premultiplied RGBA color with channels in the range 0...65535.
 #warnings("-unused_value")
 priv struct PremulColor16 {
-  r : Int
-  g : Int
-  b : Int
-  a : Int
+  r : Int32
+  g : Int32
+  b : Int32
+  a : Int32
 } derive(Eq)
 
 ///|
@@ -22,7 +22,7 @@ fn transparent_premul16() -> PremulColor16 {
 }
 
 ///|
-fn clamp_channel16(value : Int) -> Int {
+fn clamp_channel16(value : Int32) -> Int32 {
   if value < 0 {
     0
   } else if value > 65535 {
@@ -33,17 +33,17 @@ fn clamp_channel16(value : Int) -> Int {
 }
 
 ///|
-fn round_div_nonnegative(value : Int64, divisor : Int64) -> Int {
+fn round_div_nonnegative(value : Int64, divisor : Int64) -> Int32 {
   ((value + divisor / 2L) / divisor).to_int()
 }
 
 ///|
-fn multiply_channel16(left : Int, right : Int) -> Int {
+fn multiply_channel16(left : Int32, right : Int32) -> Int32 {
   round_div_nonnegative(left.to_int64() * right.to_int64(), 65535L)
 }
 
 ///|
-fn unit_to_channel16(value : Double) -> Int {
+fn unit_to_channel16(value : Double) -> Int32 {
   let clamped = if value < 0.0 {
     0.0
   } else if value > 1.0 {
@@ -55,7 +55,7 @@ fn unit_to_channel16(value : Double) -> Int {
 }
 
 ///|
-fn channel16_to_byte(value : Int) -> Int {
+fn channel16_to_byte(value : Int32) -> Int32 {
   round_div_nonnegative(clamp_channel16(value).to_int64(), 257L)
 }
 
@@ -78,7 +78,7 @@ fn PremulColor16::to_color(self : PremulColor16) -> Color {
     return Color::transparent()
   }
   let alpha = clamp_channel16(self.a)
-  let unpremultiply = fn(channel : Int) {
+  let unpremultiply = fn(channel : Int32) {
     let straight = round_div_nonnegative(
       clamp_channel16(channel).to_int64() * 65535L,
       alpha.to_int64(),
@@ -95,7 +95,7 @@ fn PremulColor16::to_color(self : PremulColor16) -> Color {
 
 ///|
 #warnings("-unused_value")
-fn PremulColor16::scaled(self : PremulColor16, factor : Int) -> PremulColor16 {
+fn PremulColor16::scaled(self : PremulColor16, factor : Int32) -> PremulColor16 {
   let factor = clamp_channel16(factor)
   {
     r: multiply_channel16(self.r, factor),
@@ -147,7 +147,7 @@ fn PremulColor16::convert_space(
     return self
   }
   let alpha = clamp_channel16(self.a)
-  let convert = fn(channel : Int) {
+  let convert = fn(channel : Int32) {
     let straight = clamp_channel16(channel).to_double() / alpha.to_double()
     let converted = match (from, to) {
       (SRGB, LinearRGB) => srgb_to_linear_unit(straight)
@@ -162,20 +162,20 @@ fn PremulColor16::convert_space(
 ///|
 /// A tight rectangular rendering surface addressed in device coordinates.
 priv struct RenderSurface {
-  mut origin_x : Int
-  mut origin_y : Int
-  width : Int
-  height : Int
+  mut origin_x : Int32
+  mut origin_y : Int32
+  width : Int32
+  height : Int32
   color_space : WorkingColorSpace
   pixels : Array[PremulColor16]
 }
 
 ///|
 fn RenderSurface::new(
-  origin_x : Int,
-  origin_y : Int,
-  width : Int,
-  height : Int,
+  origin_x : Int32,
+  origin_y : Int32,
+  width : Int32,
+  height : Int32,
   color_space : WorkingColorSpace,
 ) -> RenderSurface {
   let width = if width < 0 { 0 } else { width }
@@ -193,8 +193,8 @@ fn RenderSurface::new(
 ///|
 fn RenderSurface::contains_device(
   self : RenderSurface,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
 ) -> Bool {
   x >= self.origin_x &&
   x < self.origin_x + self.width &&
@@ -203,7 +203,11 @@ fn RenderSurface::contains_device(
 }
 
 ///|
-fn RenderSurface::index_device(self : RenderSurface, x : Int, y : Int) -> Int {
+fn RenderSurface::index_device(
+  self : RenderSurface,
+  x : Int32,
+  y : Int32,
+) -> Int32 {
   (y - self.origin_y) * self.width + (x - self.origin_x)
 }
 
@@ -211,8 +215,8 @@ fn RenderSurface::index_device(self : RenderSurface, x : Int, y : Int) -> Int {
 #warnings("-unused_value")
 fn RenderSurface::get_device(
   self : RenderSurface,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
 ) -> PremulColor16 {
   if self.contains_device(x, y) {
     self.pixels[self.index_device(x, y)]
@@ -225,8 +229,8 @@ fn RenderSurface::get_device(
 #warnings("-unused_value")
 fn RenderSurface::set_device(
   self : RenderSurface,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   color : PremulColor16,
 ) -> Unit {
   if self.contains_device(x, y) {
@@ -238,8 +242,8 @@ fn RenderSurface::set_device(
 #warnings("-unused_value")
 fn RenderSurface::composite_device(
   self : RenderSurface,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   source : PremulColor16,
 ) -> Unit {
   if self.contains_device(x, y) {
@@ -322,12 +326,12 @@ fn RenderSurface::convert_space(
 /// A bounded per-render cache for reusable intermediate surfaces.
 priv struct RenderSurfacePool {
   available : Array[RenderSurface]
-  max_surfaces : Int
+  max_surfaces : Int32
 }
 
 ///|
 #warnings("-unused_value")
-fn RenderSurfacePool::new(max_surfaces? : Int = 8) -> RenderSurfacePool {
+fn RenderSurfacePool::new(max_surfaces~ : Int32 = 8) -> RenderSurfacePool {
   {
     available: [],
     max_surfaces: if max_surfaces < 0 {
@@ -342,10 +346,10 @@ fn RenderSurfacePool::new(max_surfaces? : Int = 8) -> RenderSurfacePool {
 #warnings("-unused_value")
 fn RenderSurfacePool::acquire(
   self : RenderSurfacePool,
-  origin_x : Int,
-  origin_y : Int,
-  width : Int,
-  height : Int,
+  origin_x : Int32,
+  origin_y : Int32,
+  width : Int32,
+  height : Int32,
   color_space : WorkingColorSpace,
 ) -> RenderSurface {
   for index in 0..<self.available.length() {

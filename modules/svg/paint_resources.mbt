@@ -51,7 +51,7 @@ pub fn Pattern::new(
 priv struct PatternRegistry {
   patterns : Map[String, Pattern]
   references : Map[String, String]
-  specified : Map[String, Int]
+  specified : Map[String, Int32]
 }
 
 ///|
@@ -71,7 +71,7 @@ fn PatternRegistry::add_definition(
   self : PatternRegistry,
   pattern : Pattern,
   reference : String?,
-  specified : Int,
+  specified : Int32,
 ) -> Unit {
   self.patterns.set(pattern.id, pattern)
   self.specified.set(pattern.id, specified)
@@ -189,7 +189,7 @@ pub(all) enum Gradient {
 priv struct GradientRegistry {
   gradients : Map[String, Gradient]
   references : Map[String, String]
-  specified : Map[String, Int]
+  specified : Map[String, Int32]
 }
 
 ///|
@@ -214,7 +214,7 @@ fn GradientRegistry::add_definition(
   id : String,
   gradient : Gradient,
   reference : String?,
-  specified : Int,
+  specified : Int32,
 ) -> Unit {
   self.gradients.set(id, gradient)
   self.specified.set(id, specified)

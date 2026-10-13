@@ -1,6 +1,6 @@
 ///|
 test "detailed rendering reports parse failures" {
-  let result = render_svg("", 4, 4, RenderOptions::default())
+  let result = @svg.render_svg("", 4, 4, @svg.RenderOptions::default())
   inspect(result.diagnostics.length(), content="1")
   inspect(result.diagnostics[0].kind is ParseFailed, content="true")
   inspect(result.diagnostics[0].stage is Document, content="true")
@@ -8,11 +8,11 @@ test "detailed rendering reports parse failures" {
 
 ///|
 test "detailed rendering reports unresolved raster images" {
-  let result = render_svg(
+  let result = @svg.render_svg(
     "<svg width=\"4\" height=\"4\"><image href=\"missing.png\" width=\"4\" height=\"4\"/></svg>",
     4,
     4,
-    RenderOptions::default(),
+    @svg.RenderOptions::default(),
   )
   inspect(result.diagnostics.length(), content="1")
   inspect(result.diagnostics[0].kind is ResourceUnresolved, content="true")
@@ -22,19 +22,19 @@ test "detailed rendering reports unresolved raster images" {
 
 ///|
 test "detailed rendering accepts a resolved raster image" {
-  let options = RenderOptions::{
-    ..RenderOptions::default(),
+  let options = @svg.RenderOptions::{
+    ..@svg.RenderOptions::default(),
     image_resolver: Some(fn(href) {
       if href == "asset.png" {
-        let image = Image::new(1, 1)
-        image.set_pixel(0, 0, Color::rgb(255, 0, 0))
+        let image = @svg.Image::new(1, 1)
+        image.set_pixel(0, 0, @svg.Color::rgb(255, 0, 0))
         Some(image)
       } else {
         None
       }
     }),
   }
-  let result = render_svg(
+  let result = @svg.render_svg(
     "<svg width=\"4\" height=\"4\"><image href=\"asset.png\" width=\"4\" height=\"4\"/></svg>",
     4, 4, options,
   )

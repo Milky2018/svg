@@ -198,9 +198,9 @@ test "outer SVG percentages use the render viewport" {
   let svg = "<svg width=\"100%\" height=\"100%\">" +
     "<rect width=\"100%\" height=\"100%\" fill=\"red\"/>" +
     "</svg>"
-  let image = match render_svg_to_image(svg, 200, 100) {
+  let image = match @svg.render_svg_to_image(svg, 200, 100) {
     Some(image) => image
-    None => Image::new(200, 100)
+    None => @svg.Image::new(200, 100)
   }
   inspect(image.get_pixel(199, 99).a, content="255")
 }

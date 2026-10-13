@@ -1,6 +1,6 @@
 ///|
 test "Style::default" {
-  let style = Style::default()
+  let style = @style.Style::default()
   inspect(style.display, content="Block")
   inspect(style.position, content="Static")
   inspect(style.flex_grow, content="0")
@@ -8,29 +8,29 @@ test "Style::default" {
 
 ///|
 test "Style::Eq compares all fields" {
-  let base = Style::default()
-  let same = Style::default()
-  let changed = { ..Style::default(), width: Length(120.0), }
+  let base = @style.Style::default()
+  let same = @style.Style::default()
+  let changed = { ..@style.Style::default(), width: Length(120.0), }
   assert_true(base == same)
   assert_false(base == changed)
 }
 
 ///|
 test "Style::layout_eq compares layout fields only" {
-  let base = Style::default()
-  let same = Style::default()
-  let layout_changed = { ..Style::default(), width: Length(120.0), }
+  let base = @style.Style::default()
+  let same = @style.Style::default()
+  let layout_changed = { ..@style.Style::default(), width: Length(120.0), }
   let paint_changed = {
-    ..Style::default(),
+    ..@style.Style::default(),
     color: @types.Color::white(),
     background_color: @types.Color::rgba(10, 20, 30, 0.5),
     box_shadows: [
-      BoxShadow::new(false, 1.0, 2.0, 3.0, 4.0, @types.Color::black()),
+      @style.BoxShadow::new(false, 1.0, 2.0, 3.0, 4.0, @types.Color::black()),
     ],
   }
   let containing_block_changed = {
-    ..Style::default(),
-    transform: { ..Transform::none(), translate_x: Length(1.0), },
+    ..@style.Style::default(),
+    transform: { ..@style.Transform::none(), translate_x: Length(1.0), },
   }
   assert_true(base.layout_eq(same))
   assert_false(base.layout_eq(layout_changed))
@@ -40,52 +40,58 @@ test "Style::layout_eq compares layout fields only" {
 
 ///|
 test "Style::has_multicol_true_for_column_count_one" {
-  let style = { ..Style::default(), column_count: Some(1), }
+  let style = { ..@style.Style::default(), column_count: Some(1), }
   assert_true(style.has_multicol())
 }
 
 ///|
 test "Style::has_multicol_false_for_auto_columns" {
-  let style = Style::default()
+  let style = @style.Style::default()
   assert_false(style.has_multicol())
 }
 
 ///|
 test "BorderStyle::priority ordering" {
-  inspect(BorderStyle::priority(None), content="0")
-  inspect(BorderStyle::priority(Hidden), content="9")
-  assert_true(BorderStyle::priority(Double) > BorderStyle::priority(Solid))
-  assert_true(BorderStyle::priority(Solid) > BorderStyle::priority(Dashed))
-  assert_true(BorderStyle::priority(Dashed) > BorderStyle::priority(Dotted))
+  inspect(@style.BorderStyle::priority(None), content="0")
+  inspect(@style.BorderStyle::priority(Hidden), content="9")
+  assert_true(
+    @style.BorderStyle::priority(Double) > @style.BorderStyle::priority(Solid),
+  )
+  assert_true(
+    @style.BorderStyle::priority(Solid) > @style.BorderStyle::priority(Dashed),
+  )
+  assert_true(
+    @style.BorderStyle::priority(Dashed) > @style.BorderStyle::priority(Dotted),
+  )
 }
 
 ///|
 test "WritingMode::is_vertical and is_block_rtl" {
-  assert_false(WritingMode::is_vertical(HorizontalTb))
-  assert_true(WritingMode::is_vertical(VerticalRl))
-  assert_true(WritingMode::is_vertical(VerticalLr))
-  assert_true(WritingMode::is_block_rtl(VerticalRl))
-  assert_false(WritingMode::is_block_rtl(VerticalLr))
-  assert_false(WritingMode::is_block_rtl(HorizontalTb))
+  assert_false(@style.WritingMode::is_vertical(HorizontalTb))
+  assert_true(@style.WritingMode::is_vertical(VerticalRl))
+  assert_true(@style.WritingMode::is_vertical(VerticalLr))
+  assert_true(@style.WritingMode::is_block_rtl(VerticalRl))
+  assert_false(@style.WritingMode::is_block_rtl(VerticalLr))
+  assert_false(@style.WritingMode::is_block_rtl(HorizontalTb))
 }
 
 ///|
 test "Direction::is_rtl" {
-  assert_true(Direction::is_rtl(Rtl))
-  assert_false(Direction::is_rtl(Ltr))
+  assert_true(@style.Direction::is_rtl(Rtl))
+  assert_false(@style.Direction::is_rtl(Ltr))
 }
 
 ///|
 test "ScrollSnapType none/mandatory/axis helpers" {
-  let none = ScrollSnapType::none()
+  let none = @style.ScrollSnapType::none()
   assert_false(none.is_mandatory())
   assert_false(none.snaps_x())
   assert_false(none.snaps_y())
-  let mandatory_x : ScrollSnapType = { axis: X, strictness: Mandatory, }
+  let mandatory_x : @style.ScrollSnapType = { axis: X, strictness: Mandatory, }
   assert_true(mandatory_x.is_mandatory())
   assert_true(mandatory_x.snaps_x())
   assert_false(mandatory_x.snaps_y())
-  let both : ScrollSnapType = { axis: Both, strictness: Proximity, }
+  let both : @style.ScrollSnapType = { axis: Both, strictness: Proximity, }
   assert_false(both.is_mandatory())
   assert_true(both.snaps_x())
   assert_true(both.snaps_y())
@@ -93,18 +99,18 @@ test "ScrollSnapType none/mandatory/axis helpers" {
 
 ///|
 test "MarginTrim block/inline helpers" {
-  assert_true(MarginTrim::trim_block_start(BlockStart))
-  assert_true(MarginTrim::trim_block_start(Block))
-  assert_false(MarginTrim::trim_block_start(BlockEnd))
-  assert_false(MarginTrim::trim_block_start(None))
-  assert_true(MarginTrim::trim_block_end(BlockEnd))
-  assert_true(MarginTrim::trim_block_end(Block))
-  assert_false(MarginTrim::trim_block_end(BlockStart))
+  assert_true(@style.MarginTrim::trim_block_start(BlockStart))
+  assert_true(@style.MarginTrim::trim_block_start(Block))
+  assert_false(@style.MarginTrim::trim_block_start(BlockEnd))
+  assert_false(@style.MarginTrim::trim_block_start(None))
+  assert_true(@style.MarginTrim::trim_block_end(BlockEnd))
+  assert_true(@style.MarginTrim::trim_block_end(Block))
+  assert_false(@style.MarginTrim::trim_block_end(BlockStart))
 }
 
 ///|
 test "Transform::none is identity" {
-  let t = Transform::none()
+  let t = @style.Transform::none()
   assert_true(t.is_none())
   assert_false(t.has_scale())
   assert_false(t.has_skew())
@@ -114,23 +120,26 @@ test "Transform::none is identity" {
 
 ///|
 test "Transform::has_scale and has_skew detect modifications" {
-  let scaled : Transform = { ..Transform::none(), scale_x: 2.0, }
+  let scaled : @style.Transform = { ..@style.Transform::none(), scale_x: 2.0, }
   assert_true(scaled.has_scale())
   assert_false(scaled.is_none())
-  let skewed : Transform = { ..Transform::none(), skew_x_degrees: 10.0, }
+  let skewed : @style.Transform = {
+    ..@style.Transform::none(),
+    skew_x_degrees: 10.0,
+  }
   assert_true(skewed.has_skew())
   assert_false(skewed.is_none())
 }
 
 ///|
 test "Transform::compute_translate_x with length and percent" {
-  let with_length : Transform = {
-    ..Transform::none(),
+  let with_length : @style.Transform = {
+    ..@style.Transform::none(),
     translate_x: Length(15.0),
   }
   inspect(with_length.compute_translate_x(100.0), content="15")
-  let with_percent : Transform = {
-    ..Transform::none(),
+  let with_percent : @style.Transform = {
+    ..@style.Transform::none(),
     translate_y: Percent(0.25),
   }
   inspect(with_percent.compute_translate_y(80.0), content="20")
@@ -138,26 +147,47 @@ test "Transform::compute_translate_x with length and percent" {
 
 ///|
 test "Transform::quarter_turns snaps to 90 degree increments" {
-  let r0 : Transform = { ..Transform::none(), rotate_degrees: 0.0, }
+  let r0 : @style.Transform = {
+    ..@style.Transform::none(),
+    rotate_degrees: 0.0,
+  }
   inspect(r0.quarter_turns(), content="0")
-  let r90 : Transform = { ..Transform::none(), rotate_degrees: 90.0, }
+  let r90 : @style.Transform = {
+    ..@style.Transform::none(),
+    rotate_degrees: 90.0,
+  }
   inspect(r90.quarter_turns(), content="1")
-  let r180 : Transform = { ..Transform::none(), rotate_degrees: 180.0, }
+  let r180 : @style.Transform = {
+    ..@style.Transform::none(),
+    rotate_degrees: 180.0,
+  }
   inspect(r180.quarter_turns(), content="2")
-  let r270 : Transform = { ..Transform::none(), rotate_degrees: 270.0, }
+  let r270 : @style.Transform = {
+    ..@style.Transform::none(),
+    rotate_degrees: 270.0,
+  }
   inspect(r270.quarter_turns(), content="3")
-  let r360 : Transform = { ..Transform::none(), rotate_degrees: 360.0, }
+  let r360 : @style.Transform = {
+    ..@style.Transform::none(),
+    rotate_degrees: 360.0,
+  }
   inspect(r360.quarter_turns(), content="0")
-  let r45 : Transform = { ..Transform::none(), rotate_degrees: 45.0, }
+  let r45 : @style.Transform = {
+    ..@style.Transform::none(),
+    rotate_degrees: 45.0,
+  }
   inspect(r45.quarter_turns(), content="-1")
 }
 
 ///|
 test "Transform::has_affine_matrix only when explicitly set" {
-  let identity_matrix : Transform = { ..Transform::none(), has_matrix: true, }
+  let identity_matrix : @style.Transform = {
+    ..@style.Transform::none(),
+    has_matrix: true,
+  }
   assert_false(identity_matrix.has_affine_matrix())
-  let real_matrix : Transform = {
-    ..Transform::none(),
+  let real_matrix : @style.Transform = {
+    ..@style.Transform::none(),
     has_matrix: true,
     matrix_a: 2.0,
   }
@@ -166,15 +196,15 @@ test "Transform::has_affine_matrix only when explicitly set" {
 
 ///|
 test "Contain helpers - none/strict/content" {
-  let none = Contain::none()
+  let none = @style.Contain::none()
   assert_false(none.has_containment())
-  let strict = Contain::strict()
+  let strict = @style.Contain::strict()
   assert_true(strict.has_containment())
   assert_true(strict.size)
   assert_true(strict.layout)
   assert_true(strict.paint)
   assert_true(strict.style)
-  let content = Contain::content()
+  let content = @style.Contain::content()
   assert_true(content.has_containment())
   assert_false(content.size)
   assert_true(content.layout)
@@ -182,21 +212,24 @@ test "Contain helpers - none/strict/content" {
 
 ///|
 test "Style::suppresses_intrinsic_width and height by containment" {
-  let style = Style::default()
+  let style = @style.Style::default()
   assert_false(style.suppresses_intrinsic_width())
   assert_false(style.suppresses_intrinsic_height())
-  let size_contained = { ..Style::default(), contain: Contain::strict(), }
+  let size_contained = {
+    ..@style.Style::default(),
+    contain: @style.Contain::strict(),
+  }
   assert_true(size_contained.suppresses_intrinsic_width())
   assert_true(size_contained.suppresses_intrinsic_height())
-  let inline_only : Style = {
-    ..Style::default(),
-    contain: { ..Contain::none(), inline_size: true, },
+  let inline_only : @style.Style = {
+    ..@style.Style::default(),
+    contain: { ..@style.Contain::none(), inline_size: true, },
   }
   assert_true(inline_only.suppresses_intrinsic_width())
   assert_false(inline_only.suppresses_intrinsic_height())
-  let inline_only_vertical : Style = {
-    ..Style::default(),
-    contain: { ..Contain::none(), inline_size: true, },
+  let inline_only_vertical : @style.Style = {
+    ..@style.Style::default(),
+    contain: { ..@style.Contain::none(), inline_size: true, },
     writing_mode: VerticalRl,
   }
   assert_false(inline_only_vertical.suppresses_intrinsic_width())
@@ -205,23 +238,23 @@ test "Style::suppresses_intrinsic_width and height by containment" {
 
 ///|
 test "Style::contained_intrinsic_*_fallback follows writing mode" {
-  let horiz : Style = {
-    ..Style::default(),
+  let horiz : @style.Style = {
+    ..@style.Style::default(),
     contain_intrinsic_inline_size: Some(50.0),
     contain_intrinsic_block_size: Some(75.0),
   }
   inspect(horiz.contained_intrinsic_width_fallback(), content="50")
   inspect(horiz.contained_intrinsic_height_fallback(), content="75")
-  let vert : Style = {
-    ..Style::default(),
+  let vert : @style.Style = {
+    ..@style.Style::default(),
     writing_mode: VerticalRl,
     contain_intrinsic_inline_size: Some(50.0),
     contain_intrinsic_block_size: Some(75.0),
   }
   inspect(vert.contained_intrinsic_width_fallback(), content="75")
   inspect(vert.contained_intrinsic_height_fallback(), content="50")
-  let none_size : Style = {
-    ..Style::default(),
+  let none_size : @style.Style = {
+    ..@style.Style::default(),
     contain_intrinsic_inline_size: None,
   }
   inspect(none_size.contained_intrinsic_width_fallback(), content="0")
@@ -229,14 +262,23 @@ test "Style::contained_intrinsic_*_fallback follows writing mode" {
 
 ///|
 test "Style::has_multicol with column-width set" {
-  let s : Style = { ..Style::default(), column_width: Length(200.0), }
+  let s : @style.Style = {
+    ..@style.Style::default(),
+    column_width: Length(200.0),
+  }
   assert_true(s.has_multicol())
-  let s_zero : Style = { ..Style::default(), column_width: Length(0.0), }
+  let s_zero : @style.Style = {
+    ..@style.Style::default(),
+    column_width: Length(0.0),
+  }
   assert_false(s_zero.has_multicol())
-  let s_calc : Style = { ..Style::default(), column_width: Calc(-10.0, 0.5), }
+  let s_calc : @style.Style = {
+    ..@style.Style::default(),
+    column_width: Calc(-10.0, 0.5),
+  }
   assert_true(s_calc.has_multicol())
-  let s_negative_calc : Style = {
-    ..Style::default(),
+  let s_negative_calc : @style.Style = {
+    ..@style.Style::default(),
     column_width: Calc(-10.0, -0.5),
   }
   assert_false(s_negative_calc.has_multicol())
@@ -244,7 +286,7 @@ test "Style::has_multicol with column-width set" {
 
 ///|
 test "ClipPath::none returns None variant" {
-  let cp = ClipPath::none()
+  let cp = @style.ClipPath::none()
   let is_none = match cp {
     None => true
     _ => false
@@ -254,41 +296,41 @@ test "ClipPath::none returns None variant" {
 
 ///|
 test "Show impls for style enums" {
-  inspect(BorderStyle::Solid, content="Solid")
-  inspect(BorderCollapse::Collapse, content="Collapse")
-  inspect(TableLayout::Fixed, content="Fixed")
-  inspect(CaptionSide::Bottom, content="Bottom")
-  inspect(WhiteSpace::Nowrap, content="Nowrap")
-  inspect(TextOverflow::Ellipsis, content="Ellipsis")
-  inspect(WritingMode::VerticalLr, content="VerticalLr")
-  inspect(Direction::Rtl, content="Rtl")
-  inspect(TextAlign::Center, content="Center")
-  inspect(ScrollSnapAxis::Both, content="Both")
-  inspect(ScrollSnapStrictness::Mandatory, content="Mandatory")
-  inspect(ScrollSnapAlign::Center, content="Center")
-  inspect(Visibility::Collapse, content="Collapse")
-  inspect(PointerEvents::None, content="None")
-  inspect(MarginTrim::Inline, content="Inline")
-  inspect(ColumnFill::Balance, content="Balance")
-  inspect(BreakBefore::Column, content="Column")
-  inspect(BreakInside::Avoid, content="Avoid")
-  inspect(ColumnSpan::All, content="All")
-  inspect(ZIndex::Auto, content="Auto")
-  inspect(ZIndex::Value(3), content="Value(3)")
-  inspect(VerticalAlign::Sub, content="Sub")
-  inspect(TranslateValue::Length(1.5), content="Length(1.5)")
-  inspect(TranslateValue::Percent(0.5), content="Percent(0.5)")
+  inspect(@style.BorderStyle::Solid, content="Solid")
+  inspect(@style.BorderCollapse::Collapse, content="Collapse")
+  inspect(@style.TableLayout::Fixed, content="Fixed")
+  inspect(@style.CaptionSide::Bottom, content="Bottom")
+  inspect(@style.WhiteSpace::Nowrap, content="Nowrap")
+  inspect(@style.TextOverflow::Ellipsis, content="Ellipsis")
+  inspect(@style.WritingMode::VerticalLr, content="VerticalLr")
+  inspect(@style.Direction::Rtl, content="Rtl")
+  inspect(@style.TextAlign::Center, content="Center")
+  inspect(@style.ScrollSnapAxis::Both, content="Both")
+  inspect(@style.ScrollSnapStrictness::Mandatory, content="Mandatory")
+  inspect(@style.ScrollSnapAlign::Center, content="Center")
+  inspect(@style.Visibility::Collapse, content="Collapse")
+  inspect(@style.PointerEvents::None, content="None")
+  inspect(@style.MarginTrim::Inline, content="Inline")
+  inspect(@style.ColumnFill::Balance, content="Balance")
+  inspect(@style.BreakBefore::Column, content="Column")
+  inspect(@style.BreakInside::Avoid, content="Avoid")
+  inspect(@style.ColumnSpan::All, content="All")
+  inspect(@style.ZIndex::Auto, content="Auto")
+  inspect(@style.ZIndex::Value(3), content="Value(3)")
+  inspect(@style.VerticalAlign::Sub, content="Sub")
+  inspect(@style.TranslateValue::Length(1.5), content="Length(1.5)")
+  inspect(@style.TranslateValue::Percent(0.5), content="Percent(0.5)")
 }
 
 ///|
 test "ScrollSnapType Show" {
-  let snap : ScrollSnapType = { axis: Y, strictness: Proximity, }
+  let snap : @style.ScrollSnapType = { axis: Y, strictness: Proximity, }
   inspect(snap, content="{axis: Y, strictness: Proximity}")
 }
 
 ///|
 test "Show for Transform exposes full matrix dump" {
-  let t : Transform = {
+  let t : @style.Transform = {
     translate_x: Length(2.0),
     translate_y: Percent(0.5),
     scale_x: 1.5,
@@ -315,7 +357,7 @@ test "Show for Transform exposes full matrix dump" {
 
 ///|
 test "Show for Contain dumps all flags" {
-  let c = Contain::strict()
+  let c = @style.Contain::strict()
   let out = c.to_string()
   assert_true(out.contains("size: true"))
   assert_true(out.contains("layout: true"))
@@ -326,36 +368,36 @@ test "Show for Contain dumps all flags" {
 
 ///|
 test "BorderStyle::priority - every variant" {
-  inspect(BorderStyle::priority(None), content="0")
-  inspect(BorderStyle::priority(Inset), content="1")
-  inspect(BorderStyle::priority(Groove), content="2")
-  inspect(BorderStyle::priority(Outset), content="3")
-  inspect(BorderStyle::priority(Ridge), content="4")
-  inspect(BorderStyle::priority(Dotted), content="5")
-  inspect(BorderStyle::priority(Dashed), content="6")
-  inspect(BorderStyle::priority(Solid), content="7")
-  inspect(BorderStyle::priority(Double), content="8")
-  inspect(BorderStyle::priority(Hidden), content="9")
+  inspect(@style.BorderStyle::priority(None), content="0")
+  inspect(@style.BorderStyle::priority(Inset), content="1")
+  inspect(@style.BorderStyle::priority(Groove), content="2")
+  inspect(@style.BorderStyle::priority(Outset), content="3")
+  inspect(@style.BorderStyle::priority(Ridge), content="4")
+  inspect(@style.BorderStyle::priority(Dotted), content="5")
+  inspect(@style.BorderStyle::priority(Dashed), content="6")
+  inspect(@style.BorderStyle::priority(Solid), content="7")
+  inspect(@style.BorderStyle::priority(Double), content="8")
+  inspect(@style.BorderStyle::priority(Hidden), content="9")
 }
 
 ///|
 test "BorderStyle Show - every variant" {
-  inspect(BorderStyle::None, content="None")
-  inspect(BorderStyle::Inset, content="Inset")
-  inspect(BorderStyle::Groove, content="Groove")
-  inspect(BorderStyle::Outset, content="Outset")
-  inspect(BorderStyle::Ridge, content="Ridge")
-  inspect(BorderStyle::Dotted, content="Dotted")
-  inspect(BorderStyle::Dashed, content="Dashed")
-  inspect(BorderStyle::Solid, content="Solid")
-  inspect(BorderStyle::Double, content="Double")
-  inspect(BorderStyle::Hidden, content="Hidden")
+  inspect(@style.BorderStyle::None, content="None")
+  inspect(@style.BorderStyle::Inset, content="Inset")
+  inspect(@style.BorderStyle::Groove, content="Groove")
+  inspect(@style.BorderStyle::Outset, content="Outset")
+  inspect(@style.BorderStyle::Ridge, content="Ridge")
+  inspect(@style.BorderStyle::Dotted, content="Dotted")
+  inspect(@style.BorderStyle::Dashed, content="Dashed")
+  inspect(@style.BorderStyle::Solid, content="Solid")
+  inspect(@style.BorderStyle::Double, content="Double")
+  inspect(@style.BorderStyle::Hidden, content="Hidden")
 }
 
 ///|
 test "Transform::is_none - percent zero counts" {
-  let t : Transform = {
-    ..Transform::none(),
+  let t : @style.Transform = {
+    ..@style.Transform::none(),
     translate_x: Percent(0.0),
     translate_y: Percent(0.0),
   }
@@ -364,21 +406,27 @@ test "Transform::is_none - percent zero counts" {
 
 ///|
 test "Transform::quarter_turns - negative angle" {
-  let t : Transform = { ..Transform::none(), rotate_degrees: -90.0, }
+  let t : @style.Transform = {
+    ..@style.Transform::none(),
+    rotate_degrees: -90.0,
+  }
   // -90 / 90 = -1 -> -1 % 4 + 4 = 3
   inspect(t.quarter_turns(), content="3")
 }
 
 ///|
 test "Transform::compute_translate_x with Percent" {
-  let t : Transform = { ..Transform::none(), translate_x: Percent(0.5), }
+  let t : @style.Transform = {
+    ..@style.Transform::none(),
+    translate_x: Percent(0.5),
+  }
   inspect(t.compute_translate_x(100.0), content="50")
 }
 
 ///|
 test "Style::contained_intrinsic_*_fallback with negative value falls to 0" {
-  let s : Style = {
-    ..Style::default(),
+  let s : @style.Style = {
+    ..@style.Style::default(),
     contain_intrinsic_inline_size: Some(-10.0),
     contain_intrinsic_block_size: Some(-20.0),
   }
@@ -388,8 +436,8 @@ test "Style::contained_intrinsic_*_fallback with negative value falls to 0" {
 
 ///|
 test "Style::contained_intrinsic_*_fallback in vertical mode with Some(0)" {
-  let s : Style = {
-    ..Style::default(),
+  let s : @style.Style = {
+    ..@style.Style::default(),
     writing_mode: VerticalRl,
     contain_intrinsic_block_size: Some(0.0),
     contain_intrinsic_inline_size: Some(0.0),
@@ -401,15 +449,18 @@ test "Style::contained_intrinsic_*_fallback in vertical mode with Some(0)" {
 
 ///|
 test "Style::has_multicol with Percent column-width" {
-  let s : Style = { ..Style::default(), column_width: Percent(0.5), }
+  let s : @style.Style = {
+    ..@style.Style::default(),
+    column_width: Percent(0.5),
+  }
   assert_true(s.has_multicol())
 }
 
 ///|
 test "Style::contained_intrinsic_*_fallback Some(0) in horizontal mode" {
   // Hit lines 467 and 483 — Some(v) where v <= 0
-  let s_h : Style = {
-    ..Style::default(),
+  let s_h : @style.Style = {
+    ..@style.Style::default(),
     contain_intrinsic_inline_size: Some(0.0),
     contain_intrinsic_block_size: Some(0.0),
   }
@@ -419,40 +470,52 @@ test "Style::contained_intrinsic_*_fallback Some(0) in horizontal mode" {
 
 ///|
 test "Transform::is_none not-zero translate falls through" {
-  let t : Transform = { ..Transform::none(), translate_x: Length(5.0), }
+  let t : @style.Transform = {
+    ..@style.Transform::none(),
+    translate_x: Length(5.0),
+  }
   assert_false(t.is_none())
 }
 
 ///|
 test "All style Show impls" {
-  inspect(TableLayout::Auto, content="Auto")
-  inspect(ScrollSnapAxis::None, content="None")
-  inspect(ScrollSnapStrictness::None, content="None")
-  inspect(BreakBefore::Auto, content="Auto")
-  inspect(BreakBefore::Avoid, content="Avoid")
-  inspect(BreakInside::Auto, content="Auto")
-  inspect(ColumnSpan::None, content="None")
-  inspect(VerticalAlign::Baseline, content="Baseline")
-  inspect(VerticalAlign::Top, content="Top")
-  inspect(VerticalAlign::Middle, content="Middle")
-  inspect(VerticalAlign::Bottom, content="Bottom")
-  inspect(VerticalAlign::TextBottom, content="TextBottom")
-  inspect(VerticalAlign::Super, content="Super")
+  inspect(@style.TableLayout::Auto, content="Auto")
+  inspect(@style.ScrollSnapAxis::None, content="None")
+  inspect(@style.ScrollSnapStrictness::None, content="None")
+  inspect(@style.BreakBefore::Auto, content="Auto")
+  inspect(@style.BreakBefore::Avoid, content="Avoid")
+  inspect(@style.BreakInside::Auto, content="Auto")
+  inspect(@style.ColumnSpan::None, content="None")
+  inspect(@style.VerticalAlign::Baseline, content="Baseline")
+  inspect(@style.VerticalAlign::Top, content="Top")
+  inspect(@style.VerticalAlign::Middle, content="Middle")
+  inspect(@style.VerticalAlign::Bottom, content="Bottom")
+  inspect(@style.VerticalAlign::TextBottom, content="TextBottom")
+  inspect(@style.VerticalAlign::Super, content="Super")
 }
 
 ///|
 test "Style::has_multicol with MinContent/MaxContent/FitContent column-width" {
-  let s_min : Style = { ..Style::default(), column_width: MinContent, }
+  let s_min : @style.Style = {
+    ..@style.Style::default(),
+    column_width: MinContent,
+  }
   assert_false(s_min.has_multicol())
-  let s_max : Style = { ..Style::default(), column_width: MaxContent, }
+  let s_max : @style.Style = {
+    ..@style.Style::default(),
+    column_width: MaxContent,
+  }
   assert_false(s_max.has_multicol())
-  let s_fit : Style = { ..Style::default(), column_width: FitContent(100.0), }
+  let s_fit : @style.Style = {
+    ..@style.Style::default(),
+    column_width: FitContent(100.0),
+  }
   assert_false(s_fit.has_multicol())
 }
 
 ///|
 test "BoxShadow::new constructs public box shadow values" {
-  let shadow = BoxShadow::new(
+  let shadow = @style.BoxShadow::new(
     false,
     3.0,
     2.0,

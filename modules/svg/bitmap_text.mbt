@@ -5,7 +5,7 @@
 /// Simple 5x7 bitmap font for ASCII characters
 /// Each character is represented as 7 bytes (rows), each byte has 5 bits (columns)
 /// Bit 0x10 = leftmost pixel, 0x01 = rightmost pixel
-fn get_char_bitmap(c : Char) -> Array[Int] {
+fn get_char_bitmap(c : Char) -> Array[Int32] {
   match c {
     ' ' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
     '!' => [0x04, 0x04, 0x04, 0x04, 0x04, 0x00, 0x04]
@@ -109,10 +109,10 @@ fn get_char_bitmap(c : Char) -> Array[Int] {
 ///|
 /// Render text using bitmap font
 fn raster_text(
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   text : String,
-  font_size : Int,
+  font_size : Int32,
   color : Color,
   setter : ColorSink,
 ) -> Unit {

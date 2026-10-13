@@ -1,11 +1,16 @@
 ///|
 /// Internal color sink used by coverage, paint, and compositing stages.
 priv struct ColorSink {
-  set : (Int, Int, Color) -> Unit
+  set : (Int32, Int32, Color) -> Unit
 }
 
 ///|
-fn ColorSink::pixel(self : ColorSink, x : Int, y : Int, color : Color) -> Unit {
+fn ColorSink::pixel(
+  self : ColorSink,
+  x : Int32,
+  y : Int32,
+  color : Color,
+) -> Unit {
   (self.set)(x, y, color)
 }
 

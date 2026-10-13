@@ -6,8 +6,8 @@
 /// Tokenizer state
 priv struct Tokenizer {
   input : String
-  mut pos : Int
-  len : Int
+  mut pos : Int32
+  len : Int32
   /// Set by `consume_number` to record whether the just-consumed number
   /// token had an explicit leading `+`/`-` sign. Read by
   /// `tokenize_with_signs` after each `next_token` call. CSS Syntax 3
@@ -41,7 +41,7 @@ fn Tokenizer::peek_char(self : Tokenizer) -> Char {
 }
 
 ///|
-fn Tokenizer::peek_char_at(self : Tokenizer, offset : Int) -> Char {
+fn Tokenizer::peek_char_at(self : Tokenizer, offset : Int32) -> Char {
   let idx = self.pos + offset
   if idx >= self.len || idx < 0 {
     nul_char
@@ -117,7 +117,7 @@ fn is_hex_digit(c : Char) -> Bool {
 }
 
 ///|
-fn hex_digit_to_int(c : Char) -> Int {
+fn hex_digit_to_int(c : Char) -> Int32 {
   let code = c.to_int()
   if code >= '0'.to_int() && code <= '9'.to_int() {
     code - '0'.to_int()

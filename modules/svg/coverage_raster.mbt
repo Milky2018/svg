@@ -4,7 +4,7 @@ priv struct CoverageEdge {
   y0 : Int64
   x1 : Int64
   y1 : Int64
-  winding : Int
+  winding : Int32
 }
 
 ///|
@@ -15,11 +15,11 @@ priv struct CoverageCrossing {
 
 ///|
 priv struct CoverageMask {
-  origin_x : Int
-  origin_y : Int
-  width : Int
-  height : Int
-  values : Array[Int]
+  origin_x : Int32
+  origin_y : Int32
+  width : Int32
+  height : Int32
+  values : Array[Int32]
 }
 
 ///|
@@ -249,7 +249,7 @@ fn integrate_clamped_edge(
 ///|
 fn add_coverage_interval(
   row_coverage : Array[Double],
-  origin_x : Int,
+  origin_x : Int32,
   left : CoverageEdge,
   right : CoverageEdge,
   y0 : Double,
@@ -278,8 +278,8 @@ fn add_coverage_interval(
 fn build_coverage_mask(
   contours : Array[Array[(Double, Double)]],
   rule : FillRule,
-  canvas_width : Int,
-  canvas_height : Int,
+  canvas_width : Int32,
+  canvas_height : Int32,
 ) -> CoverageMask {
   let edges = make_coverage_edges(contours)
   if edges.is_empty() || canvas_width <= 0 || canvas_height <= 0 {
@@ -422,7 +422,7 @@ fn build_coverage_mask(
 
 ///|
 #warnings("-unused_value")
-fn CoverageMask::get_device(self : CoverageMask, x : Int, y : Int) -> Int {
+fn CoverageMask::get_device(self : CoverageMask, x : Int32, y : Int32) -> Int32 {
   let local_x = x - self.origin_x
   let local_y = y - self.origin_y
   if local_x < 0 ||
@@ -527,8 +527,8 @@ fn raster_contours_coverage(
   color : Color,
   rule : FillRule,
   setter : ColorSink,
-  canvas_width : Int,
-  canvas_height : Int,
+  canvas_width : Int32,
+  canvas_height : Int32,
 ) -> Unit {
   paint_coverage_mask(
     build_coverage_mask(contours, rule, canvas_width, canvas_height),

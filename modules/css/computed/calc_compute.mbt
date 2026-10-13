@@ -124,8 +124,8 @@ fn split_css_args(input : String) -> Array[String] {
 /// Parse a simple calc expression (handles + - * / with px values)
 fn is_calc_signed_number_start(
   expr : String,
-  index : Int,
-  token_start : Int,
+  index : Int32,
+  token_start : Int32,
 ) -> Bool {
   if index != token_start || index + 1 >= expr.length() {
     return false
@@ -333,7 +333,7 @@ priv enum CalcTok {
 }
 
 ///|
-fn calc_char_at(s : String, i : Int) -> Char {
+fn calc_char_at(s : String, i : Int32) -> Char {
   s[i].to_int().unsafe_to_char()
 }
 
@@ -529,9 +529,9 @@ fn calc_div(a : CalcVal, b : CalcVal) -> CalcVal? {
 /// primary := number | '(' sum ')' | fn '(' sum (',' sum)* ')'
 fn calc_parse_primary(
   toks : Array[CalcTok],
-  pos : Int,
+  pos : Int32,
   ctx : ComputeContext,
-) -> (CalcVal, Int)? {
+) -> (CalcVal, Int32)? {
   if pos >= toks.length() {
     return None
   }
@@ -640,9 +640,9 @@ fn calc_parse_primary(
 /// product := primary (('*' | '/') primary)*
 fn calc_parse_product(
   toks : Array[CalcTok],
-  pos : Int,
+  pos : Int32,
   ctx : ComputeContext,
-) -> (CalcVal, Int)? {
+) -> (CalcVal, Int32)? {
   match calc_parse_primary(toks, pos, ctx) {
     Some((first, p1)) => {
       let mut acc = first
@@ -686,9 +686,9 @@ fn calc_parse_product(
 /// sum := product (('+' | '-') product)*
 fn calc_parse_sum(
   toks : Array[CalcTok],
-  pos : Int,
+  pos : Int32,
   ctx : ComputeContext,
-) -> (CalcVal, Int)? {
+) -> (CalcVal, Int32)? {
   match calc_parse_product(toks, pos, ctx) {
     Some((first, p1)) => {
       let mut acc = first
@@ -917,7 +917,7 @@ fn resolve_custom_property_value_inner(
   value : String,
   custom_properties : Map[String, String],
   stack : Array[String],
-  depth : Int,
+  depth : Int32,
 ) -> String? {
   if depth > 32 {
     return None
@@ -1072,7 +1072,7 @@ fn is_css_ident_char(c : Char) -> Bool {
 }
 
 ///|
-fn css_math_function_prefix_len(value : String, index : Int) -> Int {
+fn css_math_function_prefix_len(value : String, index : Int32) -> Int32 {
   if index > 0 {
     let prev = value[index - 1].to_int().unsafe_to_char()
     if is_css_ident_char(prev) {
@@ -1094,7 +1094,7 @@ fn css_math_function_prefix_len(value : String, index : Int) -> Int {
 }
 
 ///|
-fn find_matching_function_end(value : String, index : Int) -> Int {
+fn find_matching_function_end(value : String, index : Int32) -> Int32 {
   let mut depth = 0
   let mut i = index
   while i < value.length() {

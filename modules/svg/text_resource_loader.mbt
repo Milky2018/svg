@@ -6,9 +6,9 @@ priv struct TextResourceLoadState {
   cache : Map[String, String]
   documents : Map[String, SVGDocument]
   active : Map[String, Bool]
-  mut depth : Int
-  mut resource_count : Int
-  mut byte_count : Int
+  mut depth : Int32
+  mut resource_count : Int32
+  mut byte_count : Int32
 }
 
 ///|
@@ -41,7 +41,7 @@ fn TextResourceLoadState::new(
 }
 
 ///|
-fn resource_last_slash(value : String) -> Int {
+fn resource_last_slash(value : String) -> Int32 {
   let mut found = -1
   for i = 0; i < value.length(); i = i + 1 {
     if value[i] == '/' {
@@ -210,12 +210,12 @@ fn parse_pi_attributes(data : String) -> Map[String, String] {
   let mut pos = 0
   while pos < data.length() {
     while pos < data.length() &&
-          css_is_whitespace(Int::unsafe_to_char(data[pos].to_int())) {
+          css_is_whitespace(Int32::unsafe_to_char(data[pos].to_int())) {
       pos = pos + 1
     }
     let name_start = pos
     while pos < data.length() &&
-          !css_is_whitespace(Int::unsafe_to_char(data[pos].to_int())) &&
+          !css_is_whitespace(Int32::unsafe_to_char(data[pos].to_int())) &&
           data[pos] != '=' {
       pos = pos + 1
     }
@@ -224,7 +224,7 @@ fn parse_pi_attributes(data : String) -> Map[String, String] {
     }
     let name = data[name_start:pos].to_owned().to_lower()
     while pos < data.length() &&
-          css_is_whitespace(Int::unsafe_to_char(data[pos].to_int())) {
+          css_is_whitespace(Int32::unsafe_to_char(data[pos].to_int())) {
       pos = pos + 1
     }
     if pos >= data.length() || data[pos] != '=' {
@@ -232,7 +232,7 @@ fn parse_pi_attributes(data : String) -> Map[String, String] {
     }
     pos = pos + 1
     while pos < data.length() &&
-          css_is_whitespace(Int::unsafe_to_char(data[pos].to_int())) {
+          css_is_whitespace(Int32::unsafe_to_char(data[pos].to_int())) {
       pos = pos + 1
     }
     if pos >= data.length() {
@@ -248,7 +248,7 @@ fn parse_pi_attributes(data : String) -> Map[String, String] {
           (if quoted {
             data[pos] != quote
           } else {
-            !css_is_whitespace(Int::unsafe_to_char(data[pos].to_int()))
+            !css_is_whitespace(Int32::unsafe_to_char(data[pos].to_int()))
           }) {
       pos = pos + 1
     }

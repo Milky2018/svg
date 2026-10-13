@@ -155,13 +155,13 @@ pub(all) enum FilterGraphPrimitive {
   GraphConvolveMatrix(
     input~ : String,
     result~ : String,
-    order_x~ : Int,
-    order_y~ : Int,
+    order_x~ : Int32,
+    order_y~ : Int32,
     kernel~ : Array[Double],
     divisor~ : Double,
     bias~ : Double,
-    target_x~ : Int,
-    target_y~ : Int,
+    target_x~ : Int32,
+    target_y~ : Int32,
     edge_mode~ : FilterEdgeMode,
     preserve_alpha~ : Bool
   )
@@ -177,7 +177,7 @@ pub(all) enum FilterGraphPrimitive {
     result~ : String,
     base_x~ : Double,
     base_y~ : Double,
-    octaves~ : Int,
+    octaves~ : Int32,
     seed~ : Double,
     stitch~ : Bool,
     fractal_noise~ : Bool

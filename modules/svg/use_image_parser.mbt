@@ -222,7 +222,7 @@ fn decode_html_entities(value : String) -> String {
   let len = value.length()
   let buf = StringBuilder()
   while i < len {
-    let c = Int::unsafe_to_char(value[i].to_int())
+    let c = Int32::unsafe_to_char(value[i].to_int())
     if c == '&' {
       if i + 3 < len &&
         value[i + 1] == 'l' &&
@@ -277,7 +277,7 @@ fn decode_html_entities(value : String) -> String {
 }
 
 ///|
-fn hex_value_local(c : Char) -> Int? {
+fn hex_value_local(c : Char) -> Int32? {
   if c >= '0' && c <= '9' {
     Some(c.to_int() - '0'.to_int())
   } else if c >= 'a' && c <= 'f' {
@@ -295,14 +295,14 @@ fn decode_percent_local(value : String) -> String {
   let buf = StringBuilder()
   let mut i = 0
   while i < len {
-    let c = Int::unsafe_to_char(value[i].to_int())
+    let c = Int32::unsafe_to_char(value[i].to_int())
     if c == '%' && i + 2 < len {
-      let c1 = Int::unsafe_to_char(value[i + 1].to_int())
-      let c2 = Int::unsafe_to_char(value[i + 2].to_int())
+      let c1 = Int32::unsafe_to_char(value[i + 1].to_int())
+      let c2 = Int32::unsafe_to_char(value[i + 2].to_int())
       match (hex_value_local(c1), hex_value_local(c2)) {
         (Some(h1), Some(h2)) => {
           let v = h1 * 16 + h2
-          buf.write_char(Int::unsafe_to_char(v))
+          buf.write_char(Int32::unsafe_to_char(v))
           i = i + 3
           continue
         }
@@ -316,7 +316,7 @@ fn decode_percent_local(value : String) -> String {
 }
 
 ///|
-fn base64_value_local(c : Char) -> Int? {
+fn base64_value_local(c : Char) -> Int32? {
   if c >= 'A' && c <= 'Z' {
     Some(c.to_int() - 'A'.to_int())
   } else if c >= 'a' && c <= 'z' {
@@ -350,7 +350,7 @@ fn decode_base64_local(value : String) -> String? {
   let mut finished = false
   let mut i = 0
   while i < len {
-    let c = Int::unsafe_to_char(value[i].to_int())
+    let c = Int32::unsafe_to_char(value[i].to_int())
     if is_base64_ws_local(c) {
       i = i + 1
       continue
@@ -388,24 +388,24 @@ fn decode_base64_local(value : String) -> String? {
         let b0 = (q0 << 2) | (q1 >> 4)
         let b1 = ((q1 & 15) << 4) | (q2 >> 2)
         let b2 = ((q2 & 3) << 6) | q3
-        buf.write_char(Int::unsafe_to_char(b0))
-        buf.write_char(Int::unsafe_to_char(b1))
-        buf.write_char(Int::unsafe_to_char(b2))
+        buf.write_char(Int32::unsafe_to_char(b0))
+        buf.write_char(Int32::unsafe_to_char(b1))
+        buf.write_char(Int32::unsafe_to_char(b2))
       } else if pad == 1 {
         if q2 < 0 || q3 >= 0 {
           return None
         }
         let b0 = (q0 << 2) | (q1 >> 4)
         let b1 = ((q1 & 15) << 4) | (q2 >> 2)
-        buf.write_char(Int::unsafe_to_char(b0))
-        buf.write_char(Int::unsafe_to_char(b1))
+        buf.write_char(Int32::unsafe_to_char(b0))
+        buf.write_char(Int32::unsafe_to_char(b1))
         finished = true
       } else if pad == 2 {
         if q2 >= 0 || q3 >= 0 {
           return None
         }
         let b0 = (q0 << 2) | (q1 >> 4)
-        buf.write_char(Int::unsafe_to_char(b0))
+        buf.write_char(Int32::unsafe_to_char(b0))
         finished = true
       } else {
         return None
@@ -438,7 +438,7 @@ fn decode_data_svg(href : String) -> String? {
   let mut start = 0
   for i = 0; i <= meta_lower.length(); i = i + 1 {
     let is_sep = i == meta_lower.length() ||
-      Int::unsafe_to_char(meta_lower[i].to_int()) == ';'
+      Int32::unsafe_to_char(meta_lower[i].to_int()) == ';'
     if is_sep {
       let token = trim_string(build_substring(meta_lower, start, i))
       if token == "base64" {

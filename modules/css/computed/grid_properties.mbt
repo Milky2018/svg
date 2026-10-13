@@ -37,7 +37,7 @@ pub fn parse_grid_line_shorthand(
 pub fn find_grid_named_line(
   name : String,
   line_names : Array[Array[String]],
-) -> Int? {
+) -> Int32? {
   for i = 0; i < line_names.length(); i = i + 1 {
     let group = line_names[i]
     for j = 0; j < group.length(); j = j + 1 {
@@ -55,11 +55,11 @@ pub fn find_grid_named_line(
 /// from the end (n=-1 is the last). Returns None if there is no such line.
 pub fn find_grid_named_line_nth(
   name : String,
-  n : Int,
+  n : Int32,
   line_names : Array[Array[String]],
-) -> Int? {
+) -> Int32? {
   // Collect the 1-based line numbers carrying `name`, in document order.
-  let hits : Array[Int] = []
+  let hits : Array[Int32] = []
   for i = 0; i < line_names.length(); i = i + 1 {
     let group = line_names[i]
     for j = 0; j < group.length(); j = j + 1 {
@@ -88,7 +88,7 @@ fn resolve_named_grid_side(
   name : String,
   is_start : Bool,
   line_names : Array[Array[String]],
-) -> Int? {
+) -> Int32? {
   // 1. An explicit line declared with this exact name wins.
   match find_grid_named_line(name, line_names) {
     Some(n) => return Some(n)
@@ -110,7 +110,7 @@ pub fn resolve_grid_line_placement(
   start : @types.GridPlacement,
   end : @types.GridPlacement,
   line_names : Array[Array[String]],
-) -> (Int?, Int?) {
+) -> (Int32?, Int32?) {
   let start_line = match start {
     Line(n) => Some(n)
     Named(name) => resolve_named_grid_side(name, true, line_names)
@@ -178,7 +178,7 @@ pub fn parse_number(value : String) -> Double {
 
 ///|
 /// Parse an integer value
-pub fn parse_integer(value : String) -> Int {
+pub fn parse_integer(value : String) -> Int32 {
   @string.parse_int(value.trim().to_owned()) catch {
     _ => 0
   }

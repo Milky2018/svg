@@ -1,6 +1,12 @@
 ///|
-fn render_filter_fixture(svg : String, width : Int, height : Int) -> Image {
-  render_svg_to_image(svg, width, height).unwrap_or(Image::new(width, height))
+fn render_filter_fixture(
+  svg : String,
+  width : Int32,
+  height : Int32,
+) -> @svg.Image {
+  @svg.render_svg_to_image(svg, width, height).unwrap_or(
+    @svg.Image::new(width, height),
+  )
 }
 
 ///|
@@ -136,13 +142,13 @@ test "filter primitive object bounding box units scale offsets" {
 ///|
 test "filter image uses the host image resolver" {
   let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"6\" height=\"6\"><defs><filter id=\"f\" filterUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"6\" height=\"6\"><feImage href=\"asset.png\" x=\"2\" y=\"2\" width=\"2\" height=\"2\"/></filter></defs><rect width=\"6\" height=\"6\" filter=\"url(#f)\"/></svg>"
-  let image = render_svg(
+  let image = @svg.render_svg(
       svg,
       6,
       6,
-      RenderOptions::with_image_resolver(fn(href) {
+      @svg.RenderOptions::with_image_resolver(fn(href) {
         if href == "asset.png" {
-          Some(Image::filled(1, 1, Color::rgb(0, 255, 0)))
+          Some(@svg.Image::filled(1, 1, @svg.Color::rgb(0, 255, 0)))
         } else {
           None
         }

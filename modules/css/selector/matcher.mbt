@@ -550,7 +550,7 @@ fn matches_has_with_shadow_context(
 
 ///|
 /// Check if index matches An+B expression
-fn matches_nth(index : Int, expr : NthExpr) -> Bool {
+fn matches_nth(index : Int32, expr : NthExpr) -> Bool {
   if expr.a == 0 {
     // Just check if index == b
     return index == expr.b

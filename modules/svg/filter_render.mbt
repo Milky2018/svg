@@ -208,8 +208,8 @@ fn morphology_filter_image(
 ///|
 fn convolve_sample(
   source : Image,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   edge_mode : FilterEdgeMode,
 ) -> Color {
   if x >= 0 && x < source.width && y >= 0 && y < source.height {
@@ -251,13 +251,13 @@ fn convolve_sample(
 ///|
 fn convolve_filter_image(
   source : Image,
-  order_x : Int,
-  order_y : Int,
+  order_x : Int32,
+  order_y : Int32,
   kernel : Array[Double],
   divisor : Double,
   bias : Double,
-  target_x : Int,
-  target_y : Int,
+  target_x : Int32,
+  target_y : Int32,
   edge_mode : FilterEdgeMode,
   preserve_alpha : Bool,
 ) -> Image {
@@ -290,7 +290,7 @@ fn convolve_filter_image(
           alpha = alpha + sample.a.to_double() * weight
         }
       }
-      fn output_channel(value : Double) -> Int {
+      fn output_channel(value : Double) -> Int32 {
         (clamp_filter_unit(value / safe_divisor / 255.0 + bias) * 255.0)
         .round()
         .to_int()
@@ -357,7 +357,7 @@ fn smooth_noise_fraction(value : Double) -> Double {
 }
 
 ///|
-fn filter_noise_hash(x : Int, y : Int, seed : Double) -> Double {
+fn filter_noise_hash(x : Int32, y : Int32, seed : Double) -> Double {
   let value = @math.sin(
       x.to_double() * 12.9898 + y.to_double() * 78.233 + seed * 37.719,
     ) *
@@ -385,11 +385,11 @@ fn filter_value_noise(x : Double, y : Double, seed : Double) -> Double {
 
 ///|
 fn turbulence_filter_image(
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   base_x : Double,
   base_y : Double,
-  octaves : Int,
+  octaves : Int32,
   seed : Double,
   fractal_noise : Bool,
 ) -> Image {
@@ -472,8 +472,8 @@ fn tile_filter_image(source : Image) -> Image {
 
 ///|
 fn filter_image_resource(
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   href : String,
   x : Double,
   y : Double,
@@ -708,7 +708,7 @@ fn filter_primitive_position_x(
   graph : FilterGraph,
   value : Double,
   target : BoundingBox,
-  origin_x : Int,
+  origin_x : Int32,
 ) -> Double {
   match graph.primitive_units {
     ObjectBoundingBox => target.min_x + value * target.width()
@@ -721,7 +721,7 @@ fn filter_primitive_position_y(
   graph : FilterGraph,
   value : Double,
   target : BoundingBox,
-  origin_y : Int,
+  origin_y : Int32,
 ) -> Double {
   match graph.primitive_units {
     ObjectBoundingBox => target.min_y + value * target.height()
@@ -734,8 +734,8 @@ fn resolve_filter_light(
   graph : FilterGraph,
   light : FilterLight,
   target : BoundingBox,
-  origin_x : Int,
-  origin_y : Int,
+  origin_x : Int32,
+  origin_y : Int32,
 ) -> FilterLight {
   match light {
     DistantLight(..) => light
@@ -818,7 +818,7 @@ fn composite_filter_pixel(
   if output_alpha <= 0.0 {
     return Color::transparent()
   }
-  fn channel(source_channel : Int, backdrop_channel : Int) -> Int {
+  fn channel(source_channel : Int32, backdrop_channel : Int32) -> Int32 {
     let source_premultiplied = source_channel.to_double() / 255.0 * source_alpha
     let backdrop_premultiplied = backdrop_channel.to_double() /
       255.0 *
@@ -909,8 +909,8 @@ fn evaluate_filter_graph(
   source : Image,
   target_bounds : BoundingBox,
   image_resolver : ((String) -> Image?)?,
-  origin_x : Int,
-  origin_y : Int,
+  origin_x : Int32,
+  origin_y : Int32,
 ) -> Image {
   if graph.primitives.is_empty() {
     return Image::new(source.width, source.height)

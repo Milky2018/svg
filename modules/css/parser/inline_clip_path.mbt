@@ -932,7 +932,7 @@ fn clip_path_angle_between(
 }
 
 ///|
-fn clip_path_max_int(a : Int, b : Int) -> Int {
+fn clip_path_max_int(a : Int32, b : Int32) -> Int32 {
   if a > b {
     a
   } else {

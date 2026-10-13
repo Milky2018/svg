@@ -1,7 +1,6 @@
 import {
   "moonbitlang/core/cmp",
   "moonbitlang/core/math",
-  "moonbitlang/core/double",
   "moonbitlang/core/string",
   "Milky2018/css/cascade",
   "Milky2018/css/parser",

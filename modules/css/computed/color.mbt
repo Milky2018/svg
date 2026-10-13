@@ -230,12 +230,12 @@ fn parse_color_value(v : String) -> CssColorValue {
 }
 
 ///|
-fn char_at(s : String, i : Int) -> Char {
+fn char_at(s : String, i : Int32) -> Char {
   s[i].to_int().unsafe_to_char()
 }
 
 ///|
-fn hex_digit(c : Char) -> Int {
+fn hex_digit(c : Char) -> Int32 {
   let code = c.to_int()
   if code >= '0'.to_int() && code <= '9'.to_int() {
     code - '0'.to_int()
@@ -261,12 +261,12 @@ fn parse_hex_color(value : String) -> @types.Color? {
       return None
     }
   }
-  fn hex1(idx : Int) -> Int {
+  fn hex1(idx : Int32) -> Int32 {
     let d = hex_digit(char_at(value, idx))
     d * 16 + d
   }
 
-  fn hex2(idx1 : Int, idx2 : Int) -> Int {
+  fn hex2(idx1 : Int32, idx2 : Int32) -> Int32 {
     hex_digit(char_at(value, idx1)) * 16 + hex_digit(char_at(value, idx2))
   }
 
@@ -307,7 +307,7 @@ fn parse_hex_color(value : String) -> @types.Color? {
 
 ///|
 /// Find first index of character in string
-fn find_char(s : String, c : Char) -> Int {
+fn find_char(s : String, c : Char) -> Int32 {
   for i = 0; i < s.length(); i = i + 1 {
     if char_at(s, i) == c {
       return i
@@ -318,7 +318,7 @@ fn find_char(s : String, c : Char) -> Int {
 
 ///|
 /// Find last index of character in string
-fn find_char_last(s : String, c : Char) -> Int {
+fn find_char_last(s : String, c : Char) -> Int32 {
   let mut last = -1
   for i = 0; i < s.length(); i = i + 1 {
     if char_at(s, i) == c {
@@ -330,7 +330,7 @@ fn find_char_last(s : String, c : Char) -> Int {
 
 ///|
 /// Extract substring
-fn substr(s : String, start : Int, end : Int) -> String {
+fn substr(s : String, start : Int32, end : Int32) -> String {
   let sb = StringBuilder()
   for i = start; i < end && i < s.length(); i = i + 1 {
     sb.write_char(char_at(s, i))
@@ -773,8 +773,8 @@ fn parse_direction_keyword(dir : String) -> Double {
 ///|
 fn parse_gradient_stop(
   part : String,
-  index : Int,
-  total : Int,
+  index : Int32,
+  total : Int32,
 ) -> (@types.Color, Double) {
   // A stop can be "color" or "color position%"
   // Try to find a percentage at the end
@@ -820,7 +820,7 @@ fn resolve_gradient_color(s : String) -> @types.Color {
 }
 
 ///|
-fn find_last_space(s : String) -> Int {
+fn find_last_space(s : String) -> Int32 {
   let mut last = -1
   let mut depth = 0
   for i = 0; i < s.length(); i = i + 1 {

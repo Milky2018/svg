@@ -92,7 +92,7 @@ fn accumulate_cascaded_declaration(
 fn accumulate_inline_declaration(
   result : CascadedValues,
   decl : Declaration,
-  source_order_offset : Int,
+  source_order_offset : Int32,
 ) -> Unit {
   accumulate_cascaded_declaration(result, {
     property: decl.property,
@@ -118,7 +118,7 @@ pub(all) struct RuleMatch {
   /// Declarations from the rule
   declarations : Array[Declaration]
   /// Source order of the rule
-  source_order : Int
+  source_order : Int32
 }
 
 ///|
@@ -131,7 +131,7 @@ pub struct CSSRule {
   /// Declarations in this rule
   declarations : Array[Declaration]
   /// Source order
-  source_order : Int
+  source_order : Int32
   /// Media query (if this rule is inside @media)
   media_query : @media.MediaQueryList?
 }
@@ -360,11 +360,11 @@ fn cascade_rule_into(
   element : @selector.Element,
   origin : Origin,
   media_env : @media.MediaEnvironment?,
-  source_order_offset : Int,
-  prev_max : Int,
+  source_order_offset : Int32,
+  prev_max : Int32,
   matches : (@selector.Element, @selector.ComplexSelector) -> Bool,
   declaration_is_valid : (String, PropertyValue) -> Bool,
-) -> Int {
+) -> Int32 {
   let media_matches = match (rule.media_query, media_env) {
     (Some(mq), Some(env)) => mq.evaluate(env)
     (Some(_), None) => true
@@ -409,10 +409,10 @@ fn cascade_stylesheet_into(
   stylesheet : Stylesheet,
   element : @selector.Element,
   media_env : @media.MediaEnvironment?,
-  source_order_offset : Int,
+  source_order_offset : Int32,
   matches : (@selector.Element, @selector.ComplexSelector) -> Bool,
   declaration_is_valid : (String, PropertyValue) -> Bool,
-) -> Int {
+) -> Int32 {
   let mut max_so = source_order_offset - 1
   let idx = stylesheet.get_or_build_index()
   for rule_idx in idx.get_candidates(element) {
@@ -437,8 +437,8 @@ fn cascade_stylesheet_matches_into(
   stylesheet : Stylesheet,
   element : @selector.Element,
   media_env : @media.MediaEnvironment?,
-  source_order_offset : Int,
-) -> Int {
+  source_order_offset : Int32,
+) -> Int32 {
   cascade_stylesheet_into(
     result,
     stylesheet,
@@ -456,9 +456,9 @@ fn cascade_validated_stylesheet_matches_into(
   stylesheet : Stylesheet,
   element : @selector.Element,
   media_env : @media.MediaEnvironment?,
-  source_order_offset : Int,
+  source_order_offset : Int32,
   declaration_is_valid : (String, PropertyValue) -> Bool,
-) -> Int {
+) -> Int32 {
   cascade_stylesheet_into(
     result, stylesheet, element, media_env, source_order_offset, @selector.matches_complex,
     declaration_is_valid,

@@ -6,8 +6,8 @@
 /// Path parser state
 priv struct PathParser {
   data : String
-  mut pos : Int
-  len : Int
+  mut pos : Int32
+  len : Int32
 }
 
 ///|
@@ -23,7 +23,7 @@ fn PathParser::is_end(self : PathParser) -> Bool {
 ///|
 fn PathParser::peek(self : PathParser) -> Char {
   if self.pos < self.len {
-    Int::unsafe_to_char(self.data[self.pos].to_int())
+    Int32::unsafe_to_char(self.data[self.pos].to_int())
   } else {
     '\u0000'
   }
@@ -32,7 +32,7 @@ fn PathParser::peek(self : PathParser) -> Char {
 ///|
 fn PathParser::advance(self : PathParser) -> Char {
   if self.pos < self.len {
-    let c = Int::unsafe_to_char(self.data[self.pos].to_int())
+    let c = Int32::unsafe_to_char(self.data[self.pos].to_int())
     self.pos = self.pos + 1
     c
   } else {
@@ -116,7 +116,7 @@ fn PathParser::parse_number(self : PathParser) -> Double? {
   // Build string manually
   let buf = StringBuilder()
   for i in start..<self.pos {
-    let c = Int::unsafe_to_char(self.data[i].to_int())
+    let c = Int32::unsafe_to_char(self.data[i].to_int())
     buf.write_char(c)
   }
   parse_double(buf.to_string())
@@ -382,8 +382,8 @@ fn parse_double(s : String) -> Double? {
   let mut i = 0
   let len = s.length()
   // Helper to get char at index
-  fn char_at(str : String, idx : Int) -> Char {
-    Int::unsafe_to_char(str[idx].to_int())
+  fn char_at(str : String, idx : Int32) -> Char {
+    Int32::unsafe_to_char(str[idx].to_int())
   }
   // Sign
   if i < len && char_at(s, i) == '-' {
@@ -848,7 +848,7 @@ fn flatten_cubic_recursive(
   y3 : Double,
   flatness : Double,
   points : Array[(Double, Double)],
-  depth : Int,
+  depth : Int32,
 ) -> Unit {
   // Limit recursion depth
   if depth >= 24 {
@@ -962,7 +962,7 @@ fn flatten_quadratic_recursive(
   y2 : Double,
   flatness : Double,
   points : Array[(Double, Double)],
-  depth : Int,
+  depth : Int32,
 ) -> Unit {
   if depth >= 24 {
     points.push((x2, y2))
@@ -1134,7 +1134,7 @@ fn angle_between(ux : Double, uy : Double, vx : Double, vy : Double) -> Double {
 }
 
 ///|
-fn max_int(a : Int, b : Int) -> Int {
+fn max_int(a : Int32, b : Int32) -> Int32 {
   if a > b {
     a
   } else {
@@ -1143,7 +1143,7 @@ fn max_int(a : Int, b : Int) -> Int {
 }
 
 ///|
-fn min_int(a : Int, b : Int) -> Int {
+fn min_int(a : Int32, b : Int32) -> Int32 {
   if a < b {
     a
   } else {

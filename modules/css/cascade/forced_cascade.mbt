@@ -55,9 +55,9 @@ fn cascade_stylesheet_forced_validated_into(
   element : @selector.Element,
   media_env : @media.MediaEnvironment?,
   forced : @selector.ForcedPseudoStates,
-  source_order_offset : Int,
+  source_order_offset : Int32,
   declaration_is_valid : (String, PropertyValue) -> Bool,
-) -> Int {
+) -> Int32 {
   cascade_stylesheet_into(
     result,
     stylesheet,

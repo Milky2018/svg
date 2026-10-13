@@ -79,7 +79,7 @@ pub fn UseElement::with_size(
 }
 
 ///|
-fn hex_value(c : Char) -> Int? {
+fn hex_value(c : Char) -> Int32? {
   if c >= '0' && c <= '9' {
     Some(c.to_int() - '0'.to_int())
   } else if c >= 'a' && c <= 'f' {
@@ -97,14 +97,14 @@ fn decode_percent(s : String) -> String {
   let len = s.length()
   let buf = StringBuilder()
   while i < len {
-    let c = Int::unsafe_to_char(s[i].to_int())
+    let c = Int32::unsafe_to_char(s[i].to_int())
     if c == '%' && i + 2 < len {
-      let c1 = Int::unsafe_to_char(s[i + 1].to_int())
-      let c2 = Int::unsafe_to_char(s[i + 2].to_int())
+      let c1 = Int32::unsafe_to_char(s[i + 1].to_int())
+      let c2 = Int32::unsafe_to_char(s[i + 2].to_int())
       match (hex_value(c1), hex_value(c2)) {
         (Some(h1), Some(h2)) => {
           let v = h1 * 16 + h2
-          buf.write_char(Int::unsafe_to_char(v))
+          buf.write_char(Int32::unsafe_to_char(v))
           i = i + 3
           continue
         }

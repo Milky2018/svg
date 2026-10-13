@@ -88,16 +88,16 @@ fn get_shape_bounds(shape : Shape) -> BoundingBox {
 /// Render context for drawing
 priv struct RenderState {
   setter : ColorSink
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
   flatness : Double // For path flattening
   clip : ClipRect? // Optional clipping rectangle for culling
   /// Font callback: (codepoint, font_size) -> (path_commands, advance_width)
-  text_to_paths : ((Int, Double) -> (Array[PathCommand], Double))?
+  text_to_paths : ((Int32, Double) -> (Array[PathCommand], Double))?
   /// Host callback for resolving image references into decoded RGBA pixels.
   image_resolver : ((String) -> Image?)?
   target_image : Image?
-  blend_pixel : ((Int, Int, Color, BlendMode) -> Unit)?
+  blend_pixel : ((Int32, Int32, Color, BlendMode) -> Unit)?
   diagnostics : Array[RenderDiagnostic]
 }
 
@@ -442,7 +442,7 @@ fn render_isolated_node(
       layer.composite_device(x, y, PremulColor16::from_color(color))
     },
   }
-  let layer_blend = fn(x : Int, y : Int, color : Color, mode : BlendMode) {
+  let layer_blend = fn(x : Int32, y : Int32, color : Color, mode : BlendMode) {
     if layer.contains_device(x, y) {
       layer.set_device(
         x,
@@ -604,7 +604,7 @@ fn apply_mask_to_isolated_surface(
       mask_surface.composite_device(x, y, PremulColor16::from_color(color))
     },
   }
-  let mask_blend = fn(x : Int, y : Int, color : Color, mode : BlendMode) {
+  let mask_blend = fn(x : Int32, y : Int32, color : Color, mode : BlendMode) {
     if mask_surface.contains_device(x, y) {
       mask_surface.set_device(
         x,

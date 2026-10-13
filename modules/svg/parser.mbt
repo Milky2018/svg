@@ -6,7 +6,7 @@
 /// SVG Parser state
 priv struct SVGParser {
   events : Array[SVGXmlEvent]
-  mut pos : Int
+  mut pos : Int32
 }
 
 ///|
@@ -22,8 +22,8 @@ priv struct SVGParseContext {
   markers : MarkerRegistry
   stylesheets : Array[@css_cascade.Stylesheet]
   element_stack : Array[@css_selector.Element]
-  sibling_index_stack : Array[Int]
-  sibling_count_stack : Array[Int]
+  sibling_index_stack : Array[Int32]
+  sibling_count_stack : Array[Int32]
   previous_sibling_stack : Array[@css_selector.Element?]
   selector_element_slots : Array[@css_selector.Element?]
   style_stack : Array[InheritedStyle]
@@ -38,8 +38,8 @@ priv struct SVGParseContext {
 ///|
 fn SVGParseContext::new(
   stylesheets : Array[@css_cascade.Stylesheet],
-  initial_length_viewport? : (Double, Double) = (300.0, 150.0),
-  environment? : RenderEnvironment = RenderEnvironment::default(),
+  initial_length_viewport~ : (Double, Double) = (300.0, 150.0),
+  environment~ : RenderEnvironment = RenderEnvironment::default(),
 ) -> SVGParseContext {
   let color_scheme = match environment.color_scheme {
     Light => @css_media.Light
@@ -129,7 +129,7 @@ fn SVGParseContext::current_style(self : SVGParseContext) -> InheritedStyle {
 }
 
 ///|
-fn SVGParseContext::current_sibling_index(self : SVGParseContext) -> Int {
+fn SVGParseContext::current_sibling_index(self : SVGParseContext) -> Int32 {
   if self.sibling_index_stack.length() == 0 {
     1
   } else {
@@ -138,7 +138,7 @@ fn SVGParseContext::current_sibling_index(self : SVGParseContext) -> Int {
 }
 
 ///|
-fn SVGParseContext::current_sibling_count(self : SVGParseContext) -> Int {
+fn SVGParseContext::current_sibling_count(self : SVGParseContext) -> Int32 {
   if self.sibling_count_stack.length() == 0 {
     1
   } else {
@@ -853,7 +853,10 @@ fn parse_plain_text_content(parser : SVGParser, tag_name : String) -> String? {
 }
 
 ///|
-fn count_direct_child_elements(parser : SVGParser, parent_tag : String) -> Int {
+fn count_direct_child_elements(
+  parser : SVGParser,
+  parent_tag : String,
+) -> Int32 {
   let mut pos = parser.pos
   let mut depth = 0
   let mut count = 0

@@ -35,7 +35,7 @@ image resolution is configured with `RenderOptions`.
 ///|
 test "README: render SVG markup" {
   let source = "<svg width=\"10\" height=\"10\"><rect x=\"1\" y=\"1\" width=\"8\" height=\"8\" fill=\"red\"/></svg>"
-  let image = render_svg_to_image(source, 16, 16)
+  let image = @svg.render_svg_to_image(source, 16, 16)
   assert_true(image is Some(_))
 }
 ```
@@ -46,9 +46,14 @@ Use the document API when the parsed resource tables or root node are needed:
 ///|
 test "README: parse and render a document" {
   let source = "<svg width=\"4\" height=\"4\"><circle cx=\"2\" cy=\"2\" r=\"2\"/></svg>"
-  match parse_svg_document(source) {
+  match @svg.parse_svg_document(source) {
     Some(document) => {
-      let result = render_svg_document(document, 4, 4, RenderOptions::default())
+      let result = @svg.render_svg_document(
+        document,
+        4,
+        4,
+        @svg.RenderOptions::default(),
+      )
       assert_eq(result.image.width(), 4)
     }
     None => fail("expected a valid SVG document")
@@ -65,7 +70,12 @@ of requiring a separate error channel.
 ```mbt check
 ///|
 test "README: inspect structured diagnostics" {
-  let result = render_svg("<svg><broken></svg>", 8, 8, RenderOptions::default())
+  let result = @svg.render_svg(
+    "<svg><broken></svg>",
+    8,
+    8,
+    @svg.RenderOptions::default(),
+  )
   assert_eq(result.image.width(), 8)
   assert_true(result.diagnostics.length() > 0)
   assert_eq(result.diagnostics[0].kind, ParseFailed)
@@ -81,14 +91,14 @@ resource cannot be resolved.
 ```mbt check
 ///|
 test "README: resolve a raster image" {
-  let options = RenderOptions::with_image_resolver(fn(href) {
+  let options = @svg.RenderOptions::with_image_resolver(fn(href) {
     if href == "asset.png" {
-      Some(Image::filled(2, 2, Color::rgba(255, 0, 0, 128)))
+      Some(@svg.Image::filled(2, 2, @svg.Color::rgba(255, 0, 0, 128)))
     } else {
       None
     }
   })
-  let result = render_svg(
+  let result = @svg.render_svg(
     "<svg width=\"2\" height=\"2\"><image href=\"asset.png\" width=\"2\" height=\"2\"/></svg>",
     2, 2, options,
   )
@@ -112,18 +122,18 @@ or performs network requests.
 ```mbt check
 ///|
 test "README: render with host text resources and static state" {
-  let options = RenderOptions::{
-    ..RenderOptions::default(),
+  let options = @svg.RenderOptions::{
+    ..@svg.RenderOptions::default(),
     environment: {
-      ..RenderEnvironment::default(),
+      ..@svg.RenderEnvironment::default(),
       base_uri: "mem:/document.svg",
       color_scheme: Dark,
       sample_time_seconds: 0.5,
       element_state_resolver: Some(fn(id) {
         if id == "target" {
-          { ..ElementState::none(), hover: true, }
+          { ..@svg.ElementState::none(), hover: true, }
         } else {
-          ElementState::none()
+          @svg.ElementState::none()
         }
       }),
     },
@@ -135,7 +145,7 @@ test "README: render with host text resources and static state" {
     }),
   }
   let source = "<?xml-stylesheet href=\"theme.css\"?><svg width=\"2\" height=\"2\"><rect id=\"target\" width=\"2\" height=\"2\"/></svg>"
-  let result = render_svg(source, 2, 2, options)
+  let result = @svg.render_svg(source, 2, 2, options)
   assert_eq(result.diagnostics.length(), 0)
 }
 ```

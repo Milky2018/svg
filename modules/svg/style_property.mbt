@@ -188,7 +188,7 @@ fn valid_svg_transform(value : String) -> Bool {
   let mut functions = 0
   while i < input.length() {
     while i < input.length() {
-      let c = Int::unsafe_to_char(input[i].to_int())
+      let c = Int32::unsafe_to_char(input[i].to_int())
       if css_is_whitespace(c) || c == ',' {
         i += 1
       } else {
@@ -200,7 +200,7 @@ fn valid_svg_transform(value : String) -> Bool {
     }
     let name_start = i
     while i < input.length() {
-      let c = Int::unsafe_to_char(input[i].to_int())
+      let c = Int32::unsafe_to_char(input[i].to_int())
       if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
         i += 1
       } else {
@@ -209,16 +209,16 @@ fn valid_svg_transform(value : String) -> Bool {
     }
     let name = build_substring(input, name_start, i)
     while i < input.length() &&
-          css_is_whitespace(Int::unsafe_to_char(input[i].to_int())) {
+          css_is_whitespace(Int32::unsafe_to_char(input[i].to_int())) {
       i += 1
     }
-    if i >= input.length() || Int::unsafe_to_char(input[i].to_int()) != '(' {
+    if i >= input.length() || Int32::unsafe_to_char(input[i].to_int()) != '(' {
       return false
     }
     i += 1
     let args_start = i
-    while i < input.length() && Int::unsafe_to_char(input[i].to_int()) != ')' {
-      if Int::unsafe_to_char(input[i].to_int()) == '(' {
+    while i < input.length() && Int32::unsafe_to_char(input[i].to_int()) != ')' {
+      if Int32::unsafe_to_char(input[i].to_int()) == '(' {
         return false
       }
       i += 1
