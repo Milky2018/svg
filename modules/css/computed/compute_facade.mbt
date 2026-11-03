@@ -58,8 +58,8 @@ pub fn compute_inline_raw(
       }
     }
     if colon_pos > 0 {
-      let prop = view_to_string(pair_str.view(end_offset=colon_pos)).trim()
-      let val = view_to_string(pair_str.view(start_offset=colon_pos + 1)).trim()
+      let prop = view_to_string(pair_str.exact_view(end=colon_pos)).trim()
+      let val = view_to_string(pair_str.exact_view(start=colon_pos + 1)).trim()
       if !prop.is_empty() &&
         (!val.is_empty() || starts_with(prop.to_owned(), "--")) {
         let (value, importance) = strip_inline_important_marker(val.to_owned())

@@ -28,7 +28,7 @@ pub struct CSSRule {
   selector_text : String
   selector : @selector.ComplexSelector
   declarations : Array[Declaration]
-  source_order : Int
+  source_order : Int32
   media_query : @media.MediaQueryList?
 }
 
@@ -48,13 +48,13 @@ pub(all) struct Declaration {
   origin : Origin
   importance : Importance
   specificity : @selector.Specificity
-  source_order : Int
+  source_order : Int32
 }
 pub fn Declaration::from_inline(String, String, Importance) -> Self
 pub fn Declaration::new(String, String) -> Self
 pub fn Declaration::output(Self, &Logger) -> Unit
 pub fn Declaration::to_string(Self) -> String
-pub fn Declaration::with_metadata(String, PropertyValue, Origin, Importance, @selector.Specificity, Int) -> Self
+pub fn Declaration::with_metadata(String, PropertyValue, Origin, Importance, @selector.Specificity, Int32) -> Self
 pub impl Show for Declaration
 
 pub(all) struct ImportRule {
@@ -113,17 +113,17 @@ pub impl Show for PropertyValue
 pub(all) struct RuleMatch {
   specificity : @selector.Specificity
   declarations : Array[Declaration]
-  source_order : Int
+  source_order : Int32
 }
 
 pub(all) struct SelectorIndex {
-  by_id : Map[String, Array[Int]]
-  by_class : Map[String, Array[Int]]
-  by_tag : Map[String, Array[Int]]
-  universal : Array[Int]
+  by_id : Map[String, Array[Int32]]
+  by_class : Map[String, Array[Int32]]
+  by_tag : Map[String, Array[Int32]]
+  universal : Array[Int32]
 }
 pub fn SelectorIndex::from_stylesheet(Stylesheet) -> Self
-pub fn SelectorIndex::get_candidates(Self, @selector.Element) -> Array[Int]
+pub fn SelectorIndex::get_candidates(Self, @selector.Element) -> Array[Int32]
 pub fn SelectorIndex::new() -> Self
 
 pub struct Stylesheet {

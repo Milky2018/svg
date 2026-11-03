@@ -177,9 +177,9 @@ pub fn ClipRect::to_string(Self) -> String
 pub impl Show for ClipRect
 
 pub(all) struct Color {
-  r : Int
-  g : Int
-  b : Int
+  r : Int32
+  g : Int32
+  b : Int32
   a : Double
 } derive(@debug.Debug)
 pub fn Color::black() -> Self
@@ -188,8 +188,8 @@ pub fn Color::is_opaque(Self) -> Bool
 pub fn Color::is_transparent(Self) -> Bool
 pub fn Color::not_equal(Self, Self) -> Bool
 pub fn Color::output(Self, &Logger) -> Unit
-pub fn Color::rgb(Int, Int, Int) -> Self
-pub fn Color::rgba(Int, Int, Int, Double) -> Self
+pub fn Color::rgb(Int32, Int32, Int32) -> Self
+pub fn Color::rgba(Int32, Int32, Int32, Double) -> Self
 pub fn Color::to_hex(Self) -> String
 pub fn Color::to_repr(Self) -> @debug.Repr
 pub fn Color::to_rgba_string(Self) -> String
@@ -302,18 +302,18 @@ pub(all) enum Easing {
   EaseInOutBounce
   LinearFunction(Array[LinearEasingPoint])
   CubicBezier(Double, Double, Double, Double)
-  Steps(Int, StepPosition)
+  Steps(Int32, StepPosition)
 } derive(Eq, @debug.Debug)
 pub fn Easing::apply(Self, Double, Double, Double) -> Double
 pub fn Easing::cubic_bezier(Double, Double, Double, Double) -> Self
 pub fn Easing::equal(Self, Self) -> Bool
 pub fn Easing::frame(Self, Double, Double, Double) -> EasingFrame
-pub fn Easing::frames(Self, Double, Double, Int) -> Array[EasingFrame]
+pub fn Easing::frames(Self, Double, Double, Int32) -> Array[EasingFrame]
 pub fn Easing::linear(Array[LinearEasingPoint]) -> Self?
 pub fn Easing::not_equal(Self, Self) -> Bool
 pub fn Easing::output(Self, &Logger) -> Unit
 pub fn Easing::sample(Self, Double) -> Double
-pub fn Easing::steps(Int, StepPosition) -> Self
+pub fn Easing::steps(Int32, StepPosition) -> Self
 pub fn Easing::to_repr(Self) -> @debug.Repr
 pub fn Easing::to_string(Self) -> String
 pub impl Show for Easing
@@ -390,11 +390,11 @@ pub impl Show for GridLine
 
 pub(all) enum GridPlacement {
   Auto
-  Line(Int)
-  Span(Int)
+  Line(Int32)
+  Span(Int32)
   Named(String)
-  NamedLine(Int, String)
-  SpanNamed(Int, String)
+  NamedLine(Int32, String)
+  SpanNamed(Int32, String)
 } derive(Eq, @debug.Debug)
 pub fn GridPlacement::equal(Self, Self) -> Bool
 pub fn GridPlacement::not_equal(Self, Self) -> Bool
@@ -543,7 +543,7 @@ pub fn Rect::zero() -> Self[Double]
 pub impl[T : Show] Show for Rect[T]
 
 pub(all) enum RepeatCount {
-  Count(Int)
+  Count(Int32)
   AutoFill
   AutoFit
 } derive(Eq, @debug.Debug)

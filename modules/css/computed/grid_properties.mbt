@@ -308,7 +308,7 @@ pub fn parse_grid_template_areas_value(value : String) -> Array[String] {
         end = end + 1
       }
       if end > i + 1 {
-        let row_str = view_to_string(v.view(start_offset=i + 1, end_offset=end))
+        let row_str = view_to_string(v.exact_view(start=i + 1, end~))
         result.push(row_str.to_string())
       }
       i = end + 1
@@ -361,8 +361,8 @@ pub fn parse_aspect_ratio(value : String) -> Double? {
     }
     if slash_pos > 0 {
       // Use view slicing
-      let width_str = view_to_string(v.view(end_offset=slash_pos)).trim()
-      let height_str = view_to_string(v.view(start_offset=slash_pos + 1)).trim()
+      let width_str = view_to_string(v.exact_view(end=slash_pos)).trim()
+      let height_str = view_to_string(v.exact_view(start=slash_pos + 1)).trim()
       let w = @string.parse_double(width_str.to_owned()) catch {
         _ => return None
       }

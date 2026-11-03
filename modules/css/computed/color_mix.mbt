@@ -21,12 +21,12 @@ fn split_depth0(s : String, sep : Char) -> Array[String] {
         depth = depth - 1
       }
     } else if c == sep && depth == 0 {
-      res.push(view_to_string(s.view(start_offset=start, end_offset=i)))
+      res.push(view_to_string(s.exact_view(start~, end=i)))
       start = i + 1
     }
     i = i + 1
   }
-  res.push(view_to_string(s.view(start_offset=start)))
+  res.push(view_to_string(s.exact_view(start~)))
   res
 }
 
@@ -38,7 +38,7 @@ fn parse_interpolation_space(spec : String) -> ColorInterpolationSpace? {
   if !s.has_prefix("in ") {
     return None
   }
-  let rest = view_to_string(s.view(start_offset=3)).trim().to_owned()
+  let rest = view_to_string(s.exact_view(start=3)).trim().to_owned()
   // The first token is the color space; any remainder is the hue method.
   let tokens = split_depth0(rest, ' ').filter(fn(x) { x.trim().length() > 0 })
   if tokens.length() == 0 {
@@ -67,9 +67,7 @@ fn parse_mix_component(part : String) -> (@types.Color?, Double?) {
   for tok in tokens {
     let t = tok.trim().to_owned()
     if t.has_suffix("%") {
-      let num = view_to_string(
-        t.view(start_offset=0, end_offset=t.length() - 1),
-      )
+      let num = view_to_string(t.exact_view(start=0, end=t.length() - 1))
       percent = Some(parse_number(num) / 100.0)
     } else {
       color_tokens.push(t)
@@ -96,7 +94,7 @@ fn parse_color_mix(v : String) -> CssColorValue? {
   if !v.has_prefix("color-mix(") || !v.has_suffix(")") {
     return None
   }
-  let inner = view_to_string(v.view(start_offset=10, end_offset=v.length() - 1))
+  let inner = view_to_string(v.exact_view(start=10, end=v.length() - 1))
   let parts = split_depth0(inner, ',')
   if parts.length() != 3 {
     return None

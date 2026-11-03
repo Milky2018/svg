@@ -14,13 +14,13 @@ pub fn parse_transform(String) -> Transform
 
 pub fn path_bbox(Array[PathCommand]) -> BoundingBox
 
-pub fn render_path_commands_to_image(Array[PathCommand], Int, Int, Color, transform? : Array[Double]) -> Image
+pub fn render_path_commands_to_image(Array[PathCommand], Int32, Int32, Color, transform? : Array[Double]) -> Image
 
-pub fn render_svg(String, Int, Int, RenderOptions) -> RenderResult
+pub fn render_svg(String, Int32, Int32, RenderOptions) -> RenderResult
 
-pub fn render_svg_document(SVGDocument, Int, Int, RenderOptions) -> RenderResult
+pub fn render_svg_document(SVGDocument, Int32, Int32, RenderOptions) -> RenderResult
 
-pub fn render_svg_to_image(String, Int, Int) -> Image?
+pub fn render_svg_to_image(String, Int32, Int32) -> Image?
 
 // Errors
 
@@ -102,15 +102,15 @@ pub fn ClipPathUnits::not_equal(Self, Self) -> Bool
 pub fn ClipPathUnits::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Color {
-  r : Int
-  g : Int
-  b : Int
-  a : Int
+  r : Int32
+  g : Int32
+  b : Int32
+  a : Int32
 } derive(@debug.Debug)
 pub fn Color::black() -> Self
 pub fn Color::is_transparent(Self) -> Bool
-pub fn Color::rgb(Int, Int, Int) -> Self
-pub fn Color::rgba(Int, Int, Int, Int) -> Self
+pub fn Color::rgb(Int32, Int32, Int32) -> Self
+pub fn Color::rgba(Int32, Int32, Int32, Int32) -> Self
 pub fn Color::to_repr(Self) -> @debug.Repr
 pub fn Color::transparent() -> Self
 pub fn Color::white() -> Self
@@ -216,9 +216,9 @@ pub(all) enum FilterGraphPrimitive {
   GraphMerge(result~ : String, inputs~ : Array[String])
   GraphComponentTransfer(input~ : String, result~ : String, red~ : ComponentTransferFunction, green~ : ComponentTransferFunction, blue~ : ComponentTransferFunction, alpha~ : ComponentTransferFunction)
   GraphMorphology(input~ : String, result~ : String, radius_x~ : Double, radius_y~ : Double, operator~ : MorphologyOperator)
-  GraphConvolveMatrix(input~ : String, result~ : String, order_x~ : Int, order_y~ : Int, kernel~ : Array[Double], divisor~ : Double, bias~ : Double, target_x~ : Int, target_y~ : Int, edge_mode~ : FilterEdgeMode, preserve_alpha~ : Bool)
+  GraphConvolveMatrix(input~ : String, result~ : String, order_x~ : Int32, order_y~ : Int32, kernel~ : Array[Double], divisor~ : Double, bias~ : Double, target_x~ : Int32, target_y~ : Int32, edge_mode~ : FilterEdgeMode, preserve_alpha~ : Bool)
   GraphDisplacementMap(input~ : String, input2~ : String, result~ : String, scale~ : Double, x_channel~ : FilterChannel, y_channel~ : FilterChannel)
-  GraphTurbulence(result~ : String, base_x~ : Double, base_y~ : Double, octaves~ : Int, seed~ : Double, stitch~ : Bool, fractal_noise~ : Bool)
+  GraphTurbulence(result~ : String, base_x~ : Double, base_y~ : Double, octaves~ : Int32, seed~ : Double, stitch~ : Bool, fractal_noise~ : Bool)
   GraphTile(input~ : String, result~ : String)
   GraphImage(result~ : String, href~ : String, x~ : Double, y~ : Double, width~ : Double, height~ : Double)
   GraphDiffuseLighting(input~ : String, result~ : String, surface_scale~ : Double, diffuse_constant~ : Double, color~ : Color, light~ : FilterLight)
@@ -254,13 +254,13 @@ pub fn GradientUnits::to_repr(Self) -> @debug.Repr
 pub struct Image {
   // private fields
 }
-pub fn Image::filled(Int, Int, Color) -> Self
-pub fn Image::from_pixels(Int, Int, Array[Color]) -> Self?
-pub fn Image::get_pixel(Self, Int, Int) -> Color
-pub fn Image::height(Self) -> Int
-pub fn Image::new(Int, Int) -> Self
-pub fn Image::set_pixel(Self, Int, Int, Color) -> Unit
-pub fn Image::width(Self) -> Int
+pub fn Image::filled(Int32, Int32, Color) -> Self
+pub fn Image::from_pixels(Int32, Int32, Array[Color]) -> Self?
+pub fn Image::get_pixel(Self, Int32, Int32) -> Color
+pub fn Image::height(Self) -> Int32
+pub fn Image::new(Int32, Int32) -> Self
+pub fn Image::set_pixel(Self, Int32, Int32, Color) -> Unit
+pub fn Image::width(Self) -> Int32
 
 pub(all) enum ImageSampling {
   Nearest
@@ -532,9 +532,9 @@ pub(all) struct RenderOptions {
   image_resolver : ((String) -> Image?)?
   text_resource_resolver : ((String, TextResourceKind) -> String?)?
   environment : RenderEnvironment
-  max_external_depth : Int
-  max_external_resources : Int
-  max_external_bytes : Int
+  max_external_depth : Int32
+  max_external_resources : Int32
+  max_external_bytes : Int32
 }
 pub fn RenderOptions::default() -> Self
 pub fn RenderOptions::with_image_resolver((String) -> Image?) -> Self

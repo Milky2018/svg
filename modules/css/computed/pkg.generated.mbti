@@ -24,9 +24,9 @@ pub fn default_color() -> @values.Color
 
 pub fn extract_border_width(String) -> @values.Dimension
 
-pub fn find_grid_named_line(String, Array[Array[String]]) -> Int?
+pub fn find_grid_named_line(String, Array[Array[String]]) -> Int32?
 
-pub fn find_grid_named_line_nth(String, Int, Array[Array[String]]) -> Int?
+pub fn find_grid_named_line_nth(String, Int32, Array[Array[String]]) -> Int32?
 
 pub fn initial_value(String) -> String
 
@@ -92,7 +92,7 @@ pub fn parse_grid_template_track_list(String) -> (Array[@values.TrackSizingFunct
 
 pub fn parse_grid_template_tracks(String) -> Array[@values.TrackSizingFunction]
 
-pub fn parse_integer(String) -> Int
+pub fn parse_integer(String) -> Int32
 
 pub fn parse_linear_gradient(String) -> @values.BackgroundImage
 
@@ -124,7 +124,7 @@ pub fn resolve_current_color(CssColorValue, @values.Color) -> @values.Color
 
 pub fn resolve_custom_property_value(String, Map[String, String]) -> String?
 
-pub fn resolve_grid_line_placement(@values.GridPlacement, @values.GridPlacement, Array[Array[String]]) -> (Int?, Int?)
+pub fn resolve_grid_line_placement(@values.GridPlacement, @values.GridPlacement, Array[Array[String]]) -> (Int32?, Int32?)
 
 pub fn resolve_length_dimension(String, ComputeContext) -> @values.Dimension?
 

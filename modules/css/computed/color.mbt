@@ -65,7 +65,7 @@ fn resolve_color_var_fallback(value : String) -> String {
     return v.to_owned()
   }
   // Extract content inside var(...)
-  let inner = view_to_string(v.view(start_offset=4, end_offset=v.length() - 1))
+  let inner = view_to_string(v.exact_view(start=4, end=v.length() - 1))
   // Find the comma separating variable name from fallback
   let mut paren_depth = 0
   let mut comma_pos = -1

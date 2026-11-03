@@ -10,9 +10,7 @@ pub fn parse_clip(value : String) -> @types.ClipRect {
   // Parse rect(top, right, bottom, left)
   if v.has_prefix("rect(") && v.has_suffix(")") {
     // Extract the content inside rect()
-    let content = view_to_string(
-      v.view(start_offset=5, end_offset=v.length() - 1),
-    ).trim()
+    let content = view_to_string(v.exact_view(start=5, end=v.length() - 1)).trim()
     // Split by comma or space (both are valid in CSS)
     let parts : Array[String] = []
     let mut current = StringBuilder()
@@ -52,9 +50,7 @@ pub fn parse_clip_path(value : String) -> @style.ClipPath {
     return None
   }
   if v.has_prefix("inset(") && v.has_suffix(")") {
-    let raw_content = view_to_string(
-        v.view(start_offset=6, end_offset=v.length() - 1),
-      )
+    let raw_content = view_to_string(v.exact_view(start=6, end=v.length() - 1))
       .trim()
       .to_owned()
     let content = match raw_content.find("round") {
@@ -81,17 +77,13 @@ pub fn parse_clip_path(value : String) -> @style.ClipPath {
     }
   }
   if v.has_prefix("rect(") && v.has_suffix(")") {
-    let content = view_to_string(
-        v.view(start_offset=5, end_offset=v.length() - 1),
-      )
+    let content = view_to_string(v.exact_view(start=5, end=v.length() - 1))
       .trim()
       .to_owned()
     return parse_clip_path_rect(content)
   }
   if v.has_prefix("xywh(") && v.has_suffix(")") {
-    let raw_content = view_to_string(
-        v.view(start_offset=5, end_offset=v.length() - 1),
-      )
+    let raw_content = view_to_string(v.exact_view(start=5, end=v.length() - 1))
       .trim()
       .to_owned()
     let content = match raw_content.find("round") {
@@ -102,32 +94,26 @@ pub fn parse_clip_path(value : String) -> @style.ClipPath {
     return parse_clip_path_xywh(content)
   }
   if v.has_prefix("circle(") && v.has_suffix(")") {
-    let content = view_to_string(
-        v.view(start_offset=7, end_offset=v.length() - 1),
-      )
+    let content = view_to_string(v.exact_view(start=7, end=v.length() - 1))
       .trim()
       .to_owned()
     return parse_clip_path_circle(content)
   }
   if v.has_prefix("ellipse(") && v.has_suffix(")") {
-    let content = view_to_string(
-        v.view(start_offset=8, end_offset=v.length() - 1),
-      )
+    let content = view_to_string(v.exact_view(start=8, end=v.length() - 1))
       .trim()
       .to_owned()
     return parse_clip_path_ellipse(content)
   }
   if v.has_prefix("polygon(") && v.has_suffix(")") {
-    let content = view_to_string(
-        v.view(start_offset=8, end_offset=v.length() - 1),
-      )
+    let content = view_to_string(v.exact_view(start=8, end=v.length() - 1))
       .trim()
       .to_owned()
     return parse_clip_path_polygon(content)
   }
   if v.has_prefix("path(") && v.has_suffix(")") {
     let content = view_to_string(
-        raw_v.view(start_offset=5, end_offset=raw_v.length() - 1),
+        raw_v.exact_view(start=5, end=raw_v.length() - 1),
       )
       .trim()
       .to_owned()

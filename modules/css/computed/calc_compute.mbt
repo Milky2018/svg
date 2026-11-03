@@ -9,17 +9,13 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
 
   // Handle nested calc()
   if v.has_prefix("calc(") && v.has_suffix(")") {
-    let inner = view_to_string(
-      v.view(start_offset=5, end_offset=v.length() - 1),
-    )
+    let inner = view_to_string(v.exact_view(start=5, end=v.length() - 1))
     return parse_simple_calc_expr(inner, ctx)
   }
 
   // Handle nested min()
   if v.has_prefix("min(") && v.has_suffix(")") {
-    let inner = view_to_string(
-      v.view(start_offset=4, end_offset=v.length() - 1),
-    )
+    let inner = view_to_string(v.exact_view(start=4, end=v.length() - 1))
     let args = split_css_args(inner)
     let mut min_val : Double? = None
     for arg in args {
@@ -37,9 +33,7 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
 
   // Handle nested max()
   if v.has_prefix("max(") && v.has_suffix(")") {
-    let inner = view_to_string(
-      v.view(start_offset=4, end_offset=v.length() - 1),
-    )
+    let inner = view_to_string(v.exact_view(start=4, end=v.length() - 1))
     let args = split_css_args(inner)
     let mut max_val : Double? = None
     for arg in args {
@@ -57,9 +51,7 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
 
   // Handle nested clamp()
   if v.has_prefix("clamp(") && v.has_suffix(")") {
-    let inner = view_to_string(
-      v.view(start_offset=6, end_offset=v.length() - 1),
-    )
+    let inner = view_to_string(v.exact_view(start=6, end=v.length() - 1))
     let args = split_css_args(inner)
     if args.length() != 3 {
       return None
@@ -259,9 +251,7 @@ fn parse_css_math_function(
   if !v.has_suffix(")") {
     return None
   }
-  let inner = view_to_string(
-    v.view(start_offset=prefix_len, end_offset=v.length() - 1),
-  )
+  let inner = view_to_string(v.exact_view(start=prefix_len, end=v.length() - 1))
   let raw_args = split_css_args(inner)
   if raw_args.is_empty() {
     return None
@@ -731,7 +721,7 @@ fn eval_calc(expr : String, ctx : ComputeContext) -> (Double, Double)? {
   if !v.has_prefix("calc(") || !v.has_suffix(")") {
     return None
   }
-  let inner = view_to_string(v.view(start_offset=5, end_offset=v.length() - 1))
+  let inner = view_to_string(v.exact_view(start=5, end=v.length() - 1))
   let toks = match calc_tokenize(inner) {
     Some(t) => t
     None => return None
@@ -944,9 +934,7 @@ fn resolve_custom_property_value_inner(
   if close < 0 {
     return None
   }
-  let inner = view_to_string(
-    value.view(start_offset=open + 1, end_offset=close),
-  )
+  let inner = view_to_string(value.exact_view(start=open + 1, end=close))
   let mut comma = -1
   paren_depth = 0
   for i in 0..<inner.length() {
@@ -961,7 +949,7 @@ fn resolve_custom_property_value_inner(
     }
   }
   let name = view_to_string(
-      inner.view(end_offset=if comma < 0 { inner.length() } else { comma }),
+      inner.exact_view(end=if comma < 0 { inner.length() } else { comma }),
     )
     .trim()
     .to_owned()
@@ -971,7 +959,7 @@ fn resolve_custom_property_value_inner(
   let fallback = if comma < 0 {
     None
   } else {
-    Some(view_to_string(inner.view(start_offset=comma + 1)).trim().to_owned())
+    Some(view_to_string(inner.exact_view(start=comma + 1)).trim().to_owned())
   }
   let replacement = if stack.contains(name) {
     match fallback {
@@ -1025,8 +1013,8 @@ fn resolve_custom_property_value_inner(
   }
   match replacement {
     Some(replacement) => {
-      let before = view_to_string(value.view(end_offset=start))
-      let after = view_to_string(value.view(start_offset=close + 1))
+      let before = view_to_string(value.exact_view(end=start))
+      let after = view_to_string(value.exact_view(start=close + 1))
       resolve_custom_property_value_inner(
         before + replacement + after,
         custom_properties,
@@ -1079,7 +1067,7 @@ fn css_math_function_prefix_len(value : String, index : Int32) -> Int32 {
       return 0
     }
   }
-  let tail = view_to_string(value.view(start_offset=index))
+  let tail = view_to_string(value.exact_view(start=index))
   if tail.has_prefix("calc(") {
     5
   } else if tail.has_prefix("min(") {
@@ -1133,9 +1121,7 @@ fn normalize_grid_template_math_functions(
     if prefix_len > 0 {
       let end = find_matching_function_end(value, i + prefix_len - 1)
       if end > i {
-        let expr = view_to_string(
-          value.view(start_offset=i, end_offset=end + 1),
-        )
+        let expr = view_to_string(value.exact_view(start=i, end=end + 1))
         match dimension_to_grid_token(resolve_dimension(expr, ctx)) {
           Some(token) => {
             out.write_string(token)

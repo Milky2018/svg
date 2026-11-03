@@ -181,25 +181,25 @@ fn parse_rotate_degrees(value : String) -> Double {
     return 0.0
   }
   if v.has_suffix("deg") {
-    let num_str = view_to_string(v.view(end_offset=v.length() - 3))
+    let num_str = view_to_string(v.exact_view(end=v.length() - 3))
     return @string.parse_double(num_str.trim()) catch { _ => 0.0 }
   }
   if v.has_suffix("turn") {
-    let num_str = view_to_string(v.view(end_offset=v.length() - 4))
+    let num_str = view_to_string(v.exact_view(end=v.length() - 4))
     let turns = @string.parse_double(num_str.trim()) catch { _ => return 0.0 }
     return turns * 360.0
   }
   // `grad` must be checked before `rad`: it also ends with "rad".
   // 400grad = 360deg, so 1grad = 0.9deg.
   if v.has_suffix("grad") {
-    let num_str = view_to_string(v.view(end_offset=v.length() - 4))
+    let num_str = view_to_string(v.exact_view(end=v.length() - 4))
     let gradians = @string.parse_double(num_str.trim()) catch {
       _ => return 0.0
     }
     return gradians * 0.9
   }
   if v.has_suffix("rad") {
-    let num_str = view_to_string(v.view(end_offset=v.length() - 3))
+    let num_str = view_to_string(v.exact_view(end=v.length() - 3))
     let radians = @string.parse_double(num_str.trim()) catch { _ => return 0.0 }
     return radians * 57.29577951308232
   }
@@ -230,7 +230,7 @@ fn parse_zoom(value : String) -> Double {
   }
   // Check for percentage (e.g., "150%")
   if v.has_suffix("%") {
-    let num_str = view_to_string(v.view(end_offset=v.length() - 1))
+    let num_str = view_to_string(v.exact_view(end=v.length() - 1))
     let n = @string.parse_double(num_str.trim()) catch { _ => return 1.0 }
     return n / 100.0
   }
@@ -249,13 +249,13 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
   }
   // Check for percentage
   if v.has_suffix("%") {
-    let num_str = view_to_string(v.view(end_offset=v.length() - 1))
+    let num_str = view_to_string(v.exact_view(end=v.length() - 1))
     let n = @string.parse_double(num_str.trim()) catch {
       _ => return Length(0.0)
     }
     Percent(n / 100.0)
   } else if v.has_suffix("px") {
-    let num_str = view_to_string(v.view(end_offset=v.length() - 2))
+    let num_str = view_to_string(v.exact_view(end=v.length() - 2))
     let n = @string.parse_double(num_str.trim()) catch {
       _ => return Length(0.0)
     }
@@ -263,7 +263,7 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
   } else if v.has_suffix("em") || v.has_suffix("rem") {
     // em/rem - convert to pixels assuming 16px base
     let suffix_len = if v.has_suffix("rem") { 3 } else { 2 }
-    let num_str = view_to_string(v.view(end_offset=v.length() - suffix_len))
+    let num_str = view_to_string(v.exact_view(end=v.length() - suffix_len))
     let n = @string.parse_double(num_str.trim()) catch {
       _ => return Length(0.0)
     }
@@ -355,7 +355,7 @@ fn strip_inline_important_marker(
   if trimmed[bang_pos - 1].to_int().unsafe_to_char() != '!' {
     return (trimmed, Normal)
   }
-  let stripped = view_to_string(trimmed.view(end_offset=bang_pos - 1))
+  let stripped = view_to_string(trimmed.exact_view(end=bang_pos - 1))
     .trim()
     .to_owned()
   if stripped.is_empty() {

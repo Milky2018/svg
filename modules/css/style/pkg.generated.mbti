@@ -37,7 +37,7 @@ pub(all) enum BorderStyle {
 pub fn BorderStyle::equal(Self, Self) -> Bool
 pub fn BorderStyle::not_equal(Self, Self) -> Bool
 pub fn BorderStyle::output(Self, &Logger) -> Unit
-pub fn BorderStyle::priority(Self) -> Int
+pub fn BorderStyle::priority(Self) -> Int32
 pub fn BorderStyle::to_repr(Self) -> @debug.Repr
 pub fn BorderStyle::to_string(Self) -> String
 pub impl Show for BorderStyle
@@ -271,11 +271,11 @@ pub(all) struct Style {
   mut flex_grow : Double
   mut flex_shrink : Double
   mut flex_basis : @values.Dimension
-  mut order : Int
+  mut order : Int32
   mut row_gap : @values.Dimension
   mut column_gap : @values.Dimension
   mut column_gap_is_normal : Bool
-  mut column_count : Int?
+  mut column_count : Int32?
   mut column_width : @values.Dimension
   mut column_fill : ColumnFill
   mut aspect_ratio : Double?
@@ -343,8 +343,8 @@ pub(all) struct Style {
   mut border_collapse : BorderCollapse
   mut table_layout : TableLayout
   mut caption_side : CaptionSide
-  mut rowspan : Int
-  mut colspan : Int
+  mut rowspan : Int32
+  mut colspan : Int32
   mut border_top_left_radius : Double
   mut border_top_right_radius : Double
   mut border_bottom_right_radius : Double
@@ -431,7 +431,7 @@ pub fn Transform::is_none(Self) -> Bool
 pub fn Transform::none() -> Self
 pub fn Transform::not_equal(Self, Self) -> Bool
 pub fn Transform::output(Self, &Logger) -> Unit
-pub fn Transform::quarter_turns(Self) -> Int
+pub fn Transform::quarter_turns(Self) -> Int32
 pub fn Transform::to_repr(Self) -> @debug.Repr
 pub fn Transform::to_string(Self) -> String
 pub impl Show for Transform
@@ -506,7 +506,7 @@ pub impl Show for WritingMode
 
 pub(all) enum ZIndex {
   Auto
-  Value(Int)
+  Value(Int32)
 } derive(Eq, @debug.Debug)
 pub fn ZIndex::equal(Self, Self) -> Bool
 pub fn ZIndex::not_equal(Self, Self) -> Bool

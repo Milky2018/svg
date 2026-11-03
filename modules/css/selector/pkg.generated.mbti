@@ -21,7 +21,7 @@ pub fn matches_selector_list(Element, SelectorList) -> Bool
 
 pub fn matches_selector_list_with_shadow_context(Element, SelectorList, ShadowContext?) -> Bool
 
-pub fn parse_selector_list_from_tokens(Array[@token.Token], Int, Int) -> Array[ComplexSelector]
+pub fn parse_selector_list_from_tokens(Array[@token.Token], Int32, Int32) -> Array[ComplexSelector]
 
 pub fn parse_selector_list_text(String) -> SelectorList?
 
@@ -105,8 +105,8 @@ pub(all) struct Element {
   prev_sibling : Element?
   next_sibling : Element?
   children : Array[Element]
-  sibling_index : Int
-  sibling_count : Int
+  sibling_index : Int32
+  sibling_count : Int32
 }
 pub fn Element::add_class(Self, String) -> Self
 pub fn Element::add_custom_state(Self, String) -> Self
@@ -118,7 +118,7 @@ pub fn Element::new(String) -> Self
 pub fn Element::set_attribute(Self, String, String) -> Self
 pub fn Element::set_id(Self, String) -> Self
 pub fn Element::set_parent(Self, Self) -> Self
-pub fn Element::set_sibling_info(Self, Int, Int) -> Self
+pub fn Element::set_sibling_info(Self, Int32, Int32) -> Self
 pub fn Element::with_classes(String, Array[String]) -> Self
 pub fn Element::with_id(String, String) -> Self
 
@@ -139,8 +139,8 @@ pub fn ForcedPseudoStates::to_string(Self) -> String
 pub impl Show for ForcedPseudoStates
 
 pub struct NthExpr {
-  a : Int
-  b : Int
+  a : Int32
+  b : Int32
 }
 pub fn NthExpr::output(Self, &Logger) -> Unit
 pub fn NthExpr::to_string(Self) -> String
@@ -167,7 +167,7 @@ pub enum PseudoClass {
   Host
   HostFunc(CompoundSelector)
   HostContextFunc(CompoundSelector)
-  Heading(Array[Int])
+  Heading(Array[Int32])
   Dir(String)
   Lang(Array[String])
   Hover
@@ -250,13 +250,13 @@ pub fn SimpleSelector::to_string(Self) -> String
 pub impl Show for SimpleSelector
 
 pub(all) struct Specificity {
-  a : Int
-  b : Int
-  c : Int
+  a : Int32
+  b : Int32
+  c : Int32
 } derive(Compare, Eq)
 pub fn Specificity::add(Self, Self) -> Self
-pub fn Specificity::compare(Self, Self) -> Int
-pub fn Specificity::compare_to(Self, Self) -> Int
+pub fn Specificity::compare(Self, Self) -> Int32
+pub fn Specificity::compare_to(Self, Self) -> Int32
 pub fn Specificity::equal(Self, Self) -> Bool
 pub fn Specificity::not_equal(Self, Self) -> Bool
 pub fn Specificity::op_ge(Self, Self) -> Bool

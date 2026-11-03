@@ -89,7 +89,7 @@ pub struct MediaQueryList {
 pub fn MediaQueryList::equal(Self, Self) -> Bool
 pub fn MediaQueryList::evaluate(Self, MediaEnvironment) -> Bool
 pub fn MediaQueryList::is_empty(Self) -> Bool
-pub fn MediaQueryList::length(Self) -> Int
+pub fn MediaQueryList::length(Self) -> Int32
 pub fn MediaQueryList::new() -> Self
 pub fn MediaQueryList::not_equal(Self, Self) -> Bool
 pub fn MediaQueryList::output(Self, &Logger) -> Unit
@@ -113,7 +113,7 @@ pub impl Show for MediaType
 pub enum MediaValue {
   Number(Double)
   Dimension(Double, String)
-  Ratio(Int, Int)
+  Ratio(Int32, Int32)
   Ident(String)
 } derive(Eq, @debug.Debug)
 pub fn MediaValue::equal(Self, Self) -> Bool
