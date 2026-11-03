@@ -164,3 +164,89 @@ test "use element referencing element defined after use (forward reference)" {
     None => panic()
   }
 }
+
+///|
+fn render_use_test_image(svg : String, size : Int) -> Image {
+  let image = Image::new(size, size)
+  match
+    parse_svg_document_in_viewport(svg, size.to_double(), size.to_double()) {
+    Some(doc) => {
+      let setter : ColorSink = {
+        set: (x, y, color) => image.set_pixel(x, y, color),
+      }
+      let ctx = RenderState::new(setter, size, size)
+      doc.render(ctx)
+    }
+    None => panic()
+  }
+  image
+}
+
+///|
+test "use of a plain element keeps negative coordinates" {
+  // A <use> that references <rect>/<path> does not establish a viewport, so
+  // content at negative coordinates in the referenced user space must stay
+  // visible once the <use> translation moves it into the canvas.
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 40 40\">" +
+    "<defs><rect id=\"r\" x=\"-10\" y=\"-10\" width=\"10\" height=\"10\" fill=\"red\"/></defs>" +
+    "<use href=\"#r\" x=\"20\" y=\"20\"/></svg>"
+  let image = render_use_test_image(svg, 40)
+  inspect(image.get_pixel(15, 15).r, content="255")
+  inspect(image.get_pixel(15, 15).a, content="255")
+  inspect(image.get_pixel(25, 25).is_transparent(), content="true")
+  inspect(image.get_pixel(5, 5).is_transparent(), content="true")
+}
+
+///|
+test "use of a plain element is not clipped to the root viewport size" {
+  // The referenced path is larger than the root viewport in its own user
+  // space; scaling it down through <use> must keep the whole shape.
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 40 40\">" +
+    "<defs><path id=\"p\" d=\"M0 0 H100 V100 H0 Z\" fill=\"blue\"/></defs>" +
+    "<use href=\"#p\" transform=\"translate(10 10) scale(0.2)\"/></svg>"
+  let image = render_use_test_image(svg, 40)
+  // 20x20 device pixels at (10..30, 10..30); the far corner used to be lost
+  // because the clone was clipped to 0..40 in path units (8x8 device pixels).
+  inspect(image.get_pixel(11, 11).b, content="255")
+  inspect(image.get_pixel(29, 29).b, content="255")
+  inspect(image.get_pixel(31, 31).is_transparent(), content="true")
+}
+
+///|
+test "use of a glyph outline with a flipped matrix renders above and below the baseline" {
+  // Font glyphs are typically stored in a 1000-unit em with negative y above
+  // the baseline and placed through a scale/flip matrix on <use>.
+  let glyph = "M0 200 L600 200 L300 -800 Z"
+  let upright = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\">" +
+    "<defs><path id=\"g\" d=\"" +
+    glyph +
+    "\"/></defs>" +
+    "<use href=\"#g\" fill=\"#ff0000\" transform=\"matrix(0.02 0 0 0.02 40 60)\"/></svg>"
+  let image = render_use_test_image(upright, 100)
+  // apex at y = 60 - 16 = 44, base at y = 64; the fill comes from <use>.
+  inspect(image.get_pixel(46, 50).r, content="255")
+  inspect(image.get_pixel(46, 50).g, content="0")
+  inspect(image.get_pixel(46, 62).a, content="255")
+  inspect(image.get_pixel(46, 70).is_transparent(), content="true")
+  let flipped = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\">" +
+    "<defs><path id=\"g\" d=\"" +
+    glyph +
+    "\"/></defs>" +
+    "<use href=\"#g\" fill=\"#ff0000\" transform=\"matrix(0.02 0 0 -0.02 40 60)\"/></svg>"
+  let image = render_use_test_image(flipped, 100)
+  // mirrored: base at y = 56, apex at y = 76
+  inspect(image.get_pixel(46, 70).r, content="255")
+  inspect(image.get_pixel(46, 50).is_transparent(), content="true")
+}
+
+///|
+test "use of a nested svg still establishes a clipping viewport" {
+  let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 40 40\">" +
+    "<defs><svg id=\"inner\" width=\"10\" height=\"10\">" +
+    "<rect x=\"-5\" y=\"-5\" width=\"10\" height=\"10\" fill=\"green\"/></svg></defs>" +
+    "<use href=\"#inner\" x=\"20\" y=\"20\"/></svg>"
+  let image = render_use_test_image(svg, 40)
+  // Only the 5x5 quadrant inside the inner viewport (20..25) is visible.
+  inspect(image.get_pixel(22, 22).g > 0, content="true")
+  inspect(image.get_pixel(17, 17).is_transparent(), content="true")
+}
